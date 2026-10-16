@@ -15,7 +15,7 @@
   --warn:#fab219; --warn-text:#8a5a00; --warn-soft:#fff4dc;
   --bad:#d03b3b; --bad-text:#b12c2c; --bad-soft:#fdeaea;
   --bar:#2a78d6; --track:#edf0f5;
-  --a1:#2a78d6; --a2:#eb6834; --a3:#1baf7a; --a4:#eda100; --a5:#e87ba4; --a6:#008300; --a7:#6250d6;
+  --a1:#2a78d6; --a2:#eb6834; --a3:#1baf7a; --a4:#eda100; --a5:#e87ba4; --a6:#008300; --a7:#6250d6; --a8:#e34948;
   --shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.08);
   --radius:12px;
 }
@@ -27,7 +27,7 @@
     --brand:#8db8f2; --brand-2:#5b9cec; --brand-soft:#1d2b40; --accent:#2cc2b2;
     --good-text:#5fd35f; --good-soft:#15301a; --warn-text:#fac557; --warn-soft:#33290f; --bad-text:#f08585; --bad-soft:#3a1c1c;
     --bar:#3987e5; --track:#252e3c;
-    --a1:#3987e5; --a2:#d95926; --a3:#199e70; --a4:#c98500; --a5:#d55181; --a6:#008300; --a7:#9085e9;
+    --a1:#3987e5; --a2:#d95926; --a3:#199e70; --a4:#c98500; --a5:#d55181; --a6:#008300; --a7:#9085e9; --a8:#e66767;
     --shadow:0 1px 2px rgba(0,0,0,.4);
   }
 }
@@ -38,7 +38,7 @@
   --brand:#8db8f2; --brand-2:#5b9cec; --brand-soft:#1d2b40; --accent:#2cc2b2;
   --good-text:#5fd35f; --good-soft:#15301a; --warn-text:#fac557; --warn-soft:#33290f; --bad-text:#f08585; --bad-soft:#3a1c1c;
   --bar:#3987e5; --track:#252e3c;
-  --a1:#3987e5; --a2:#d95926; --a3:#199e70; --a4:#c98500; --a5:#d55181; --a6:#008300; --a7:#9085e9;
+  --a1:#3987e5; --a2:#d95926; --a3:#199e70; --a4:#c98500; --a5:#d55181; --a6:#008300; --a7:#9085e9; --a8:#e66767;
   --shadow:0 1px 2px rgba(0,0,0,.4);
 }
 *{box-sizing:border-box}
@@ -308,7 +308,7 @@ textarea.paste{width:100%;min-height:170px;font-family:ui-monospace,SFMono-Regul
 body.ro [data-act="add-vis"],body.ro [data-act="edit-vis"],body.ro [data-act="toggle-vis"],body.ro [data-act="del-vis"],body.ro [data-act="add-eval"],body.ro [data-act="edit-eval"],body.ro [data-act="del-eval"],body.ro [data-act="add-prod"],body.ro [data-act="del-prod"],body.ro [data-act="move-prod"],body.ro [data-act="add-med"],body.ro [data-act="edit-med"],body.ro [data-act="del-med"],body.ro [data-act="k-commit"],body.ro [data-act="imp-json"]{display:none!important}
 body.ro .tick{pointer-events:none}
 body.ro [data-act="add-ses"],body.ro [data-act="edit-ses"]{pointer-events:none}
-body.ro [data-act="line-add"],body.ro [data-act="line-ren"],body.ro [data-act="line-del"],body.ro [data-act="fdv-add"],body.ro [data-act="fdv-ren"],body.ro [data-act="fdv-del"],body.ro [data-act="fdv-imp"],body.ro [data-act="new-ses"],body.ro [data-act="del-all-ses"]{display:none!important}
+body.ro [data-act="area-add"],body.ro [data-act="area-del"],body.ro [data-act="line-add"],body.ro [data-act="line-ren"],body.ro [data-act="line-del"],body.ro [data-act="fdv-add"],body.ro [data-act="fdv-ren"],body.ro [data-act="fdv-del"],body.ro [data-act="fdv-imp"],body.ro [data-act="new-ses"],body.ro [data-act="del-all-ses"]{display:none!important}
 /* calendar / schedule */
 .cal-nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .cal-nav h2{min-width:170px;text-align:center}
@@ -455,7 +455,9 @@ const prodTerms = name => { const c = prodInfo(name); return [name, c.principio,
 const prodMatches = (name, q) => !q || prodTerms(name).concat([(S.portafolio.find(p => p.producto === name) || {}).area || '']).some(x => nrm(x).includes(q));
 const HEAD_TARGET = {'LÍNEA 1':5,'LÍNEA 2':5,'LÍNEA 3':5,'HÍBRIDA 1':9,'HÍBRIDA 2':9,'HÍBRIDA 3':7};
 const AREAS = ['ALERGO RESPIRATORIA','ANTIINFECCIOSA','CARDIOMETABÓLICA','GASTROINTESTINAL','GENITOURINARIA','MÚSCULO ESQUELÉTICA','SISTEMA NERVIOSO CENTRAL'];
-const AREA_VAR = a => { const i = AREAS.indexOf(a); return i < 0 ? 'var(--muted)' : `var(--a${i+1})`; };
+function areaList(){ const s = new Set(AREAS); arr(S.config && S.config.areas).forEach(a => a && s.add(a)); S.portafolio.forEach(p => p.area && s.add(p.area)); return [...s]; }
+const areaIdx = a => { const i = areaList().indexOf(a); return i < 0 ? 99 : i; };
+const AREA_VAR = a => { const i = areaList().indexOf(a); return i < 0 ? 'var(--muted)' : i < 8 ? `var(--a${i+1})` : 'var(--muted)'; };
 const clone = o => JSON.parse(JSON.stringify(o));
 
 function fresh(){
@@ -838,7 +840,7 @@ function sesListsHtml(line, checkedReps, checkedProds){
   const pool = S.portafolio.filter(p => !lines.length || lines.includes(GD) || lines.includes(p.linea) || cp.has(p.producto));
   const prods = new Map(); pool.forEach(p => { if (!prods.has(p.producto)) prods.set(p.producto, p.area); }); cp.forEach(p => { if (!prods.has(p)) prods.set(p, ''); });
   const byArea = groupBy([...prods].sort((a,b) => a[0].localeCompare(b[0], 'es')), ([, a]) => a);
-  const prodHtml = [...byArea].sort((a,b) => AREAS.indexOf(a[0]) - AREAS.indexOf(b[0])).map(([a, ps]) =>
+  const prodHtml = [...byArea].sort((a,b) => areaIdx(a[0]) - areaIdx(b[0])).map(([a, ps]) =>
     `<h5><i class="dot" style="background:${AREA_VAR(a)}"></i>${esc(titleCase(a) || 'Otros')}</h5>` + ps.map(([p]) => `<label><input type="checkbox" name="productos" value="${esc(p)}" ${cp.has(p)?'checked':''}> ${esc(p)}</label>`).join('')).join('') || '<span class="muted">No hay productos en el portafolio.</span>';
   return {repHtml, prodHtml, hint: line === GD ? 'Gerentes de distrito: todo el portafolio' : line ? `Productos del portafolio de ${line}` : lines.length ? `Productos de: ${lines.join(', ')}` : 'Todos los productos (marca representantes para filtrar por su línea)'};
 }
@@ -1215,15 +1217,16 @@ function gdCard(P, q){
   const groups = groupBy([...all].sort((a,b) => a[0].localeCompare(b[0], 'es')), ([, a]) => a);
   const n = S.visitadores.filter(v => v.linea === GD && v.estado !== 'Inactivo').length;
   return `<div class="card pline"><div class="card-h"><div><h2>${GD}</h2><p class="sub">${all.size} productos · todo el portafolio · ${n} gerente${n===1?'':'s'}</p></div></div>
-    <div class="card-b"><p class="gd-note">Los gerentes de distrito llevan todas las líneas. Esta lista se arma sola con los productos de todas las líneas.</p>${[...groups].sort((a,b) => AREAS.indexOf(a[0]) - AREAS.indexOf(b[0])).map(([a, ps]) => `<div class="agroup"><h4><i class="dot" style="background:${AREA_VAR(a)}"></i>${esc(titleCase(a))} <span class="muted">(${ps.length})</span></h4>
+    <div class="card-b"><p class="gd-note">Los gerentes de distrito llevan todas las líneas. Esta lista se arma sola con los productos de todas las líneas.</p>${[...groups].sort((a,b) => areaIdx(a[0]) - areaIdx(b[0])).map(([a, ps]) => `<div class="agroup"><h4><i class="dot" style="background:${AREA_VAR(a)}"></i>${esc(titleCase(a))} <span class="muted">(${ps.length})</span></h4>
       <div class="chips">${ps.map(([p]) => `<span class="chip ${q && prodMatches(p, q) ? 'hl' : ''}" style="padding-right:8px"><span class="cn" data-act="edit-prod" data-prod="${esc(p)}">${esc(p)}</span></span>`).join('')}</div></div>`).join('')}</div></div>`;
 }
 function linePill(l, f){ return `<span class="pill" title="${esc(f)}">${esc(l)}</span>`; }
 views.port = () => {
   const P = S.portafolio.filter(p => !UI.fdv || pfdv(p) === UI.fdv);
   const q = UI.q;
-  const usedAreas = AREAS.filter(a => P.some(p => p.area === a)).concat([...new Set(P.map(p=>p.area))].filter(a => a && !AREAS.includes(a)));
-  const legend = `<div class="areas-legend">${usedAreas.map(a => `<span><i class="dot" style="background:${AREA_VAR(a)}"></i>${esc(titleCase(a))}</span>`).join('')}</div>`;
+  const usedAreas = areaList().filter(a => P.some(p => p.area === a) || (!AREAS.includes(a) && arr(S.config.areas).includes(a)));
+  const legend = `<div class="areas-legend">${usedAreas.map(a => { const custom = !AREAS.includes(a), inUse = S.portafolio.some(p => p.area === a);
+    return `<span><i class="dot" style="background:${AREA_VAR(a)}"></i>${esc(titleCase(a))}${custom && !inUse ? ` <button class="iconbtn del" data-act="area-del" data-a="${esc(a)}" title="Eliminar área (no tiene productos)" aria-label="Eliminar área">×</button>` : ''}</span>`; }).join('')}<button class="btn sm ghost" data-act="area-add">＋ Nueva área</button></div>`;
   const baseLines = UI.fdv ? linesOfFdv(UI.fdv) : allLines();
   const lines = UI.linea && UI.linea !== GD ? baseLines.filter(l => l === UI.linea) : (UI.linea === GD && UI.portView === 'cards' ? [] : baseLines);
   const products = [...new Set(P.map(p => p.producto))].sort((a,b)=>a.localeCompare(b,'es'));
@@ -1243,7 +1246,7 @@ views.port = () => {
     const card = l => {
       const ps = P.filter(p => p.linea === l);
       const groups = groupBy(ps, p => p.area);
-      const areaOrder = [...groups.keys()].sort((a,b) => (AREAS.indexOf(a)+99*(AREAS.indexOf(a)<0)) - (AREAS.indexOf(b)+99*(AREAS.indexOf(b)<0)));
+      const areaOrder = [...groups.keys()].sort((a,b) => areaIdx(a) - areaIdx(b));
       return `<div class="card pline" data-drop-line="${esc(l)}">
         <div class="card-h"><div><h2>${esc(l)}</h2><p class="sub">${esc(lineFdv(l))} · ${ps.length} productos · ${groups.size} áreas</p></div>
         <span class="toolbar">${LINES.includes(l) ? '' : `<button class="iconbtn" data-act="line-ren" data-line="${esc(l)}" title="Cambiar nombre de la línea" aria-label="Cambiar nombre">✎</button><button class="iconbtn del" data-act="line-del" data-line="${esc(l)}" title="Eliminar línea" aria-label="Eliminar línea">🗑</button>`}<button class="btn sm" data-act="add-prod" data-line="${esc(l)}">＋ Producto</button></span></div>
@@ -1686,13 +1689,14 @@ function lineRename(old){
 function prodEdit(name, line){
   const isNew = !name, c = isNew ? {producto:'', principio:'', alias:[]} : prodInfo(name);
   const cur = isNew ? [] : S.portafolio.filter(p => p.producto === name);
-  const area0 = (cur[0] || {}).area || AREAS[0];
+  const area0 = (cur[0] || {}).area || areaList()[0];
   const checked = new Set(cur.map(p => `${pfdv(p)}||${p.linea}`)); if (isNew && line) checked.add(`${lineFdv(line)}||${line}`);
   const boxes = fdvList().map(f => { const ls = linesOfFdv(f); return ls.length ? `<h5>${esc(f)}</h5>` + ls.map(l => `<label><input type="checkbox" name="lineas" value="${esc(f + '||' + l)}" ${checked.has(f + '||' + l) ? 'checked' : ''}> ${esc(l)}</label>`).join('') : ''; }).join('');
   openForm(isNew ? 'Nuevo producto' : `Editar ${name}`, [
     {k:'producto', label:'Nombre comercial (marca) *', req:1, full:1, attrs:'placeholder="Ej. DESLER" style="text-transform:uppercase"'},
     {k:'principio', label:'Principio activo', attrs:'placeholder="Ej. Desloratadina"'}, {k:'alias', label:'Otros nombres (separados por coma)', attrs:'placeholder="Ej. Desler 5 mg, Deslo"'},
-    {k:'area', label:'Área terapéutica', type:'select', full:1, options:AREAS.map(a => [a, titleCase(a)])},
+    {k:'area', label:'Área terapéutica', type:'select', options:areaList().map(a => [a, titleCase(a)])},
+    {k:'nuevaArea', label:'¿Otra área? Escríbela aquí', attrs:'placeholder="Ej. DERMATOLÓGICA" style="text-transform:uppercase"'},
     {k:'_l', type:'raw', html:`<div class="checks-h"><span>Líneas que llevan este producto</span></div><div class="checks">${boxes}</div>`},
     {k:'nuevaLinea', label:'Agregar a una línea nueva', attrs:'placeholder="Ej. OTC 1" style="text-transform:uppercase"'}, {k:'nuevaFdv', label:'Fuerza de ventas de la línea nueva', type:'select', options:fdvList()}
   ].concat(isNew ? [] : [{k:'_d', type:'raw', html:`<button type="button" class="btn danger sm" data-act="del-prod-all" data-prod="${esc(name)}">🗑 Quitar ${esc(name)} de todas las líneas</button>`}]),
@@ -1700,6 +1704,8 @@ function prodEdit(name, line){
     const nn = String(d.producto || '').trim().toUpperCase().replace(/\s+/g, ' ');
     if (!nn) { toast('Escribe el nombre del producto.'); return false; }
     if (nn !== name && S.portafolio.some(p => p.producto === nn)) { toast(`Ya existe un producto llamado ${nn}. Usa otro nombre o edita ese producto.`); return false; }
+    const na = String(d.nuevaArea || '').trim().toUpperCase().replace(/\s+/g, ' ');
+    if (na) { const ex = areaList().find(a => nrm(a) === nrm(na)); d.area = ex || na; if (!ex) { S.config.areas = arr(S.config.areas).concat([na]); putConfig(); } }
     const want = new Set(arr(d.lineas)); const nl = String(d.nuevaLinea || '').trim().toUpperCase().replace(/\s+/g, ' ');
     if (nl) want.add(`${d.nuevaFdv || FDV_DEFAULT}||${nl}`);
     if (!want.size) { toast('Marca al menos una línea o escribe una línea nueva.'); return false; }
@@ -1718,7 +1724,7 @@ function moveForm(p){
     {k:'info', type:'info', full:1, html:`Actualmente en <b>${esc(p.linea)}</b> · ${esc(titleCase(p.area))}`},
     {k:'dest', label:'Línea destino', type:'select', options:allLines().filter(l => l !== p.linea)},
     {k:'modo', label:'Acción', type:'select', options:[['move','Mover (quitar de la línea actual)'],['copy','Copiar (mantener en ambas)']]},
-    {k:'area', label:'Área terapéutica', type:'select', full:1, options:AREAS.map(a => [a, titleCase(a)])}
+    {k:'area', label:'Área terapéutica', type:'select', full:1, options:areaList().map(a => [a, titleCase(a)])}
   ], {area:p.area}, d => movePart(p.id, d.dest, d.modo === 'copy', d.area), 'Aplicar');
 }
 function movePart(pid, dest, copy, area){
@@ -1867,6 +1873,10 @@ document.addEventListener('click', e => {
     case 'add-prod': prodForm(a.dataset.line); break;
     case 'edit-prod': e.stopPropagation(); if (document.body.classList.contains('ro')) break; prodEdit(a.dataset.prod); break;
     case 'del-prod-all': { const pr = a.dataset.prod; closeModal(); askConfirm(`¿Quitar ${pr} de todas las líneas del portafolio?`, () => { runOps(S.portafolio.filter(p => p.producto === pr).map(p => ({col:'portafolio', del:p.id}))).then(() => toast(`${pr} quitado del portafolio.`)); }, 'Quitar'); break; }
+    case 'area-add': openForm('Nueva área terapéutica', [{k:'nombre', label:'Nombre del área *', req:1, full:1, attrs:'placeholder="Ej. DERMATOLÓGICA" style="text-transform:uppercase"'}], {}, d => {
+        const n = d.nombre.trim().toUpperCase().replace(/\s+/g, ' '); if (areaList().some(a => nrm(a) === nrm(n))) { toast('Esa área ya existe.'); return false; }
+        S.config.areas = arr(S.config.areas).concat([n]); putConfig(); toast(`Área ${titleCase(n)} agregada. Ya puedes elegirla al crear o editar productos.`); }, 'Agregar'); break;
+    case 'area-del': { const ar = a.dataset.a; S.config.areas = arr(S.config.areas).filter(x => x !== ar); putConfig(); toast(`Área ${titleCase(ar)} eliminada.`); break; }
     case 'line-add': lineForm(a.dataset.f); break;
     case 'line-ren': lineRename(a.dataset.line); break;
     case 'line-del': { const l = a.dataset.line, nv = S.visitadores.filter(v => v.linea === l).length, np = S.portafolio.filter(p => p.linea === l).length;
