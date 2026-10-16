@@ -188,6 +188,20 @@ tr.open .chev{transform:rotate(90deg)}
 .pie .slice.on{stroke:var(--text);stroke-width:3}
 .pie-big{font-size:30px;font-weight:700;fill:var(--text)}
 .pie-sub{font-size:11px;fill:var(--muted);letter-spacing:.3px}
+.pie-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.pie-mini{border:1px solid var(--border);border-radius:10px;background:var(--surface);padding:10px 8px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;text-align:center;min-width:0}
+.pie-mini:hover{border-color:var(--brand-2)}
+.pie-mini b{font-size:13px}
+.pie-mini small{color:var(--muted);font-size:11.5px}
+.pie .pie-mini svg,.pie-mini svg{width:118px;height:118px}
+.mini-counts{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;font-size:12px;font-weight:600;font-variant-numeric:tabular-nums}
+.mini-counts span{display:inline-flex;align-items:center;gap:3px}
+.legend-compact{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--text-2);margin-top:12px}
+.legend-compact span{display:inline-flex;align-items:center;gap:5px}
+.colcfg td,.colcfg th{padding:6px 10px}
+.colcfg input[type=text]{width:100%;min-width:160px}
+.colcfg input[type=number]{width:80px}
+.gd-note{font-size:12.5px;color:var(--text-2);margin:0 0 10px}
 .pie-legend{flex:1;min-width:220px;display:flex;flex-direction:column;gap:4px}
 .pie-legend button{display:grid;grid-template-columns:14px 1fr auto 52px;gap:10px;align-items:center;text-align:left;border:1px solid transparent;background:none;border-radius:8px;padding:7px 8px;cursor:pointer}
 .pie-legend button:hover{background:var(--surface-2)}
@@ -324,7 +338,7 @@ body.ro .chip{cursor:default}
     <button class="tab" data-tab="evals">Evaluaciones</button>
     <button class="tab" data-tab="port">Portafolio</button>
     <button class="tab" data-tab="fichero">Fichero Médico</button>
-    <button class="tab" data-tab="carga">Cargar Kahoot</button>
+    <button class="tab" data-tab="carga">Cargar notas</button>
     <button class="tab" data-tab="crono">Cronograma</button>
   </nav>
 </header>
@@ -335,6 +349,7 @@ body.ro .chip{cursor:default}
     <input type="search" id="q" placeholder="Buscar visitador, correo, examen, producto, médico…" autocomplete="off">
   </div>
   <select id="fLinea" aria-label="Filtrar por línea"></select>
+  <select id="fReg" aria-label="Filtrar por región"></select>
   <select id="fVis" aria-label="Filtrar por visitador"></select>
   <select id="fExam" aria-label="Filtrar por evaluación"></select>
   <label class="fld" title="Nota mínima aprobatoria (escala 0–20)">Mín. aprobatorio <input type="number" id="fMin" min="0" max="20" step="0.5"> /20</label>
@@ -360,6 +375,7 @@ body.ro .chip{cursor:default}
 const SEED = {"visitadores": [{"id": "v1", "nombre": "Laura", "apellidos": "Garcia", "correo": "laura.garcia@lasante.com.ve", "linea": "HÍBRIDA 3", "region": "Andes", "zona": "Merida", "estado": "Activo"}, {"id": "v2", "nombre": "Marvi", "apellidos": "Garcia", "correo": "marvi.garcia@lasante.com.ve", "linea": "HÍBRIDA 3", "region": "Andes", "zona": "San Cristobal", "estado": "Activo"}, {"id": "v3", "nombre": "Maribel", "apellidos": "Barrios", "correo": "maribel.barrios@lasante.com.ve", "linea": "HÍBRIDA 3", "region": "Andes", "zona": "Trujillo", "estado": "Activo"}, {"id": "v4", "nombre": "Daniccy", "apellidos": "Baptista", "correo": "daniccy.baptista@lasante.com.ve", "linea": "LÍNEA 1", "region": "Caracas", "zona": "Caracas Nor Este", "estado": "Activo"}, {"id": "v5", "nombre": "Mariangela", "apellidos": "Pinto", "correo": "", "linea": "LÍNEA 2", "region": "Caracas", "zona": "Caracas Nor Este", "estado": "Activo"}, {"id": "v6", "nombre": "Jimmy", "apellidos": "Vega", "correo": "jimmy.vega@lasante.com.ve", "linea": "LÍNEA 3", "region": "Caracas", "zona": "Caracas Nor Este", "estado": "Activo"}, {"id": "v7", "nombre": "Ada", "apellidos": "Dascenzo", "correo": "ada.dascenzo@lasante.com.ve", "linea": "LÍNEA 1", "region": "Caracas", "zona": "Caracas Nor Oeste", "estado": "Activo"}, {"id": "v8", "nombre": "Johana", "apellidos": "Borjas", "correo": "", "linea": "LÍNEA 2", "region": "Caracas", "zona": "Caracas Nor Oeste", "estado": "Activo"}, {"id": "v9", "nombre": "Juana", "apellidos": "Araujo", "correo": "juana.araujo@lasante.com.ve", "linea": "LÍNEA 3", "region": "Caracas", "zona": "Caracas Nor Oeste", "estado": "Activo"}, {"id": "v10", "nombre": "Tatiana", "apellidos": "Silva", "correo": "tatiana.silva@lasante.com.ve", "linea": "LÍNEA 1", "region": "Caracas", "zona": "Caracas Sur Este", "estado": "Activo"}, {"id": "v11", "nombre": "Andrea", "apellidos": "Ballesteros", "correo": "", "linea": "LÍNEA 2", "region": "Caracas", "zona": "Caracas Sur Este", "estado": "Activo"}, {"id": "v12", "nombre": "Nazareth", "apellidos": "Alayza", "correo": "nazareth.alayza@lasante.com.ve", "linea": "LÍNEA 3", "region": "Caracas", "zona": "Caracas Sur Este", "estado": "Activo"}, {"id": "v13", "nombre": "Gregorio", "apellidos": "Carrero", "correo": "gregorio.carrero@lasante.com.ve", "linea": "LÍNEA 1", "region": "Caracas", "zona": "Caracas Sur Oeste", "estado": "Activo"}, {"id": "v14", "nombre": "Edwar", "apellidos": "Barazarte", "correo": "", "linea": "LÍNEA 2", "region": "Caracas", "zona": "Caracas Sur Oeste", "estado": "Activo"}, {"id": "v15", "nombre": "Mariana", "apellidos": "Guzman", "correo": "mariana.guzman@lasante.com.ve", "linea": "LÍNEA 3", "region": "Caracas", "zona": "Caracas Sur Oeste", "estado": "Activo"}, {"id": "v16", "nombre": "Dayana", "apellidos": "Montiel", "correo": "dayana.montiel@lasante.com.ve", "linea": "HÍBRIDA 1", "region": "Centro Este", "zona": "Maracay", "estado": "Activo"}, {"id": "v17", "nombre": "Daisy", "apellidos": "Perez", "correo": "daisy.perez@lasante.com.ve", "linea": "HÍBRIDA 2", "region": "Centro Este", "zona": "Maracay", "estado": "Activo"}, {"id": "v18", "nombre": "Veronica", "apellidos": "Polanco", "correo": "veronica.polanco@lasante.com.ve", "linea": "HÍBRIDA 1", "region": "Centro Este", "zona": "Valencia Norte", "estado": "Activo"}, {"id": "v19", "nombre": "Joansy", "apellidos": "Marin", "correo": "joansy.marin@lasante.com.ve", "linea": "HÍBRIDA 2", "region": "Centro Este", "zona": "Valencia Norte", "estado": "Activo"}, {"id": "v20", "nombre": "Jesus", "apellidos": "Camacho", "correo": "jesus.camacho@lasante.com.ve", "linea": "HÍBRIDA 1", "region": "Centro Este", "zona": "Valencia Sur", "estado": "Activo"}, {"id": "v21", "nombre": "Argenis", "apellidos": "Duran", "correo": "argenis.duran@lasante.com.ve", "linea": "HÍBRIDA 2", "region": "Centro Este", "zona": "Valencia Sur", "estado": "Activo"}, {"id": "v22", "nombre": "", "apellidos": "", "correo": "", "linea": "HÍBRIDA 1", "region": "Centro Oeste", "zona": "Barquisimeto Este", "estado": "Vacante"}, {"id": "v23", "nombre": "Vanessa", "apellidos": "Alviarez", "correo": "vanessa.alviarez@lasante.com.ve", "linea": "HÍBRIDA 2", "region": "Centro Oeste", "zona": "Barquisimeto Este", "estado": "Activo"}, {"id": "v24", "nombre": "Victor", "apellidos": "Barazarte", "correo": "victor.barazarte@lasante.com.ve", "linea": "HÍBRIDA 1", "region": "Centro Oeste", "zona": "Barquisimeto Oeste", "estado": "Activo"}, {"id": "v25", "nombre": "Hector", "apellidos": "Perez", "correo": "hector.perez@lasante.com.ve", "linea": "HÍBRIDA 2", "region": "Centro Oeste", "zona": "Barquisimeto Oeste", "estado": "Activo"}, {"id": "v26", "nombre": "Leonardo", "apellidos": "Guillén", "correo": "leonardo.guillen@lasante.com.ve", "linea": "HÍBRIDA 1", "region": "Centro Oeste", "zona": "Barinas - Portuguesa", "estado": "Activo"}, {"id": "v27", "nombre": "Giuseppe", "apellidos": "Catanzaro", "correo": "giuseppe.catanzaro@lasante.com.ve", "linea": "HÍBRIDA 2", "region": "Centro Oeste", "zona": "Barinas - Portuguesa", "estado": "Activo"}, {"id": "v28", "nombre": "July", "apellidos": "Villalobos", "correo": "july.villalobos@lasante.com.ve", "linea": "HÍBRIDA 1", "region": "Maracaibo", "zona": "Maracaibo Norte", "estado": "Activo"}, {"id": "v29", "nombre": "Leonidas", "apellidos": "Melendez", "correo": "leonidas.melendez@lasante.com.ve", "linea": "HÍBRIDA 2", "region": "Maracaibo", "zona": "Maracaibo Norte", "estado": "Activo"}, {"id": "v30", "nombre": "Gerardo", "apellidos": "Rodriguez", "correo": "gerardo.rodriguez@lasante.com.ve", "linea": "HÍBRIDA 1", "region": "Maracaibo", "zona": "Maracaibo Sur", "estado": "Activo"}, {"id": "v31", "nombre": "Elvis", "apellidos": "Malave", "correo": "elvis.malave@lasante.com.ve", "linea": "HÍBRIDA 2", "region": "Maracaibo", "zona": "Maracaibo Sur", "estado": "Activo"}, {"id": "v32", "nombre": "Lubia", "apellidos": "Quintero", "correo": "lubia.quintero@lasante.com.ve", "linea": "HÍBRIDA 3", "region": "Maracaibo", "zona": "Falcon", "estado": "Activo"}, {"id": "v33", "nombre": "Genesis", "apellidos": "Martinez", "correo": "genesis.martinez@lasante.com.ve", "linea": "LÍNEA 1", "region": "Oriente Norte", "zona": "Anzoategui - Nueva Esparta", "estado": "Activo"}, {"id": "v34", "nombre": "Neivis", "apellidos": "Parra", "correo": "", "linea": "LÍNEA 2", "region": "Oriente Norte", "zona": "Anzoategui - Nueva Esparta", "estado": "Activo"}, {"id": "v35", "nombre": "Aries", "apellidos": "Carrizales", "correo": "aries.carrizales@lasante.com.ve", "linea": "LÍNEA 3", "region": "Oriente Norte", "zona": "Anzoategui - Nueva Esparta", "estado": "Activo"}, {"id": "v36", "nombre": "Edgaris", "apellidos": "Vallejo", "correo": "edgaris.vallejo@lasante.com.ve", "linea": "HÍBRIDA 3", "region": "Oriente Norte", "zona": "Cumana - Carupano", "estado": "Activo"}, {"id": "v37", "nombre": "Carolina", "apellidos": "Vasquez", "correo": "carolina.vasquez@lasante.com.ve", "linea": "HÍBRIDA 3", "region": "Oriente Sur", "zona": "Puerto Ordaz - San Felix", "estado": "Activo"}, {"id": "v38", "nombre": "Hernan", "apellidos": "Guevara", "correo": "hernan.guevara@lasante.com.ve", "linea": "HÍBRIDA 3", "region": "Oriente Sur", "zona": "Ciudad Bolivar - El Tigre", "estado": "Activo"}, {"id": "v39", "nombre": "Daysis", "apellidos": "Mora", "correo": "", "linea": "HÍBRIDA 1", "region": "Oriente Sur", "zona": "Maturin", "estado": "Activo"}, {"id": "v40", "nombre": "Greisely", "apellidos": "Rosal", "correo": "gresely.rosal@lasante.com.ve", "linea": "HÍBRIDA 2", "region": "Oriente Sur", "zona": "Maturin", "estado": "Activo"}, {"id": "v41", "nombre": "Angela", "apellidos": "Castillo", "correo": "angela.castillo@lasante.com.ve", "linea": "SIN ASIGNAR", "region": "—", "zona": "—", "estado": "Fuera de estructura"}, {"id": "v42", "nombre": "Ricardo", "apellidos": "Guevara", "correo": "ricardo.guevara@lasante.com.ve", "linea": "SIN ASIGNAR", "region": "—", "zona": "—", "estado": "Fuera de estructura"}, {"id": "v43", "nombre": "Jhoselyn", "apellidos": "Sanchez", "correo": "jhoselyn.sanchez@lasante.com.ve", "linea": "SIN ASIGNAR", "region": "—", "zona": "—", "estado": "Fuera de estructura"}, {"id": "v44", "nombre": "Marahy", "apellidos": "Churion", "correo": "marahy.churion@lasante.com.ve", "linea": "SIN ASIGNAR", "region": "—", "zona": "—", "estado": "Fuera de estructura"}, {"id": "v45", "nombre": "Tonny", "apellidos": "Espinoza", "correo": "tonny.espinoza@lasante.com.ve", "linea": "SIN ASIGNAR", "region": "—", "zona": "—", "estado": "Fuera de estructura"}, {"id": "v46", "nombre": "Andrea", "apellidos": "Alarcon", "correo": "andrea.alarcon@lasante.com.ve", "linea": "SIN ASIGNAR", "region": "—", "zona": "—", "estado": "Fuera de estructura"}, {"id": "v47", "nombre": "Randolph", "apellidos": "Gramcko", "correo": "randolph.gramcko@lasante.com.ve", "linea": "SIN ASIGNAR", "region": "—", "zona": "—", "estado": "Fuera de estructura"}], "evaluaciones": [{"id": "e1", "vid": "v7", "examen": "Alzheimer y Donepezilo: Claves de la Ficha Técnica", "fecha": "", "nota": 20.0, "kahoot": 19057, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e2", "vid": "v7", "examen": "SNC", "fecha": "", "nota": 20.0, "kahoot": 19900, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e3", "vid": "v7", "examen": "Olanzatique", "fecha": "", "nota": 20.0, "kahoot": 18964, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e4", "vid": "v4", "examen": "Alzheimer y Donepezilo: Claves de la Ficha Técnica", "fecha": "", "nota": 20.0, "kahoot": 18844, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e5", "vid": "v4", "examen": "SNC", "fecha": "", "nota": 20.0, "kahoot": 19826, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e6", "vid": "v4", "examen": "Olanzatique", "fecha": "", "nota": 19.0, "kahoot": 17947, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e7", "vid": "v20", "examen": "Alzheimer y Donepezilo: Claves de la Ficha Técnica", "fecha": "", "nota": 20.0, "kahoot": 18265, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e8", "vid": "v20", "examen": "SNC", "fecha": "", "nota": 19.0, "kahoot": 18565, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e9", "vid": "v20", "examen": "Olanzatique", "fecha": "", "nota": 18.5, "kahoot": 174669, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx", "obs": "Puntaje Kahoot original \"17 4669\" (dato inconsistente)"}, {"id": "e10", "vid": "v30", "examen": "Alzheimer y Donepezilo: Claves de la Ficha Técnica", "fecha": "", "nota": 20.0, "kahoot": 18199, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e11", "vid": "v30", "examen": "SNC", "fecha": "", "nota": 19.0, "kahoot": 16797, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e12", "vid": "v30", "examen": "Olanzatique", "fecha": "", "nota": 16.5, "kahoot": 14390, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e13", "vid": "v18", "examen": "Alzheimer y Donepezilo: Claves de la Ficha Técnica", "fecha": "", "nota": 19.0, "kahoot": 18195, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e14", "vid": "v18", "examen": "SNC", "fecha": "", "nota": 18.5, "kahoot": 18990, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e15", "vid": "v18", "examen": "Olanzatique", "fecha": "", "nota": 20.0, "kahoot": 19493, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e16", "vid": "v33", "examen": "Alzheimer y Donepezilo: Claves de la Ficha Técnica", "fecha": "", "nota": 19.0, "kahoot": 18174, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e17", "vid": "v33", "examen": "SNC", "fecha": "", "nota": 18.5, "kahoot": 17889, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e18", "vid": "v33", "examen": "Olanzatique", "fecha": "", "nota": 17.5, "kahoot": 15624, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e19", "vid": "v10", "examen": "Alzheimer y Donepezilo: Claves de la Ficha Técnica", "fecha": "", "nota": 20.0, "kahoot": 18112, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e20", "vid": "v10", "examen": "SNC", "fecha": "", "nota": 19.0, "kahoot": 17287, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e21", "vid": "v10", "examen": "Olanzatique", "fecha": "", "nota": 20.0, "kahoot": 17604, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e22", "vid": "v28", "examen": "Alzheimer y Donepezilo: Claves de la Ficha Técnica", "fecha": "", "nota": 20.0, "kahoot": 17993, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e23", "vid": "v28", "examen": "SNC", "fecha": "", "nota": 19.0, "kahoot": 16407, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e24", "vid": "v28", "examen": "Olanzatique", "fecha": "", "nota": 19.5, "kahoot": 16431, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e25", "vid": "v13", "examen": "Alzheimer y Donepezilo: Claves de la Ficha Técnica", "fecha": "", "nota": 20.0, "kahoot": 17765, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e26", "vid": "v13", "examen": "SNC", "fecha": "", "nota": 20.0, "kahoot": 19451, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e27", "vid": "v13", "examen": "Olanzatique", "fecha": "", "nota": 17.5, "kahoot": 18008, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e28", "vid": "v24", "examen": "Alzheimer y Donepezilo: Claves de la Ficha Técnica", "fecha": "", "nota": 19.0, "kahoot": 17752, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e29", "vid": "v24", "examen": "SNC", "fecha": "", "nota": 20.0, "kahoot": 19748, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e30", "vid": "v24", "examen": "Olanzatique", "fecha": "", "nota": 20.0, "kahoot": 19637, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e31", "vid": "v41", "examen": "Alzheimer y Donepezilo: Claves de la Ficha Técnica", "fecha": "", "nota": 18.0, "kahoot": 16058, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e32", "vid": "v41", "examen": "SNC", "fecha": "", "nota": 20.0, "kahoot": 19670, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e33", "vid": "v41", "examen": "Olanzatique", "fecha": "", "nota": 17.5, "kahoot": 15719, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e34", "vid": "v16", "examen": "Alzheimer y Donepezilo: Claves de la Ficha Técnica", "fecha": "", "nota": 19.0, "kahoot": 16589, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e35", "vid": "v16", "examen": "SNC", "fecha": "", "nota": 20.0, "kahoot": 19609, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e36", "vid": "v16", "examen": "Olanzatique", "fecha": "", "nota": 19.0, "kahoot": 18279, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e37", "vid": "v32", "examen": "Alzheimer y Donepezilo: Claves de la Ficha Técnica", "fecha": "", "nota": 19.0, "kahoot": 16576, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e38", "vid": "v32", "examen": "SNC", "fecha": "", "nota": 18.0, "kahoot": 14929, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e39", "vid": "v32", "examen": "Olanzatique", "fecha": "", "nota": 19.0, "kahoot": 15792, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e40", "vid": "v26", "examen": "Alzheimer y Donepezilo: Claves de la Ficha Técnica", "fecha": "", "nota": 19.0, "kahoot": 16735, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e41", "vid": "v26", "examen": "SNC", "fecha": "", "nota": 15.5, "kahoot": 13679, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e42", "vid": "v26", "examen": "Olanzatique", "fecha": "", "nota": 20.0, "kahoot": 19159, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e43", "vid": "v42", "examen": "Alzheimer y Donepezilo: Claves de la Ficha Técnica", "fecha": "", "nota": 0, "kahoot": null, "estado": "No presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e44", "vid": "v43", "examen": "Alzheimer y Donepezilo: Claves de la Ficha Técnica", "fecha": "", "nota": 0, "kahoot": null, "estado": "No presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e45", "vid": "v43", "examen": "Vonoprazan", "fecha": null, "nota": 18.0, "kahoot": 15202, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e46", "vid": "v44", "examen": "Alzheimer y Donepezilo: Claves de la Ficha Técnica", "fecha": "", "nota": 0, "kahoot": null, "estado": "No presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e47", "vid": "v45", "examen": "Alzheimer y Donepezilo: Claves de la Ficha Técnica", "fecha": "", "nota": 0, "kahoot": null, "estado": "No presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e48", "vid": "v46", "examen": "Alzheimer y Donepezilo: Claves de la Ficha Técnica", "fecha": "", "nota": 0, "kahoot": null, "estado": "No presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e49", "vid": "v46", "examen": "Vonoprazan", "fecha": null, "nota": 20.0, "kahoot": 15849, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e50", "vid": "v47", "examen": "Alzheimer y Donepezilo: Claves de la Ficha Técnica", "fecha": "", "nota": 0, "kahoot": null, "estado": "No presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e51", "vid": "v35", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 15.0, "kahoot": 10493, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e52", "vid": "v6", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 19.0, "kahoot": 15786, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e53", "vid": "v9", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 15.0, "kahoot": 15120, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e54", "vid": "v15", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 20.0, "kahoot": 16867, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e55", "vid": "v12", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 9.0, "kahoot": 7157, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx", "obs": "Nota original 0.45 (45%) → 9/20"}, {"id": "e56", "vid": "v21", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 8.0, "kahoot": 5752, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e57", "vid": "v17", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 0.0, "kahoot": 0, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e58", "vid": "v31", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 19.0, "kahoot": 17545, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e59", "vid": "v27", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 17.0, "kahoot": 13595, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e60", "vid": "v40", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 18.0, "kahoot": 17092, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e61", "vid": "v25", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 17.0, "kahoot": 10880, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e62", "vid": "v19", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 0.0, "kahoot": 0, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e63", "vid": "v29", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 15.0, "kahoot": 12989, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e64", "vid": "v23", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 20.0, "kahoot": 18509, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e65", "vid": "v37", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 19.0, "kahoot": 16283, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e66", "vid": "v36", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 15.0, "kahoot": 11942, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e67", "vid": "v38", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 20.0, "kahoot": 13474, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e68", "vid": "v1", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 15.0, "kahoot": 11906, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e69", "vid": "v3", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 18.0, "kahoot": 15162, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e70", "vid": "v2", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 18.0, "kahoot": 14808, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e71", "vid": "v32", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 16.0, "kahoot": 11063, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}], "portafolio": [{"id": "p1", "linea": "LÍNEA 1", "area": "ALERGO RESPIRATORIA", "producto": "DESLER"}, {"id": "p2", "linea": "LÍNEA 1", "area": "ALERGO RESPIRATORIA", "producto": "DESLER M"}, {"id": "p3", "linea": "LÍNEA 1", "area": "ALERGO RESPIRATORIA", "producto": "MOMEQ CREMA"}, {"id": "p4", "linea": "LÍNEA 1", "area": "ALERGO RESPIRATORIA", "producto": "MOMEQ NASAL"}, {"id": "p5", "linea": "LÍNEA 1", "area": "ALERGO RESPIRATORIA", "producto": "PULMOLIX"}, {"id": "p6", "linea": "LÍNEA 1", "area": "ANTIINFECCIOSA", "producto": "SULAMP"}, {"id": "p7", "linea": "LÍNEA 1", "area": "SISTEMA NERVIOSO CENTRAL", "producto": "FLUDIL"}, {"id": "p8", "linea": "LÍNEA 1", "area": "SISTEMA NERVIOSO CENTRAL", "producto": "JULITAM"}, {"id": "p9", "linea": "LÍNEA 1", "area": "SISTEMA NERVIOSO CENTRAL", "producto": "LAMIDUS"}, {"id": "p10", "linea": "LÍNEA 1", "area": "SISTEMA NERVIOSO CENTRAL", "producto": "OLANZATIQUE"}, {"id": "p11", "linea": "LÍNEA 1", "area": "SISTEMA NERVIOSO CENTRAL", "producto": "ZILDON"}, {"id": "p12", "linea": "LÍNEA 1", "area": "SISTEMA NERVIOSO CENTRAL", "producto": "ZOCLONAX"}, {"id": "p13", "linea": "LÍNEA 1", "area": "ANTIINFECCIOSA", "producto": "RIXIGAL SUSP"}, {"id": "p14", "linea": "LÍNEA 2", "area": "CARDIOMETABÓLICA", "producto": "AMSARTIQUE"}, {"id": "p15", "linea": "LÍNEA 2", "area": "CARDIOMETABÓLICA", "producto": "CANDETIQUE"}, {"id": "p16", "linea": "LÍNEA 2", "area": "CARDIOMETABÓLICA", "producto": "CIRGREL"}, {"id": "p17", "linea": "LÍNEA 2", "area": "CARDIOMETABÓLICA", "producto": "GLIMERID"}, {"id": "p18", "linea": "LÍNEA 2", "area": "CARDIOMETABÓLICA", "producto": "GLUSTAR"}, {"id": "p19", "linea": "LÍNEA 2", "area": "CARDIOMETABÓLICA", "producto": "IVAZYD"}, {"id": "p20", "linea": "LÍNEA 2", "area": "CARDIOMETABÓLICA", "producto": "LANZAMIENTO CARDIO 1"}, {"id": "p21", "linea": "LÍNEA 2", "area": "CARDIOMETABÓLICA", "producto": "LANZAMIENTO CARDIO 2"}, {"id": "p22", "linea": "LÍNEA 2", "area": "CARDIOMETABÓLICA", "producto": "OLMETIQUE"}, {"id": "p23", "linea": "LÍNEA 2", "area": "CARDIOMETABÓLICA", "producto": "XAROX"}, {"id": "p24", "linea": "LÍNEA 2", "area": "CARDIOMETABÓLICA", "producto": "XEROGRAX"}, {"id": "p25", "linea": "LÍNEA 2", "area": "GASTROINTESTINAL", "producto": "ESOZ"}, {"id": "p26", "linea": "LÍNEA 3", "area": "ANTIINFECCIOSA", "producto": "DAKSOL"}, {"id": "p27", "linea": "LÍNEA 3", "area": "ANTIINFECCIOSA", "producto": "NITAX"}, {"id": "p28", "linea": "LÍNEA 3", "area": "ANTIINFECCIOSA", "producto": "RIXIGAL"}, {"id": "p29", "linea": "LÍNEA 3", "area": "ANTIINFECCIOSA", "producto": "TRIPUR"}, {"id": "p30", "linea": "LÍNEA 3", "area": "GASTROINTESTINAL", "producto": "BUMETIN"}, {"id": "p31", "linea": "LÍNEA 3", "area": "GASTROINTESTINAL", "producto": "LANZAMIENTO GI"}, {"id": "p32", "linea": "LÍNEA 3", "area": "GASTROINTESTINAL", "producto": "LEPRIT"}, {"id": "p33", "linea": "LÍNEA 3", "area": "GENITOURINARIA", "producto": "TALYSTOR"}, {"id": "p34", "linea": "LÍNEA 3", "area": "MÚSCULO ESQUELÉTICA", "producto": "TIOCOL"}, {"id": "p35", "linea": "LÍNEA 3", "area": "MÚSCULO ESQUELÉTICA", "producto": "TIOCOLFEN"}, {"id": "p36", "linea": "HÍBRIDA 1", "area": "ALERGO RESPIRATORIA", "producto": "DESLER"}, {"id": "p37", "linea": "HÍBRIDA 1", "area": "ALERGO RESPIRATORIA", "producto": "DESLER M"}, {"id": "p38", "linea": "HÍBRIDA 1", "area": "ALERGO RESPIRATORIA", "producto": "MOMEQ CREMA"}, {"id": "p39", "linea": "HÍBRIDA 1", "area": "ALERGO RESPIRATORIA", "producto": "MOMEQ NASAL"}, {"id": "p40", "linea": "HÍBRIDA 1", "area": "ALERGO RESPIRATORIA", "producto": "PULMOLIX"}, {"id": "p41", "linea": "HÍBRIDA 1", "area": "ANTIINFECCIOSA", "producto": "SULAMP"}, {"id": "p42", "linea": "HÍBRIDA 1", "area": "ANTIINFECCIOSA", "producto": "TRIPUR"}, {"id": "p43", "linea": "HÍBRIDA 1", "area": "ANTIINFECCIOSA", "producto": "RIXIGAL SUSP"}, {"id": "p44", "linea": "HÍBRIDA 1", "area": "GASTROINTESTINAL", "producto": "ESOZ"}, {"id": "p45", "linea": "HÍBRIDA 1", "area": "GENITOURINARIA", "producto": "TALYSTOR"}, {"id": "p46", "linea": "HÍBRIDA 1", "area": "SISTEMA NERVIOSO CENTRAL", "producto": "FLUDIL"}, {"id": "p47", "linea": "HÍBRIDA 1", "area": "SISTEMA NERVIOSO CENTRAL", "producto": "JULITAM"}, {"id": "p48", "linea": "HÍBRIDA 1", "area": "SISTEMA NERVIOSO CENTRAL", "producto": "LAMIDUS"}, {"id": "p49", "linea": "HÍBRIDA 1", "area": "SISTEMA NERVIOSO CENTRAL", "producto": "OLANZATIQUE"}, {"id": "p50", "linea": "HÍBRIDA 1", "area": "SISTEMA NERVIOSO CENTRAL", "producto": "ZILDON"}, {"id": "p51", "linea": "HÍBRIDA 1", "area": "SISTEMA NERVIOSO CENTRAL", "producto": "ZOCLONAX"}, {"id": "p52", "linea": "HÍBRIDA 2", "area": "ANTIINFECCIOSA", "producto": "RIXIGAL"}, {"id": "p53", "linea": "HÍBRIDA 2", "area": "CARDIOMETABÓLICA", "producto": "AMSARTIQUE"}, {"id": "p54", "linea": "HÍBRIDA 2", "area": "CARDIOMETABÓLICA", "producto": "CANDETIQUE"}, {"id": "p55", "linea": "HÍBRIDA 2", "area": "CARDIOMETABÓLICA", "producto": "CIRGREL"}, {"id": "p56", "linea": "HÍBRIDA 2", "area": "CARDIOMETABÓLICA", "producto": "GLUSTAR"}, {"id": "p57", "linea": "HÍBRIDA 2", "area": "CARDIOMETABÓLICA", "producto": "IVAZYD"}, {"id": "p58", "linea": "HÍBRIDA 2", "area": "CARDIOMETABÓLICA", "producto": "LANZAMIENTO CARDIO 1"}, {"id": "p59", "linea": "HÍBRIDA 2", "area": "CARDIOMETABÓLICA", "producto": "LANZAMIENTO CARDIO 2"}, {"id": "p60", "linea": "HÍBRIDA 2", "area": "CARDIOMETABÓLICA", "producto": "OLMETIQUE"}, {"id": "p61", "linea": "HÍBRIDA 2", "area": "CARDIOMETABÓLICA", "producto": "XAROX"}, {"id": "p62", "linea": "HÍBRIDA 2", "area": "CARDIOMETABÓLICA", "producto": "XEROGRAX"}, {"id": "p63", "linea": "HÍBRIDA 2", "area": "GASTROINTESTINAL", "producto": "BUMETIN"}, {"id": "p64", "linea": "HÍBRIDA 2", "area": "GASTROINTESTINAL", "producto": "LANZAMIENTO GI"}, {"id": "p65", "linea": "HÍBRIDA 2", "area": "GASTROINTESTINAL", "producto": "LEPRIT"}, {"id": "p66", "linea": "HÍBRIDA 2", "area": "MÚSCULO ESQUELÉTICA", "producto": "TIOCOL"}, {"id": "p67", "linea": "HÍBRIDA 2", "area": "MÚSCULO ESQUELÉTICA", "producto": "TIOCOLFEN"}, {"id": "p68", "linea": "HÍBRIDA 3", "area": "ALERGO RESPIRATORIA", "producto": "DESLER M"}, {"id": "p69", "linea": "HÍBRIDA 3", "area": "ALERGO RESPIRATORIA", "producto": "MOMEQ CREMA"}, {"id": "p70", "linea": "HÍBRIDA 3", "area": "ALERGO RESPIRATORIA", "producto": "MOMEQ NASAL"}, {"id": "p71", "linea": "HÍBRIDA 3", "area": "ALERGO RESPIRATORIA", "producto": "PULMOLIX"}, {"id": "p72", "linea": "HÍBRIDA 3", "area": "ANTIINFECCIOSA", "producto": "RIXIGAL"}, {"id": "p73", "linea": "HÍBRIDA 3", "area": "ANTIINFECCIOSA", "producto": "SULAMP"}, {"id": "p74", "linea": "HÍBRIDA 3", "area": "CARDIOMETABÓLICA", "producto": "AMSARTIQUE"}, {"id": "p75", "linea": "HÍBRIDA 3", "area": "CARDIOMETABÓLICA", "producto": "CIRGREL"}, {"id": "p76", "linea": "HÍBRIDA 3", "area": "CARDIOMETABÓLICA", "producto": "IVAZYD"}, {"id": "p77", "linea": "HÍBRIDA 3", "area": "CARDIOMETABÓLICA", "producto": "LANZAMIENTO CARDIO 1"}, {"id": "p78", "linea": "HÍBRIDA 3", "area": "CARDIOMETABÓLICA", "producto": "LANZAMIENTO CARDIO 2"}, {"id": "p79", "linea": "HÍBRIDA 3", "area": "CARDIOMETABÓLICA", "producto": "OLMETIQUE"}, {"id": "p80", "linea": "HÍBRIDA 3", "area": "CARDIOMETABÓLICA", "producto": "XAROX"}, {"id": "p81", "linea": "HÍBRIDA 3", "area": "CARDIOMETABÓLICA", "producto": "XEROGRAX"}, {"id": "p82", "linea": "HÍBRIDA 3", "area": "GASTROINTESTINAL", "producto": "BUMETIN"}, {"id": "p83", "linea": "HÍBRIDA 3", "area": "GASTROINTESTINAL", "producto": "ESOZ"}, {"id": "p84", "linea": "HÍBRIDA 3", "area": "GASTROINTESTINAL", "producto": "LANZAMIENTO GI"}, {"id": "p85", "linea": "HÍBRIDA 3", "area": "GASTROINTESTINAL", "producto": "LEPRIT"}, {"id": "p86", "linea": "HÍBRIDA 3", "area": "GENITOURINARIA", "producto": "TALYSTOR"}, {"id": "p87", "linea": "HÍBRIDA 3", "area": "MÚSCULO ESQUELÉTICA", "producto": "TIOCOLFEN"}, {"id": "p88", "linea": "HÍBRIDA 3", "area": "SISTEMA NERVIOSO CENTRAL", "producto": "FLUDIL"}, {"id": "p89", "linea": "HÍBRIDA 3", "area": "SISTEMA NERVIOSO CENTRAL", "producto": "JULITAM"}, {"id": "p90", "linea": "HÍBRIDA 3", "area": "SISTEMA NERVIOSO CENTRAL", "producto": "LAMIDUS"}, {"id": "p91", "linea": "HÍBRIDA 3", "area": "SISTEMA NERVIOSO CENTRAL", "producto": "OLANZATIQUE"}, {"id": "p92", "linea": "HÍBRIDA 3", "area": "SISTEMA NERVIOSO CENTRAL", "producto": "ZILDON"}, {"id": "p93", "linea": "HÍBRIDA 3", "area": "SISTEMA NERVIOSO CENTRAL", "producto": "ZOCLONAX"}], "fichero": [{"esp": "Alergologia", "cuota": {"LÍNEA 1": 3, "LÍNEA 2": 0, "LÍNEA 3": 0, "HÍBRIDA 1": 2, "HÍBRIDA 2": 0, "HÍBRIDA 3": 1}, "nacional": 40, "universo": 50, "alcance": 0.8, "ficheroAgo": 36, "crec": 0.1111111111111111}, {"esp": "Cirugía Cardio", "cuota": {"LÍNEA 1": 0, "LÍNEA 2": 5, "LÍNEA 3": 0, "HÍBRIDA 1": 0, "HÍBRIDA 2": 5, "HÍBRIDA 3": 1}, "nacional": 77, "universo": 78, "alcance": 0.9871794871794872, "ficheroAgo": 21, "crec": 2.6666666666666665}, {"esp": "Cardiologia", "cuota": {"LÍNEA 1": 0, "LÍNEA 2": 50, "LÍNEA 3": 0, "HÍBRIDA 1": 0, "HÍBRIDA 2": 40, "HÍBRIDA 3": 30}, "nacional": 820, "universo": 1378, "alcance": 0.5950653120464441, "ficheroAgo": 555, "crec": 0.4774774774774775}, {"esp": "Cirugía", "cuota": {"LÍNEA 1": 0, "LÍNEA 2": 0, "LÍNEA 3": 0, "HÍBRIDA 1": 0, "HÍBRIDA 2": 0, "HÍBRIDA 3": 0}, "nacional": 0, "universo": 14197, "alcance": 0, "ficheroAgo": 27, "crec": -1}, {"esp": "Dermatologia", "cuota": {"LÍNEA 1": 0, "LÍNEA 2": 0, "LÍNEA 3": 0, "HÍBRIDA 1": 0, "HÍBRIDA 2": 0, "HÍBRIDA 3": 0}, "nacional": 0, "universo": 402, "alcance": 0, "ficheroAgo": 37, "crec": -1}, {"esp": "Endocrinologia", "cuota": {"LÍNEA 1": 0, "LÍNEA 2": 10, "LÍNEA 3": 0, "HÍBRIDA 1": 0, "HÍBRIDA 2": 5, "HÍBRIDA 3": 5}, "nacional": 130, "universo": 251, "alcance": 0.5179282868525896, "ficheroAgo": 100, "crec": 0.3}, {"esp": "Gastroenterología", "cuota": {"LÍNEA 1": 0, "LÍNEA 2": 0, "LÍNEA 3": 60, "HÍBRIDA 1": 0, "HÍBRIDA 2": 30, "HÍBRIDA 3": 20}, "nacional": 710, "universo": 713, "alcance": 0.9957924263674615, "ficheroAgo": 491, "crec": 0.4460285132382892}, {"esp": "Ginecologia Obstetricia", "cuota": {"LÍNEA 1": 0, "LÍNEA 2": 0, "LÍNEA 3": 0, "HÍBRIDA 1": 0, "HÍBRIDA 2": 0, "HÍBRIDA 3": 0}, "nacional": 0, "universo": 4227, "alcance": 0, "ficheroAgo": 18, "crec": -1}, {"esp": "Infectologia", "cuota": {"LÍNEA 1": 0, "LÍNEA 2": 0, "LÍNEA 3": 0, "HÍBRIDA 1": 0, "HÍBRIDA 2": 0, "HÍBRIDA 3": 0}, "nacional": 0, "universo": 69, "alcance": 0, "ficheroAgo": 8, "crec": -1}, {"esp": "Inmunologia", "cuota": {"LÍNEA 1": 0, "LÍNEA 2": 0, "LÍNEA 3": 0, "HÍBRIDA 1": 0, "HÍBRIDA 2": 0, "HÍBRIDA 3": 0}, "nacional": 0, "universo": 33, "alcance": 0, "ficheroAgo": 5, "crec": -1}, {"esp": "Medicina Familiar", "cuota": {"LÍNEA 1": 0, "LÍNEA 2": 0, "LÍNEA 3": 0, "HÍBRIDA 1": 0, "HÍBRIDA 2": 0, "HÍBRIDA 3": 0}, "nacional": 0, "universo": 751, "alcance": 0, "ficheroAgo": 46, "crec": -1}, {"esp": "Medicina General", "cuota": {"LÍNEA 1": 10, "LÍNEA 2": 20, "LÍNEA 3": 20, "HÍBRIDA 1": 20, "HÍBRIDA 2": 20, "HÍBRIDA 3": 10}, "nacional": 680, "universo": 14369, "alcance": 0.04732410049411928, "ficheroAgo": 513, "crec": 0.3255360623781676}, {"esp": "Medicina Interna", "cuota": {"LÍNEA 1": 30, "LÍNEA 2": 60, "LÍNEA 3": 60, "HÍBRIDA 1": 40, "HÍBRIDA 2": 50, "HÍBRIDA 3": 30}, "nacional": 1770, "universo": 5637, "alcance": 0.3139968068121341, "ficheroAgo": 1003, "crec": 0.7647058823529411}, {"esp": "Neumonologia", "cuota": {"LÍNEA 1": 20, "LÍNEA 2": 0, "LÍNEA 3": 0, "HÍBRIDA 1": 20, "HÍBRIDA 2": 0, "HÍBRIDA 3": 5}, "nacional": 315, "universo": 462, "alcance": 0.6818181818181818, "ficheroAgo": 235, "crec": 0.3404255319148936}, {"esp": "Neurocirugia", "cuota": {"LÍNEA 1": 6, "LÍNEA 2": 0, "LÍNEA 3": 0, "HÍBRIDA 1": 4, "HÍBRIDA 2": 0, "HÍBRIDA 3": 3}, "nacional": 87, "universo": 350, "alcance": 0.24857142857142858, "ficheroAgo": 38, "crec": 1.2894736842105263}, {"esp": "Neurologia", "cuota": {"LÍNEA 1": 6, "LÍNEA 2": 0, "LÍNEA 3": 0, "HÍBRIDA 1": 5, "HÍBRIDA 2": 0, "HÍBRIDA 3": 5}, "nacional": 110, "universo": 423, "alcance": 0.26004728132387706, "ficheroAgo": 108, "crec": 0.018518518518518517}, {"esp": "Oftalmologia", "cuota": {"LÍNEA 1": 0, "LÍNEA 2": 0, "LÍNEA 3": 0, "HÍBRIDA 1": 0, "HÍBRIDA 2": 0, "HÍBRIDA 3": 0}, "nacional": 0, "universo": 842, "alcance": 0, "ficheroAgo": 63, "crec": -1}, {"esp": "Otorrinolaringologia", "cuota": {"LÍNEA 1": 30, "LÍNEA 2": 0, "LÍNEA 3": 0, "HÍBRIDA 1": 20, "HÍBRIDA 2": 0, "HÍBRIDA 3": 10}, "nacional": 400, "universo": 613, "alcance": 0.6525285481239804, "ficheroAgo": 289, "crec": 0.38408304498269896}, {"esp": "Pediatria", "cuota": {"LÍNEA 1": 40, "LÍNEA 2": 0, "LÍNEA 3": 0, "HÍBRIDA 1": 34, "HÍBRIDA 2": 0, "HÍBRIDA 3": 20}, "nacional": 646, "universo": 3689, "alcance": 0.17511520737327188, "ficheroAgo": 788, "crec": -0.1802030456852792}, {"esp": "Psiquiatria", "cuota": {"LÍNEA 1": 15, "LÍNEA 2": 0, "LÍNEA 3": 0, "HÍBRIDA 1": 5, "HÍBRIDA 2": 0, "HÍBRIDA 3": 5}, "nacional": 155, "universo": 1202, "alcance": 0.12895174708818635, "ficheroAgo": 127, "crec": 0.2204724409448819}, {"esp": "Traumatologia", "cuota": {"LÍNEA 1": 0, "LÍNEA 2": 0, "LÍNEA 3": 10, "HÍBRIDA 1": 0, "HÍBRIDA 2": 10, "HÍBRIDA 3": 10}, "nacional": 210, "universo": 1954, "alcance": 0.10747185261003071, "ficheroAgo": 214, "crec": -0.018691588785046728}, {"esp": "Urologia", "cuota": {"LÍNEA 1": 0, "LÍNEA 2": 0, "LÍNEA 3": 10, "HÍBRIDA 1": 10, "HÍBRIDA 2": 0, "HÍBRIDA 3": 5}, "nacional": 175, "universo": 630, "alcance": 0.2777777777777778, "ficheroAgo": 185, "crec": -0.05405405405405406}], "contactos": {"LÍNEA 1": 160, "LÍNEA 2": 145, "LÍNEA 3": 160, "HÍBRIDA 1": 160, "HÍBRIDA 2": 160, "HÍBRIDA 3": 160}, "lineas": ["LÍNEA 1", "LÍNEA 2", "LÍNEA 3", "HÍBRIDA 1", "HÍBRIDA 2", "HÍBRIDA 3"]};
 const LS_KEY = 'fdv-terapias-marca-oct2026-v1';
 const LINES = SEED.lineas;
+const GD = 'GERENTES DE DISTRITO';
 const HEAD_TARGET = {'LÍNEA 1':5,'LÍNEA 2':5,'LÍNEA 3':5,'HÍBRIDA 1':9,'HÍBRIDA 2':9,'HÍBRIDA 3':7};
 const AREAS = ['ALERGO RESPIRATORIA','ANTIINFECCIOSA','CARDIOMETABÓLICA','GASTROINTESTINAL','GENITOURINARIA','MÚSCULO ESQUELÉTICA','SISTEMA NERVIOSO CENTRAL'];
 const AREA_VAR = a => { const i = AREAS.indexOf(a); return i < 0 ? 'var(--muted)' : `var(--a${i+1})`; };
@@ -422,7 +438,7 @@ async function connect(){
   schedule();
 }
 
-const UI = { tab:'ranking', q:'', linea:'', vis:'', exam:'', band:'', sort:{}, open:new Set(), showInactive:false, portView:'cards', rankDir:'asc', kahoot:null, ficheroLinea:'' };
+const UI = { tab:'ranking', q:'', linea:'', region:'', pieBy:'general', vis:'', exam:'', band:'', sort:{}, open:new Set(), showInactive:false, portView:'cards', rankDir:'asc', kahoot:null, ficheroLinea:'' };
 try { const t = localStorage.getItem(LS_KEY+'-tab'); if (t) UI.tab = t; } catch(e) {}
 if (/^#cronograma$/i.test(location.hash)) UI.tab = 'crono';
 
@@ -453,7 +469,7 @@ function toast(msg){ const t = document.createElement('div'); t.className='toast
 
 /* ---------- metrics ---------- */
 function scopeVis(){
-  return S.visitadores.filter(v => (UI.showInactive || v.estado !== 'Inactivo') && (!UI.linea || v.linea === UI.linea) && (!UI.vis || v.id === UI.vis));
+  return S.visitadores.filter(v => (UI.showInactive || v.estado !== 'Inactivo') && (!UI.linea || v.linea === UI.linea) && (!UI.region || (v.region || '—') === UI.region) && (!UI.vis || v.id === UI.vis));
 }
 function scopeEvals(){ const ids = new Set(scopeVis().map(v => v.id)); return S.evaluaciones.filter(e => ids.has(e.vid) && (!UI.exam || e.examen === UI.exam)); }
 function examOrder(evs){
@@ -466,26 +482,45 @@ const BAND_META = {exc:{label:'Excelente', color:'var(--good)'}, apr:{label:'Apr
 function bandOf(avg){ if (avg == null) return 'sin'; const m = S.config.min, hi = Math.max(18, m); if (avg >= hi) return 'exc'; if (avg >= m) return 'apr'; if (avg >= 10) return 'rie'; return 'cri'; }
 function bandRange(k){ const m = S.config.min, hi = Math.max(18, m);
   return {exc:`${fmt(hi)} a 20`, apr: m < hi ? `${fmt(m)} a menos de ${fmt(hi)}` : 'no aplica', rie: m > 10 ? `10 a menos de ${fmt(m)}` : 'no aplica', cri:`menos de ${fmt(Math.min(10, m))}`, sin:'solo ausencias'}[k]; }
-function pieChart(vs){
-  const total = vs.length;
-  if (!total) return '<div class="empty">Aún no hay notas para graficar. Carga un reporte de Kahoot o agrega evaluaciones.</div>';
-  const counts = Object.fromEntries(BAND_ORDER.map(k => [k, 0])); vs.forEach(s => counts[bandOf(s.avg)]++);
-  const withAvg = vs.filter(s => s.avg != null), mean = withAvg.length ? withAvg.reduce((a,s) => a + s.avg, 0) / withAvg.length : null;
+function bandCounts(vs){ const c = Object.fromEntries(BAND_ORDER.map(k => [k, 0])); vs.forEach(s => c[bandOf(s.avg)]++); return c; }
+function meanAvg(vs){ const w = vs.filter(s => s.avg != null); return w.length ? w.reduce((a,s) => a + s.avg, 0) / w.length : null; }
+function pieSvg(vs, interactive){
+  const total = vs.length, counts = bandCounts(vs), mean = meanAvg(vs);
   const R = 96, r = 62, c = 105; let a0 = -Math.PI / 2;
   const pt = (rad, a) => `${(c + rad*Math.cos(a)).toFixed(2)} ${(c + rad*Math.sin(a)).toFixed(2)}`;
   const shown = BAND_ORDER.filter(k => counts[k]);
   const slices = shown.map(k => {
     const frac = counts[k] / total, tipTxt = `${BAND_META[k].label}: ${counts[k]} de ${total} (${pct(frac)})`;
-    const attrs = `fill="${BAND_META[k].color}" stroke="var(--surface)" stroke-width="2" class="slice ${UI.band===k?'on':''}" data-act="band" data-band="${k}" data-tip="${esc(tipTxt)}"`;
-    if (shown.length === 1) return `<circle cx="${c}" cy="${c}" r="${(R+r)/2}" fill="none" stroke="${BAND_META[k].color}" stroke-width="${R-r}" class="slice" data-act="band" data-band="${k}" data-tip="${esc(tipTxt)}"/>`;
+    const act = interactive ? `data-act="band" data-band="${k}"` : '';
+    if (shown.length === 1) return `<circle cx="${c}" cy="${c}" r="${(R+r)/2}" fill="none" stroke="${BAND_META[k].color}" stroke-width="${R-r}" class="slice" ${act} data-tip="${esc(tipTxt)}"/>`;
     const a1 = a0 + frac * 2 * Math.PI, large = frac > .5 ? 1 : 0;
     const d = `M ${pt(R,a0)} A ${R} ${R} 0 ${large} 1 ${pt(R,a1)} L ${pt(r,a1)} A ${r} ${r} 0 ${large} 0 ${pt(r,a0)} Z`;
-    a0 = a1; return `<path d="${d}" ${attrs}/>`;
+    a0 = a1; return `<path d="${d}" fill="${BAND_META[k].color}" stroke="var(--surface)" stroke-width="2" class="slice ${interactive && UI.band===k?'on':''}" ${act} data-tip="${esc(tipTxt)}"/>`;
   }).join('');
-  return `<div class="pie"><svg viewBox="0 0 210 210" role="img" aria-label="Distribución de estudiantes por promedio">${slices}
-    <text x="${c}" y="${c+4}" text-anchor="middle" class="pie-big">${fmt(mean)}</text><text x="${c}" y="${c+22}" text-anchor="middle" class="pie-sub">PROMEDIO /20</text></svg>
+  return `<svg viewBox="0 0 210 210" role="img" aria-label="Distribución por promedio">${slices}<text x="${c}" y="${c+4}" text-anchor="middle" class="pie-big">${fmt(mean)}</text><text x="${c}" y="${c+22}" text-anchor="middle" class="pie-sub">PROMEDIO /20</text></svg>`;
+}
+function pieChart(vs){
+  const total = vs.length;
+  if (!total) return '<div class="empty">Aún no hay notas para graficar. Carga un reporte de Kahoot o una planilla de notas.</div>';
+  const counts = bandCounts(vs);
+  return `<div class="pie">${pieSvg(vs, true)}
     <div class="pie-legend">${BAND_ORDER.filter(k => k !== 'sin' || counts.sin).map(k => `<button type="button" class="${UI.band===k?'on':''}" data-act="band" data-band="${k}" title="Clic para ver solo este grupo en el ranking">
       <i class="dot" style="background:${BAND_META[k].color};width:12px;height:12px"></i><span class="nm">${BAND_META[k].label}<small>${bandRange(k)}</small></span><span class="c">${counts[k]}</span><span class="p">${pct(counts[k]/total)}</span></button>`).join('')}</div></div>`;
+}
+function pieGroups(vs, by){
+  if (!vs.length) return pieChart(vs);
+  const key = by === 'region' ? s => (s.v.region && s.v.region !== '—' ? s.v.region : 'Sin región') : s => s.v.linea;
+  const groups = [...groupBy(vs, key)].sort((a,b) => (meanAvg(b[1]) ?? -1) - (meanAvg(a[1]) ?? -1));
+  return `<div class="pie-grid">${groups.map(([g, list]) => { const c = bandCounts(list);
+    return `<button type="button" class="pie-mini" data-act="pie-group" data-by="${by}" data-g="${esc(g)}" title="Ver solo ${esc(g)}"><b>${esc(g)}</b><small>${list.length} estudiante${list.length===1?'':'s'}</small>${pieSvg(list, false)}
+      <span class="mini-counts">${BAND_ORDER.filter(k => c[k]).map(k => `<span title="${BAND_META[k].label}"><i class="dot" style="background:${BAND_META[k].color}"></i>${c[k]}</span>`).join('')}</span></button>`; }).join('')}</div>
+    <div class="legend-compact">${BAND_ORDER.map(k => `<span><i class="dot" style="background:${BAND_META[k].color}"></i>${BAND_META[k].label} (${bandRange(k)})</span>`).join('')}</div>`;
+}
+function pieCard(vs, title, sub){
+  const by = UI.pieBy || 'general';
+  return `<div class="card"><div class="card-h"><div><h2>${title}</h2><p class="sub">${sub}</p></div>
+    <div class="seg" role="group" aria-label="Ver torta"><button type="button" class="${by==='general'?'on':''}" data-act="pie-by" data-v="general">General</button><button type="button" class="${by==='region'?'on':''}" data-act="pie-by" data-v="region">Por región</button><button type="button" class="${by==='linea'?'on':''}" data-act="pie-by" data-v="linea">Por línea</button></div></div>
+    <div class="card-b">${by === 'general' ? pieChart(vs) : pieGroups(vs, by)}</div></div>`;
 }
 const counts = e => e.nota != null && !isNaN(e.nota) && (e.estado !== 'No presentó' || S.config.ausCero);
 const passes = e => e.nota >= S.config.min;
@@ -630,12 +665,12 @@ function sesListsHtml(line, checkedReps, checkedProds){
   const repHtml = [...groupBy(reps.sort((a,b) => fullName(a).localeCompare(fullName(b), 'es')), v => v.linea)].sort((a,b) => a[0].localeCompare(b[0], 'es')).map(([l, vs]) =>
     `<h5>${esc(l)} <button type="button" class="btn sm ghost" data-act="ses-line" data-line="${esc(l)}">Marcar línea</button></h5>` + vs.map(v => `<label><input type="checkbox" name="reps" value="${v.id}" ${cr.has(v.id)?'checked':''}> ${esc(fullName(v))}</label>`).join('')).join('') || '<span class="muted">No hay representantes activos.</span>';
   const lines = line ? [line] : [...new Set([...cr].map(id => vm[id] && vm[id].linea).filter(Boolean))];
-  const pool = S.portafolio.filter(p => !lines.length || lines.includes(p.linea) || cp.has(p.producto));
+  const pool = S.portafolio.filter(p => !lines.length || lines.includes(GD) || lines.includes(p.linea) || cp.has(p.producto));
   const prods = new Map(); pool.forEach(p => { if (!prods.has(p.producto)) prods.set(p.producto, p.area); }); cp.forEach(p => { if (!prods.has(p)) prods.set(p, ''); });
   const byArea = groupBy([...prods].sort((a,b) => a[0].localeCompare(b[0], 'es')), ([, a]) => a);
   const prodHtml = [...byArea].sort((a,b) => AREAS.indexOf(a[0]) - AREAS.indexOf(b[0])).map(([a, ps]) =>
     `<h5><i class="dot" style="background:${AREA_VAR(a)}"></i>${esc(titleCase(a) || 'Otros')}</h5>` + ps.map(([p]) => `<label><input type="checkbox" name="productos" value="${esc(p)}" ${cp.has(p)?'checked':''}> ${esc(p)}</label>`).join('')).join('') || '<span class="muted">No hay productos en el portafolio.</span>';
-  return {repHtml, prodHtml, hint: line ? `Productos del portafolio de ${line}` : lines.length ? `Productos de: ${lines.join(', ')}` : 'Todos los productos (marca representantes para filtrar por su línea)'};
+  return {repHtml, prodHtml, hint: line === GD ? 'Gerentes de distrito: todo el portafolio' : line ? `Productos del portafolio de ${line}` : lines.length ? `Productos de: ${lines.join(', ')}` : 'Todos los productos (marca representantes para filtrar por su línea)'};
 }
 function refreshSesLists(){
   const body = $('#modalBody'); if (!body || !$('#sesReps')) return;
@@ -651,7 +686,7 @@ function sesForm(s, date){
   openForm(isNew ? 'Nueva sesión de capacitación' : 'Editar sesión', [
     {k:'fecha', label:'Fecha *', type:'date', req:1}, {k:'hora', label:'Hora', type:'time'},
     {k:'titulo', label:'Tema u objetivo', full:1, attrs:'placeholder="Ej. Repaso SNC para Línea 1"'},
-    {k:'linea', label:'Línea', type:'select', full:1, options:[['', 'Todas las líneas']].concat(LINES.map(l => [l, l]))},
+    {k:'linea', label:'Línea', type:'select', full:1, options:[['', 'Todas las líneas']].concat(LINES.concat([GD]).map(l => [l, l]))},
     {k:'_r', type:'raw', html:`<div class="checks-h"><span>Representantes · <span id="sesCount">${arr(s.reps).length} seleccionados</span></span><span class="toolbar"><button type="button" class="btn sm" data-act="ses-all">Todos los visibles</button><button type="button" class="btn sm" data-act="ses-none">Ninguno</button></span></div><div class="checks" id="sesReps">${h.repHtml}</div>`},
     {k:'_p', type:'raw', html:`<div class="checks-h"><span>Productos a estudiar · <span id="sesPCount">${arr(s.productos).length} seleccionados</span></span><small class="muted" id="sesProdHint">${esc(h.hint)}</small></div><div class="checks" id="sesProds">${h.prodHtml}</div>`},
     {k:'notas', label:'Notas para los representantes', full:1, attrs:'placeholder="Ej. Estudiar ficha técnica y presentar Kahoot el viernes"'}
@@ -676,10 +711,9 @@ views.ranking = () => {
   const median = sorted.length ? (sorted.length % 2 ? sorted[(sorted.length-1)/2] : (sorted[sorted.length/2-1] + sorted[sorted.length/2]) / 2) : null;
   const cell = (r, ex) => { const e = r.byEx[ex]; if (!e) return '<span class="muted">—</span>'; if (e.estado === 'No presentó') return '<span class="t-warn" title="No presentó">NP</span>';
     return `<span class="cellnote ${e.nota < min ? 't-bad' : ''}" title="${esc(ex)}${e.fecha ? ' · ' + fdate(e.fecha) : ''}">${fmt(e.nota)}</span>`; };
-  const scope = [UI.linea, UI.vis && fullName(VM()[UI.vis]), UI.exam].filter(Boolean).join(' · ');
+  const scope = [UI.linea, UI.region && (UI.region === '—' ? 'Sin región' : UI.region), UI.vis && fullName(VM()[UI.vis]), UI.exam].filter(Boolean).join(' · ');
   return `<div class="grid g-2">
-    <div class="card"><div class="card-h"><div><h2>¿Cómo van mis estudiantes?</h2><p class="sub">Cada estudiante según su promedio acumulado${scope ? ' · ' + esc(scope) : ''}. Se actualiza al cargar nuevas notas.</p></div></div>
-      <div class="card-b">${pieChart(vs)}</div></div>
+    ${pieCard(vs, '¿Cómo van mis estudiantes?', `Cada estudiante según su promedio acumulado${scope ? ' · ' + esc(scope) : ''}. ${UI.pieBy && UI.pieBy !== 'general' ? 'Clic en una torta para filtrar por ese grupo.' : 'Se actualiza al cargar nuevas notas.'}`)}
     <div class="card"><div class="card-h"><div><h2>Resumen del grupo</h2><p class="sub">${exams.length} evaluaci${exams.length===1?'ón':'ones'} · ${evs.length} notas registradas</p></div></div>
       <div class="card-b"><div class="stats-mini">
         <div><span>Promedio del grupo</span><b class="${median!=null&&withAvg.reduce((a,b)=>a+b,0)/withAvg.length<min?'t-bad':''}">${fmt(withAvg.length ? withAvg.reduce((a,b)=>a+b,0)/withAvg.length : null, 2)}</b></div>
@@ -739,7 +773,7 @@ views.resumen = () => {
   </div>`;
 
   const exRows = ex.map(e => Object.assign({}, e, {dif: e === hard ? 'Mayor' : e === easy ? 'Menor' : ''}));
-  h += `<div class="card" style="margin-top:16px"><div class="card-h"><div><h2>Distribución de estudiantes por promedio</h2><p class="sub">Clic en una porción para ver ese grupo en el ranking</p></div></div><div class="card-b">${pieChart(vs)}</div></div>`;
+  h += `<div style="margin-top:16px">${pieCard(vs, 'Distribución de estudiantes por promedio', 'Clic en una porción para ver ese grupo en el ranking')}</div>`;
   h += `<div class="grid g-2" style="margin-top:16px">
     <div class="card"><div class="card-h"><div><h2>Promedio por examen / capacitación</h2><p class="sub">Escala 0–20 · la línea vertical marca el mínimo aprobatorio</p></div></div>
       <div class="card-b">${bars([...ex].sort((a,b)=>(a.avg??99)-(b.avg??99)).map(e => ({label:esc(e.examen), value:e.avg, tip:`${e.examen}: promedio ${fmt(e.avg,2)} · aprobación ${pct(e.rate)} · n=${e.n}`})))}</div>
@@ -759,7 +793,7 @@ views.resumen = () => {
         tip:`${fullName(s.v)} (${s.v.linea}) · promedio ${fmt(s.avg,2)} · ${s.n} notas · ${s.list.map(e=>e.examen+': '+(e.estado==='No presentó'?'NP':fmt(e.nota))).join(' | ')}`})))}</div></div>
   </div>`;
 
-  const byLine = LINES.concat(['SIN ASIGNAR']).map(l => { const st = stats(evs.filter(e => (VM()[e.vid]||{}).linea === l)); return {l, ...st}; }).filter(x => x.total);
+  const byLine = LINES.concat([GD, 'SIN ASIGNAR']).map(l => { const st = stats(evs.filter(e => (VM()[e.vid]||{}).linea === l)); return {l, ...st}; }).filter(x => x.total);
   h += `<div class="grid g-2" style="margin-top:16px">
     <div class="card"><div class="card-h"><div><h2>Promedio por línea</h2><p class="sub">Agregado de todas las evaluaciones de la línea</p></div></div>
       <div class="card-b">${bars(byLine.map(x => ({label:esc(x.l), value:x.avg, tip:`${x.l}: promedio ${fmt(x.avg,2)} · aprobación ${pct(x.rate)} · ${x.n} notas`})))}</div></div>
@@ -779,7 +813,7 @@ views.fdv = () => {
   const list = S.visitadores.filter(v => (UI.showInactive || v.estado !== 'Inactivo') && (!UI.linea || v.linea === UI.linea) && (!UI.vis || v.id === UI.vis)
     && matchesQ(fullName(v), v.correo, v.linea, v.zona, v.region, v.estado, ...evAll.filter(e => e.vid === v.id).map(e => e.examen)));
   const rows = list.map(v => { const evs = evAll.filter(e => e.vid === v.id); return Object.assign({}, v, {full:fullName(v), evs, st:stats(evs)}); });
-  const lineCards = LINES.concat(['SIN ASIGNAR']).map(l => {
+  const lineCards = LINES.concat([GD, 'SIN ASIGNAR']).map(l => {
     const vs = S.visitadores.filter(v => v.linea === l && v.estado !== 'Inactivo');
     const act = vs.filter(v => v.estado === 'Activo' || v.estado === 'Fuera de estructura').length, vac = vs.filter(v => v.estado === 'Vacante').length;
     const target = HEAD_TARGET[l];
@@ -835,12 +869,20 @@ views.evals = () => {
     ], rows, {defaultSort:{k:'nota', dir:-1}})}</div></div>`;
 };
 
+function gdCard(P, q){
+  const all = new Map(); P.forEach(p => { if (!all.has(p.producto)) all.set(p.producto, p.area); });
+  const groups = groupBy([...all].sort((a,b) => a[0].localeCompare(b[0], 'es')), ([, a]) => a);
+  const n = S.visitadores.filter(v => v.linea === GD && v.estado !== 'Inactivo').length;
+  return `<div class="card pline"><div class="card-h"><div><h2>${GD}</h2><p class="sub">${all.size} productos · todo el portafolio · ${n} gerente${n===1?'':'s'}</p></div></div>
+    <div class="card-b"><p class="gd-note">Los gerentes de distrito llevan todas las líneas. Esta lista se arma sola con los productos de las 6 líneas.</p>${[...groups].sort((a,b) => AREAS.indexOf(a[0]) - AREAS.indexOf(b[0])).map(([a, ps]) => `<div class="agroup"><h4><i class="dot" style="background:${AREA_VAR(a)}"></i>${esc(titleCase(a))} <span class="muted">(${ps.length})</span></h4>
+      <div class="chips">${ps.map(([p]) => `<span class="chip ${q && nrm(p + ' ' + a).includes(q) ? 'hl' : ''}" style="cursor:default;padding-right:8px">${esc(p)}</span>`).join('')}</div></div>`).join('')}</div></div>`;
+}
 views.port = () => {
   const P = S.portafolio;
   const q = UI.q;
   const usedAreas = AREAS.filter(a => P.some(p => p.area === a)).concat([...new Set(P.map(p=>p.area))].filter(a => !AREAS.includes(a)));
   const legend = `<div class="areas-legend">${usedAreas.map(a => `<span><i class="dot" style="background:${AREA_VAR(a)}"></i>${esc(titleCase(a))}</span>`).join('')}</div>`;
-  const lines = UI.linea ? [UI.linea] : LINES;
+  const lines = UI.linea && UI.linea !== GD && LINES.includes(UI.linea) ? [UI.linea] : (UI.linea && UI.linea !== GD ? [] : (UI.linea === GD && UI.portView === 'cards' ? [] : LINES));
   const products = [...new Set(P.map(p => p.producto))].sort((a,b)=>a.localeCompare(b,'es'));
   let body;
   if (UI.portView === 'cards') {
@@ -854,7 +896,7 @@ views.port = () => {
         <div class="card-b">${areaOrder.map(a => `<div class="agroup"><h4><i class="dot" style="background:${AREA_VAR(a)}"></i>${esc(titleCase(a))} <span class="muted">(${groups.get(a).length})</span></h4>
           <div class="chips">${groups.get(a).map(p => `<span class="chip ${q && nrm(p.producto+' '+p.area).includes(q) ? 'hl':''}" draggable="true" data-pid="${p.id}" title="Arrastra a otra línea para moverlo">${esc(p.producto)}
             <button class="mv" data-act="move-prod" data-id="${p.id}" title="Mover / copiar a otra línea" aria-label="Mover">⇄</button><button class="x" data-act="del-prod" data-id="${p.id}" title="Quitar de ${esc(l)}" aria-label="Eliminar">×</button></span>`).join('')}</div></div>`).join('') || '<div class="empty">Sin productos. Arrastra aquí.</div>'}</div></div>`;
-    }).join('')}</div>`;
+    }).join('')}${!UI.linea || UI.linea === GD ? gdCard(P, q) : ''}</div>`;
   } else {
     const filtered = products.filter(pr => !q || nrm(pr + ' ' + (P.find(p=>p.producto===pr)||{}).area).includes(q));
     body = `<div class="card"><div class="tbl-wrap"><table class="matrix"><thead><tr><th>Producto</th><th>Área terapéutica</th>${lines.map(l => `<th class="c">${esc(shortLine(l))}</th>`).join('')}<th class="c">Líneas</th></tr></thead><tbody>
@@ -927,10 +969,10 @@ views.carga = () => {
   const k = UI.kahoot;
   const exams = [...new Set(S.evaluaciones.map(e => e.examen))];
   let h = `<div class="grid g-2">
-  <div class="card"><div class="card-h"><div><h2>Cargar reporte de Kahoot</h2><p class="sub">Pega desde Excel / CSV o arrastra un archivo .csv / .txt</p></div><button class="btn sm" data-act="k-sample">Ver ejemplo</button></div>
+  <div class="card"><div class="card-h"><div><h2>Cargar notas</h2><p class="sub">Kahoot, Moodle, Genially o cualquier Excel / CSV de notas</p></div><span class="toolbar"><button class="btn sm" data-act="k-sample">Ejemplo Kahoot</button><button class="btn sm" data-act="k-sample-moodle">Ejemplo Moodle</button></span></div>
   <div class="card-b">
     <div class="form-row">
-      <label style="flex:2 1 220px">Examen / Capacitación<input type="text" id="kExam" list="examList" placeholder="Ej. Lanzamiento GI" value="${esc(k?.exam||'')}"></label>
+      <label style="flex:2 1 220px">Evaluación (si el archivo trae una sola)<input type="text" id="kExam" list="examList" placeholder="Ej. Lanzamiento GI" value="${esc(k?.exam||'')}"></label>
       <datalist id="examList">${exams.map(e => `<option value="${esc(e)}">`).join('')}</datalist>
       <label style="flex:1 1 140px">Fecha<input type="date" id="kDate" value="${esc(k?.date||today())}"></label>
     </div>
@@ -938,6 +980,7 @@ views.carga = () => {
       <label style="flex:2 1 220px">Método de conversión a nota /20
         <select id="kMode">
           <option value="auto">Automático (según columnas detectadas)</option>
+          <option value="sheet">Planilla de notas: Moodle, Genially o Excel (una columna por evaluación)</option>
           <option value="nota">Nota directa (x/20, %, 0–1 o 0–20)</option>
           <option value="correct">Respuestas correctas ÷ total preguntas × 20</option>
           <option value="pointsMax">Puntos Kahoot ÷ (N preguntas × 1000) × 20</option>
@@ -951,13 +994,33 @@ views.carga = () => {
   </div></div>
   <div class="card"><div class="card-h"><h2>Formatos aceptados</h2></div><div class="card-b"><div class="note">
     <ul>
+      <li><b>Moodle</b>: exportación del libro de calificaciones o de resultados de un cuestionario (.xlsx o .csv). Toma <span class="mono">Nombre</span> + <span class="mono">Apellido(s)</span> y <span class="mono">Dirección de correo</span>; cada columna de calificación (<span class="mono">Cuestionario: … (Real)</span>, <span class="mono">Calificación/10,00</span>) se vuelve una evaluación. Las columnas por pregunta y “Total del curso” no se importan salvo que las marques.</li>
+      <li><b>Genially u otra planilla</b>: nombre (o usuario), correo y una o varias columnas de nota. Si hay una columna de “puntuación máxima”, se usa para cada fila.</li>
+      <li>Las notas se pasan a escala /20 según la escala detectada (sobre 1, 10, 20, 100 o el máximo de la columna); puedes corregir la escala y el nombre de cada evaluación antes de registrar.</li>
       <li><b>Reporte Kahoot (hoja “Final Scores”)</b>: columnas <span class="mono">Player / Jugador</span>, <span class="mono">Total Score / Puntaje</span>, <span class="mono">Correct Answers / Correctas</span>, <span class="mono">Incorrect Answers / Incorrectas</span>.</li>
       <li><b>Resumen propio</b>: <span class="mono">Nombre</span>, <span class="mono">Correo</span>, <span class="mono">Nota</span> (acepta <span class="mono">18/20</span>, <span class="mono">90%</span>, <span class="mono">0,9</span> o <span class="mono">18</span>), opcional <span class="mono">Puntuación Kahoot</span>, <span class="mono">Examen</span>, <span class="mono">Fecha</span>.</li>
       <li>Separadores: tabulador (copiar desde Excel), punto y coma o coma. Puntajes con espacios de miles (<span class="mono">19 057</span>) se interpretan correctamente.</li>
       <li>Cada fila se asocia al visitador por correo o por coincidencia de nombre; puedes corregir la asociación antes de registrar.</li>
       <li>Al registrar, todas las métricas, tasas y alertas de riesgo se recalculan al instante.</li>
     </ul></div></div></div></div>`;
-  if (k && k.rows) {
+  if (k && k.rows && k.sheet) {
+    const opts = v => `<option value="">— Omitir fila —</option><option value="__new" ${v==='__new'?'selected':''}>＋ Crear visitador nuevo</option>` +
+      [...S.visitadores].filter(x => x.estado !== 'Vacante').sort((a,b) => fullName(a).localeCompare(fullName(b),'es')).map(x => `<option value="${x.id}" ${x.id===v?'selected':''}>${esc(fullName(x))} · ${esc(shortLine(x.linea))}</option>`).join('');
+    const on = k.cols.filter(c => c.on);
+    const ok = k.rows.filter(r => r.vid).reduce((a, r) => a + on.filter(c => sheetRowNota(r, c) != null).length, 0);
+    h += `<div class="card" style="margin-top:16px"><div class="card-h"><div><h2>Evaluaciones encontradas en el archivo</h2><p class="sub">Marca las que quieres importar, ajusta el nombre y la escala. La nota se convierte a /20.</p></div></div>
+      <div class="card-b" style="padding:10px 0 0"><div class="tbl-wrap"><table class="colcfg"><thead><tr><th>Importar</th><th>Columna del archivo</th><th>Nombre de la evaluación</th><th>Escala (nota máxima)</th><th class="r">Con nota</th><th class="r">Promedio /20</th></tr></thead><tbody>
+      ${k.cols.map((c, j) => { const ns = k.rows.map(r => sheetRowNota(r, c)).filter(x => x != null); return `<tr><td><input type="checkbox" data-kcol-on="${j}" ${c.on?'checked':''} aria-label="Importar ${esc(c.header)}"></td><td class="mono">${esc(c.header)}</td>
+        <td><input type="text" data-kcol-name="${j}" value="${esc(c.name)}" list="examList"></td>
+        <td>${c.rowMax ? '<span class="muted">Según columna de puntuación máxima</span>' : `<input type="number" min="0.01" step="any" data-kcol-max="${j}" value="${c.max}">`}</td>
+        <td class="r num">${ns.length}</td><td class="r num">${avgBadge(ns.length ? ns.reduce((a,b) => a+b, 0) / ns.length : null)}</td></tr>`; }).join('')}</tbody></table></div></div></div>
+    <div class="card" style="margin-top:16px"><div class="card-h"><div><h2>Previsualización</h2><p class="sub">${k.rows.length} personas · ${on.length} evaluaci${on.length===1?'ón':'ones'} marcada${on.length===1?'':'s'}</p></div>
+      <div class="toolbar"><label class="chk"><input type="checkbox" id="kReplace" checked> Reemplazar si ya existe nota de la misma evaluación</label><button class="btn primary" data-act="k-commit">✓ Registrar ${ok} notas</button></div></div>
+      <div class="card-b" style="padding:10px 0 0"><div class="tbl-wrap"><table><thead><tr><th>#</th><th>Nombre (archivo)</th><th>Correo</th>${on.map(c => `<th class="r" title="${esc(c.header)}">${esc(c.name.length > 18 ? c.name.slice(0,17) + '…' : c.name)}</th>`).join('')}<th>Asociar a visitador</th></tr></thead><tbody>
+      ${k.rows.map((r, i) => `<tr><td class="muted">${i+1}</td><td>${esc(r.name)}</td><td class="mono">${esc(r.email || '')}</td>${on.map(c => { const n = sheetRowNota(r, c); return `<td class="r num">${n == null ? '<span class="muted">—</span>' : `<b class="${n < S.config.min ? 't-bad' : ''}">${fmt(n)}</b>`}</td>`; }).join('')}
+        <td><select data-krow="${i}" style="max-width:260px">${opts(r.vid)}</select> ${r.matchBy ? `<small class="muted">${esc(r.matchBy)}</small>` : ''}</td></tr>`).join('')}
+      </tbody></table></div></div></div>`;
+  } else if (k && k.rows) {
     const vm = VM();
     const opts = v => `<option value="">— Omitir fila —</option><option value="__new" ${v==='__new'?'selected':''}>＋ Crear visitador nuevo</option>` +
       [...S.visitadores].filter(x => x.estado !== 'Vacante').sort((a,b) => fullName(a).localeCompare(fullName(b),'es')).map(x => `<option value="${x.id}" ${x.id===v?'selected':''}>${esc(fullName(x))} · ${esc(shortLine(x.linea))}</option>`).join('');
@@ -1002,6 +1065,43 @@ function matchVis(name, email){
   if (best && bestScore === 1 && !tie && toks.length === 1) return {vid:best.id, by:'coincidencia parcial — verificar'};
   return {vid:'', by:tie ? 'nombre ambiguo' : 'sin coincidencia'};
 }
+/* generic grade sheets (Moodle, Genially, Excel) */
+const SHEET_EXCL = /rank|clasificacion|posicion|^#$|^n[°º.]?$|^id\b|numero de id|identific|cedula|telefono|fecha|date|^hora|tiempo|time|duracion|estado|state|status|institucion|departamento|grupo|group|ciudad|pais|country|correo|e-?mail|mail|usuario|user|nombre|apellido|name|player|jugador|participante|correct|acierto|incorrect|error|respuesta|answer|^p\.? ?\d|pregunta|question|^q ?\d|ultimo|descargado|comenzado|finalizado|started|completed|maxim|posible|out of|intento|attempt/;
+function gradeMax(header){ const m = String(header).match(/\/\s*([\d.,]+)\s*\)?\s*$/) || String(header).match(/sobre\s*([\d.,]+)/i); if (m) return parseNum(m[1]); if (/%|porcentaje|percentage/i.test(header)) return 100; return null; }
+function cleanEvalName(h){
+  let s = String(h).replace(/\((real|porcentaje|percentage|letra|letter)\)/ig, '').replace(/\/\s*[\d.,]+\s*$/, '').replace(/^(cuestionario|quiz|tarea|assignment|actividad|activity|examen|evaluaci[oó]n|lecci[oó]n|lesson|h5p|taller|workshop)\s*:\s*/i, '');
+  s = s.replace(/^\s*(calificaci[oó]n|grade|nota|puntuaci[oó]n|score|resultado)\s*$/i, '').replace(/\s+/g, ' ').trim();
+  return s;
+}
+function sheetNota(raw, max){
+  if (raw == null) return null; const t = String(raw).trim(); if (!t || /^[-–—]$/.test(t)) return null;
+  let m = t.match(/^([\d.,]+)\s*\/\s*([\d.,]+)$/); if (m) { const a = parseNum(m[1]), b = parseNum(m[2]); return b ? Math.round(Math.min(20, a/b*20)*100)/100 : null; }
+  const isPct = /%$/.test(t), n = parseNum(t.replace('%', '')); if (n == null) return null;
+  const mx = isPct ? 100 : max; if (!mx) return null;
+  return Math.round(Math.min(20, Math.max(0, n / mx * 20)) * 100) / 100;
+}
+function sheetDetect(rows, hdr, ix){
+  const body = rows.slice(1).filter(r => r.some(c => String(c).trim()));
+  const first = hdr.findIndex(h => /^(nombre|nombres|nombre\(s\)|first name|given name)$/.test(h));
+  const last = hdr.findIndex(h => /^(apellido|apellidos|apellido\(s\)|last name|surname|family name)$/.test(h));
+  const email = ix.email, maxIdx = hdr.findIndex(h => /maxim|posible|out of|total posible/.test(h));
+  const numShare = i => { const v = body.map(r => String(r[i] ?? '').trim()).filter(x => x && !/^[-–—]$/.test(x)); return v.length ? v.filter(x => /^[\d.,]+\s*(%|\/\s*[\d.,]+)?$/.test(x)).length / v.length : 0; };
+  const idx = hdr.map((h,i) => i).filter(i => i !== ix.name && i !== first && i !== last && i !== email && i !== maxIdx && hdr[i] && !SHEET_EXCL.test(hdr[i]) && numShare(i) >= .6);
+  const nameOf = r => (first >= 0 && last >= 0 ? `${r[first] ?? ''} ${r[last] ?? ''}` : String(r[ix.name] ?? '')).trim();
+  const parsed = body.filter(r => nameOf(r) && !/^(rank|total|promedio|media|average|overall)/i.test(nameOf(r))).map(r => {
+    const name = nameOf(r), em = email >= 0 ? String(r[email] ?? '').trim() : '', mt = matchVis(name, em);
+    return {name, email:em, raw:Object.fromEntries(idx.map(i => [i, r[i]])), rowMax: maxIdx >= 0 ? parseNum(r[maxIdx]) : null, vid:mt.vid, matchBy:mt.by};
+  });
+  const cols = idx.map(i => {
+    const header = rows[0][i], vals = parsed.map(p => String(p.raw[i] ?? '').trim()).filter(x => x && !/^[-–—]$/.test(x));
+    let max = gradeMax(header);
+    if (!max) { if (vals.some(v => /%$/.test(v))) max = 100; else { const mv = Math.max(0, ...vals.map(v => parseNum(v.replace(/\/.*/, '')) || 0)); max = mv <= 1 ? 1 : mv <= 10 ? 10 : mv <= 20 ? 20 : mv <= 100 ? 100 : Math.ceil(mv); } }
+    return {i, header, name: cleanEvalName(header), max, rowMax: maxIdx >= 0 && idx.length === 1, on: idx.length === 1 || !/total/i.test(header)};
+  });
+  return {rows:parsed, cols};
+}
+function sheetRowNota(r, c){ return sheetNota(r.raw[c.i], c.rowMax && r.rowMax ? r.rowMax : c.max); }
+
 function kahootParse(){
   const text = $('#kText').value, exam = $('#kExam').value.trim(), date = $('#kDate').value, n = parseInt($('#kN').value,10) || null;
   let mode = $('#kMode').value;
@@ -1010,14 +1110,14 @@ function kahootParse(){
   if (!lines.length) { toast('Pega o arrastra un reporte primero.'); return; }
   const d = lines[0].includes('\t') ? '\t' : (lines[0].split(';').length > lines[0].split(',').length ? ';' : ',');
   let rows = lines.map(l => splitRow(l, d));
-  const hIdx = rows.slice(0, 25).findIndex(r => r.filter(c => c.trim()).length >= 2 && r.some(c => /^(player|players|jugador|jugadores|nombre|nombres|nombre y apellido|nombre completo|participante|nickname|name|estudiante|alumno)$/.test(nrm(c))));
+  const hIdx = rows.slice(0, 25).findIndex(r => r.filter(c => c.trim()).length >= 2 && r.some(c => /^(player|players|jugador|jugadores|nombre|nombres|nombre y apellido|nombre completo|nombre de usuario|usuario|user|username|apellido\(s\)|apellidos|apellido|first name|last name|surname|participante|nickname|name|full name|estudiante|alumno)$/.test(nrm(c))));
   if (hIdx > 0) rows = rows.slice(hIdx);
-  const hdr = rows[0].map(nrm);
+  const hdr = rows[0].map(nrm), hdrRaw = rows[0];
   const find = (re, not) => hdr.findIndex(h => re.test(h) && !(not && not.test(h)));
-  const hasHeader = hdr.some(h => /player|jugador|nombre|name|participante|correo|email|score|punt|nota|correct/.test(h));
+  const hasHeader = hdr.some(h => /player|jugador|nombre|name|participante|usuario|user|apellido|estudiante|alumno|correo|email|score|punt|nota|correct/.test(h));
   let ix;
   if (hasHeader) {
-    ix = { name:find(/player|jugador|nombre|participante|nickname|^name|apellido/), email:find(/correo|e-?mail|mail/),
+    ix = { name:find(/player|jugador|nombre|participante|nickname|^name|full name|apellido|usuario|^user|estudiante|alumno/), email:find(/correo|e-?mail|mail/),
       correct:find(/correct|correctas|aciertos/, /incorrect/), incorrect:find(/incorrect|incorrectas|errores|fallos/),
       points:find(/score|puntaje|puntos|puntuacion|kahoot|points/, /nota|ponderal/), nota:find(/nota|calificacion|grade|ponderal/),
       exam:find(/examen|tema|quiz|evaluacion|capacitacion/), date:find(/fecha|date/) };
@@ -1028,6 +1128,17 @@ function kahootParse(){
     ix.nota = numCol;
   }
   if (ix.name < 0) { toast('No se encontró la columna de nombre/jugador.'); return; }
+  const sh = hasHeader && (mode === 'sheet' || (mode === 'auto' && ix.correct < 0)) ? sheetDetect([hdrRaw].concat(rows), hdr, ix) : null;
+  if (sh) {
+    if (mode === 'sheet' || (sh.cols.length && (ix.exam < 0 || sh.cols.some(c => c.i === ix.exam)))) {
+      if (!sh.cols.length) { toast('No se encontraron columnas de notas en el archivo.'); return; }
+      if (sh.cols.length === 1 && exam) sh.cols[0].name = exam;
+      sh.cols.forEach(c0 => { if (!c0.name) c0.name = exam || 'Evaluación'; });
+      UI.kahoot = Object.assign(UI.kahoot, {sheet:true, rows:sh.rows, cols:sh.cols, modeLabel:'Planilla de notas', info:`${sh.cols.length} columna${sh.cols.length===1?'':'s'} de notas detectada${sh.cols.length===1?'':'s'}`});
+      render(); setTimeout(() => { const s = $('#kMode'); if (s) s.value = UI.kahoot.mode; }, 0); return;
+    }
+  }
+  UI.kahoot.sheet = false; UI.kahoot.cols = null;
   const get = (r, k) => ix[k] >= 0 ? r[ix[k]] : null;
   const parsed = rows.filter(r => (get(r,'name')||'').trim() && !/^(rank|total|promedio)/i.test(get(r,'name'))).map(r => {
     const correct = parseNum(get(r,'correct')), incorrect = parseNum(get(r,'incorrect'));
@@ -1039,14 +1150,14 @@ function kahootParse(){
   let info = '';
   parsed.forEach(r => {
     if (mode === 'nota') r.nota = parseNota(r.notaRaw);
-    else if (mode === 'correct') { r.total = n || ((r.correct ?? 0) + (r.incorrect ?? 0)) || null; r.nota = r.correct != null && r.total ? r.correct / r.total * 20 : null; }
+    else if (mode === 'correct') { r.total = n || (ix.incorrect >= 0 ? ((r.correct ?? 0) + (r.incorrect ?? 0)) : null) || null; r.nota = r.correct != null && r.total ? r.correct / r.total * 20 : null; }
     else if (mode === 'pointsMax') { r.nota = n && r.points != null ? Math.min(20, r.points / (n * 1000) * 20) : null; }
     else if (mode === 'pointsTop') { r.nota = top && r.points != null ? r.points / top * 20 : null; }
     if (r.nota != null) r.nota = Math.round(r.nota * 100) / 100;
     const m = matchVis(r.name, r.email); r.vid = m.vid; r.matchBy = m.by;
     if (r.date) { const dm = r.date.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/); r.date = dm ? `${dm[3]}-${dm[2].padStart(2,'0')}-${dm[1].padStart(2,'0')}` : (/^\d{4}-\d{2}-\d{2}$/.test(r.date) ? r.date : ''); }
   });
-  if (mode === 'pointsMax' && !n) info = 'indica el N° de preguntas';
+  if ((mode === 'pointsMax' || (mode === 'correct' && ix.incorrect < 0)) && !n) info = 'indica el N° de preguntas para calcular la nota';
   if (mode === 'pointsTop') info = `mejor puntaje = ${top.toLocaleString('es-VE')} pts → 20/20`;
   const labels = {nota:'Nota directa', correct:'Correctas ÷ total × 20', pointsMax:'Puntos ÷ (N×1000) × 20', pointsTop:'Puntos ÷ mejor puntaje × 20'};
   UI.kahoot = Object.assign(UI.kahoot, {rows:parsed, modeLabel:labels[mode], info});
@@ -1057,9 +1168,22 @@ async function kahootCommit(){
   const k = UI.kahoot; if (!k || !k.rows) return;
   const replace = $('#kReplace')?.checked;
   const exam = $('#kExam').value.trim() || k.exam;
-  if (!exam && k.rows.some(r => !r.exam)) { toast('Indica el nombre del examen / capacitación.'); $('#kExam').focus(); return; }
+  if (!k.sheet && !exam && k.rows.some(r => !r.exam)) { toast('Indica el nombre del examen / capacitación.'); $('#kExam').focus(); return; }
   let added = 0, replaced = 0, created = 0; const ops = [];
-  k.rows.forEach(r => {
+  if (k.sheet) {
+    const on = k.cols.filter(c => c.on);
+    if (!on.length) { toast('Marca al menos una evaluación para importar.'); return; }
+    if (on.some(c => !String(c.name || '').trim())) { toast('Escribe el nombre de cada evaluación marcada.'); return; }
+    const fecha = $('#kDate').value || '';
+    k.rows.forEach(r => {
+      if (!r.vid) return; const notas = on.map(c => [c, sheetRowNota(r, c)]).filter(([, n]) => n != null); if (!notas.length) return;
+      let vid = r.vid;
+      if (vid === '__new') { const parts = titleCase(r.name).split(' '); const v = {id:uid('v'), nombre:parts[0]||'', apellidos:parts.slice(1).join(' '), correo:r.email||'', linea:UI.linea||'SIN ASIGNAR', region:UI.region||'—', zona:'—', estado:'Activo'}; ops.push({col:'visitadores', rec:v}); vid = v.id; created++; }
+      else { const cur = S.visitadores.find(v => v.id === vid); if (r.email && cur && !cur.correo) ops.push({col:'visitadores', rec:Object.assign({}, cur, {correo:r.email})}); }
+      notas.forEach(([c, n]) => { const ex = c.name.trim(); const rec = {id:uid('e'), vid, examen:ex, fecha, nota:n, kahoot:null, estado:'Presentó', origen:'Carga planilla ' + today()};
+        const prev = S.evaluaciones.findIndex(e => e.vid === vid && nrm(e.examen) === nrm(ex)); if (prev >= 0 && replace) { rec.id = S.evaluaciones[prev].id; replaced++; } else added++; ops.push({col:'evaluaciones', rec}); });
+    });
+  } else k.rows.forEach(r => {
     if (!r.vid || r.nota == null) return;
     let vid = r.vid;
     if (vid === '__new') {
@@ -1080,6 +1204,12 @@ async function kahootCommit(){
   toast(`Registradas ${added} notas nuevas${replaced?`, ${replaced} reemplazadas`:''}${created?`, ${created} visitadores creados`:''}. Métricas recalculadas.`);
   UI.tab = 'ranking'; render(); window.scrollTo(0,0);
 }
+const MOODLE_SAMPLE = `Nombre\tApellido(s)\tNúmero de ID\tDirección de correo\tCuestionario: Repaso SNC (ejemplo) (Real)\tTarea: Caso clínico Olanzatique (ejemplo) (Real)\tTotal del curso (Real)\tÚltimo descargado de este curso
+Ada\tDascenzo\t\tada.dascenzo@lasante.com.ve\t9,50\t8,00\t17,50\t1792170000
+Daniccy\tBaptista\t\tdaniccy.baptista@lasante.com.ve\t8,00\t-\t8,00\t1792170000
+Tatiana\tSilva\t\ttatiana.silva@lasante.com.ve\t6,50\t7,00\t13,50\t1792170000
+Gregorio\tCarrero\t\tgregorio.carrero@lasante.com.ve\t10,00\t9,00\t19,00\t1792170000
+Genesis\tMartinez\t\tgenesis.martinez@lasante.com.ve\t7,50\t8,50\t16,00\t1792170000`;
 const KAHOOT_SAMPLE = `Rank\tPlayer\tTotal Score (points)\tCorrect Answers\tIncorrect Answers
 1\tVanessa Alviarez\t18 420\t19\t1
 2\tJimmy Vega\t16 980\t18\t2
@@ -1127,7 +1257,7 @@ $$('[data-close]').forEach(b => b.addEventListener('click', closeModal));
 $('#modalBg').addEventListener('mousedown', e => { if (e.target.id === 'modalBg') closeModal(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); $('#dataMenu').classList.remove('on'); } });
 
-const lineOpts = () => LINES.concat(['SIN ASIGNAR']);
+const lineOpts = () => LINES.concat([GD, 'SIN ASIGNAR']);
 function visForm(v){
   const isNew = !v; v = v || {estado:'Activo', linea:UI.linea || LINES[0]};
   const zonas = [...new Set(S.visitadores.map(x => x.zona).filter(z => z && z !== '—'))].sort();
@@ -1238,7 +1368,10 @@ function exportPort(){ download('portafolio_oct2026.csv', csv([['Línea','Área 
 /* ---------- render ---------- */
 function syncFilters(){
   $('#fLinea').innerHTML = `<option value="">Todas las líneas</option>` + lineOpts().map(l => `<option ${UI.linea===l?'selected':''}>${esc(l)}</option>`).join('');
-  const vs = S.visitadores.filter(v => v.estado !== 'Vacante' && (!UI.linea || v.linea === UI.linea)).sort((a,b) => fullName(a).localeCompare(fullName(b),'es'));
+  const regs = [...new Set(S.visitadores.map(v => v.region || '—'))].sort((a,b) => a === '—' ? 1 : b === '—' ? -1 : a.localeCompare(b, 'es'));
+  if (UI.region && !regs.includes(UI.region)) UI.region = '';
+  $('#fReg').innerHTML = `<option value="">Todas las regiones</option>` + regs.map(r => `<option value="${esc(r)}" ${UI.region===r?'selected':''}>${r === '—' ? 'Sin región' : esc(r)}</option>`).join('');
+  const vs = S.visitadores.filter(v => v.estado !== 'Vacante' && (!UI.linea || v.linea === UI.linea) && (!UI.region || (v.region || '—') === UI.region)).sort((a,b) => fullName(a).localeCompare(fullName(b),'es'));
   if (UI.vis && !vs.some(v => v.id === UI.vis)) UI.vis = '';
   $('#fVis').innerHTML = `<option value="">Todos los visitadores</option>` + vs.map(v => `<option value="${v.id}" ${UI.vis===v.id?'selected':''}>${esc(fullName(v))}</option>`).join('');
   const exs = examOrder(S.evaluaciones); if (UI.exam && !exs.includes(UI.exam)) UI.exam = '';
@@ -1273,11 +1406,12 @@ function render(){
 $('#tabs').addEventListener('click', e => { const t = e.target.closest('.tab'); if (!t) return; UI.tab = t.dataset.tab; render(); window.scrollTo(0,0); });
 let qT; $('#q').addEventListener('input', e => { clearTimeout(qT); qT = setTimeout(() => { UI.q = nrm(e.target.value); render(); }, 120); });
 $('#fLinea').addEventListener('change', e => { UI.linea = e.target.value; render(); });
+$('#fReg').addEventListener('change', e => { UI.region = e.target.value; render(); });
 $('#fVis').addEventListener('change', e => { UI.vis = e.target.value; render(); });
 $('#fExam').addEventListener('change', e => { UI.exam = e.target.value; render(); });
 $('#fMin').addEventListener('change', e => { const v = parseFloat(e.target.value); if (!isNaN(v) && v >= 0 && v <= 20) { S.config.min = v; putConfig(); } });
 $('#fAus').addEventListener('change', e => { S.config.ausCero = e.target.checked; putConfig(); });
-$('#btnClear').addEventListener('click', () => { UI.q = ''; UI.linea = ''; UI.vis = ''; UI.exam = ''; UI.band = ''; UI.ficheroLinea = ''; $('#q').value = ''; render(); });
+$('#btnClear').addEventListener('click', () => { UI.q = ''; UI.linea = ''; UI.region = ''; UI.vis = ''; UI.exam = ''; UI.band = ''; UI.ficheroLinea = ''; $('#q').value = ''; render(); });
 $('#btnTheme').addEventListener('click', () => {
   const r = document.documentElement, cur = r.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
   r.dataset.theme = cur === 'dark' ? 'light' : 'dark'; try { localStorage.setItem(LS_KEY+'-theme', r.dataset.theme); } catch(e) {}
@@ -1333,9 +1467,12 @@ document.addEventListener('click', e => {
     case 'del-med': askConfirm('¿Eliminar este médico del fichero?', () => { del('medicos', id); }); break;
     case 'k-parse': kahootParse(); break;
     case 'k-clear': UI.kahoot = null; render(); break;
+    case 'k-sample-moodle': UI.kahoot = {text:MOODLE_SAMPLE, exam:'', date:today(), mode:'auto', n:''}; render(); kahootParse(); break;
     case 'k-sample': UI.kahoot = {text:KAHOOT_SAMPLE, exam:'Lanzamiento GI (ejemplo)', date:today(), mode:'auto', n:''}; render(); break;
     case 'k-commit': kahootCommit(); break;
     case 'k-file': $('#kFile').click(); break;
+    case 'pie-by': UI.pieBy = a.dataset.v; render(); break;
+    case 'pie-group': if (a.dataset.by === 'region') UI.region = a.dataset.g === 'Sin región' ? '—' : a.dataset.g; else UI.linea = a.dataset.g; UI.pieBy = 'general'; render(); toast(`Mostrando solo ${a.dataset.g}. Usa “Limpiar filtros” para volver a ver todo.`); break;
     case 'band': UI.band = UI.band === a.dataset.band ? '' : a.dataset.band; if (UI.tab !== 'ranking') { UI.tab = 'ranking'; window.scrollTo(0,0); } render(); break;
     case 'exp-rank': exportRanking(); break;
     case 'add-ses': if (document.body.classList.contains('ro')) break; sesForm(null, a.dataset.date); break;
@@ -1353,10 +1490,17 @@ document.addEventListener('click', e => {
   }
 });
 document.addEventListener('input', e => {
+  if (e.target.dataset && e.target.dataset.kcolName != null && UI.kahoot && UI.kahoot.cols) { UI.kahoot.cols[+e.target.dataset.kcolName].name = e.target.value; return; }
   const map = {kText:'text', kExam:'exam', kDate:'date', kN:'n', kMode:'mode'}; const f = map[e.target.id];
   if (f) { UI.kahoot = UI.kahoot || {}; UI.kahoot[f] = e.target.value; }
 });
 document.addEventListener('change', e => {
+  const ds = e.target.dataset || {};
+  if (UI.kahoot && UI.kahoot.cols && (ds.kcolOn != null || ds.kcolMax != null || ds.kcolName != null)) {
+    if (ds.kcolOn != null) UI.kahoot.cols[+ds.kcolOn].on = e.target.checked;
+    if (ds.kcolMax != null) { const v = parseNum(e.target.value); if (v > 0) UI.kahoot.cols[+ds.kcolMax].max = v; }
+    render(); return;
+  }
   if (e.target.closest && e.target.closest('#modalBody') && $('#sesReps') && (e.target.name === 'linea' || e.target.name === 'reps' || e.target.name === 'productos')) refreshSesLists();
   if (e.target.id === 'cronFrom' || e.target.id === 'cronTo') { const [f, tt] = cronRange(); UI.cronFrom = e.target.id === 'cronFrom' ? e.target.value || f : f; UI.cronTo = e.target.id === 'cronTo' ? e.target.value || tt : tt; render(); }
   const map = {kMode:'mode', kDate:'date'}; const f = map[e.target.id]; if (f) { UI.kahoot = UI.kahoot || {}; UI.kahoot[f] = e.target.value; }
@@ -1388,7 +1532,7 @@ async function loadEvalFile(f){
     if (/\.xlsx?$/i.test(f.name)) {
       if (!window.XLSX) { toast('No se pudo abrir el lector de Excel. Abre el archivo, copia las celdas y pégalas aquí.'); return; }
       const wb = XLSX.read(await f.arrayBuffer(), {type:'array'});
-      const hasHdr = n => /(^|\t)(player|players|jugador|jugadores|nombre|participante|estudiante|alumno)/im.test(sheetToText(wb.Sheets[n]).slice(0, 6000));
+      const hasHdr = n => /(^|\t)(player|players|jugador|jugadores|nombre|apellido|usuario|user|first name|participante|estudiante|alumno)/im.test(sheetToText(wb.Sheets[n]).slice(0, 6000));
       const pick = wb.SheetNames.find(n => /final scores|puntuaci.n(es)? final|clasificaci.n final|final/i.test(n) && hasHdr(n)) || wb.SheetNames.find(hasHdr) || wb.SheetNames[0];
       text = sheetToText(wb.Sheets[pick]);
       const ov = wb.SheetNames.find(n => /overview|resumen|summary|descripci/i.test(n));
