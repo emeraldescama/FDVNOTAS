@@ -308,7 +308,7 @@ textarea.paste{width:100%;min-height:170px;font-family:ui-monospace,SFMono-Regul
 body.ro [data-act="add-vis"],body.ro [data-act="edit-vis"],body.ro [data-act="toggle-vis"],body.ro [data-act="del-vis"],body.ro [data-act="add-eval"],body.ro [data-act="edit-eval"],body.ro [data-act="del-eval"],body.ro [data-act="add-prod"],body.ro [data-act="del-prod"],body.ro [data-act="move-prod"],body.ro [data-act="add-med"],body.ro [data-act="edit-med"],body.ro [data-act="del-med"],body.ro [data-act="k-commit"],body.ro [data-act="imp-json"]{display:none!important}
 body.ro .tick{pointer-events:none}
 body.ro [data-act="add-ses"],body.ro [data-act="edit-ses"]{pointer-events:none}
-body.ro [data-act="fdv-add"],body.ro [data-act="fdv-ren"],body.ro [data-act="fdv-del"],body.ro [data-act="fdv-imp"],body.ro [data-act="new-ses"],body.ro [data-act="del-all-ses"]{display:none!important}
+body.ro [data-act="line-add"],body.ro [data-act="line-ren"],body.ro [data-act="line-del"],body.ro [data-act="fdv-add"],body.ro [data-act="fdv-ren"],body.ro [data-act="fdv-del"],body.ro [data-act="fdv-imp"],body.ro [data-act="new-ses"],body.ro [data-act="del-all-ses"]{display:none!important}
 /* calendar / schedule */
 .cal-nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .cal-nav h2{min-width:170px;text-align:center}
@@ -445,9 +445,10 @@ const FDV_BASE = [FDV_DEFAULT, 'FDV OTC', 'FDV LA SANTÉ GENÉRICOS'];
 const fdvOf = v => (v && v.fdv) || FDV_DEFAULT;
 const pfdv = p => (p && p.fdv) || FDV_DEFAULT;
 function fdvList(){ const s = new Set((S.config && Array.isArray(S.config.fdvs) && S.config.fdvs.length ? S.config.fdvs : FDV_BASE)); S.visitadores.forEach(v => s.add(fdvOf(v))); S.portafolio.forEach(p => s.add(pfdv(p))); return [...s]; }
-function allLines(){ const extra = new Set(); S.portafolio.forEach(p => extra.add(p.linea)); S.visitadores.forEach(v => extra.add(v.linea)); [...LINES, GD, 'SIN ASIGNAR'].forEach(l => extra.delete(l)); return LINES.concat([...extra].filter(Boolean).sort((a,b) => a.localeCompare(b, 'es'))); }
-function linesOfFdv(f){ return allLines().filter(l => (f === FDV_DEFAULT && LINES.includes(l)) || S.portafolio.some(p => p.linea === l && pfdv(p) === f) || S.visitadores.some(v => v.linea === l && fdvOf(v) === f)); }
-function lineFdv(l){ const p = S.portafolio.find(x => x.linea === l); if (p) return pfdv(p); const v = S.visitadores.find(x => x.linea === l); return v ? fdvOf(v) : (UI.fdv || FDV_DEFAULT); }
+const cfgLines = () => (S.config && Array.isArray(S.config.lineas) ? S.config.lineas : []).filter(x => x && x.nombre);
+function allLines(){ const extra = new Set(); cfgLines().forEach(x => extra.add(x.nombre)); S.portafolio.forEach(p => extra.add(p.linea)); S.visitadores.forEach(v => extra.add(v.linea)); [...LINES, GD, 'SIN ASIGNAR'].forEach(l => extra.delete(l)); return LINES.concat([...extra].filter(Boolean).sort((a,b) => a.localeCompare(b, 'es'))); }
+function linesOfFdv(f){ return allLines().filter(l => (f === FDV_DEFAULT && LINES.includes(l)) || cfgLines().some(x => x.nombre === l && (x.fdv || FDV_DEFAULT) === f) || S.portafolio.some(p => p.linea === l && pfdv(p) === f) || S.visitadores.some(v => v.linea === l && fdvOf(v) === f)); }
+function lineFdv(l){ const c = cfgLines().find(x => x.nombre === l); if (c) return c.fdv || FDV_DEFAULT; if (LINES.includes(l)) return FDV_DEFAULT; const p = S.portafolio.find(x => x.linea === l); if (p) return pfdv(p); const v = S.visitadores.find(x => x.linea === l); return v ? fdvOf(v) : (UI.fdv || FDV_DEFAULT); }
 const catKey = name => 'c-' + (nrm(name).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 120) || 'x');
 const prodInfo = name => (S.productos || []).find(c => c.producto === name) || {producto:name, principio:'', alias:[]};
 const prodTerms = name => { const c = prodInfo(name); return [name, c.principio, ...arr(c.alias)].filter(Boolean); };
@@ -1239,17 +1240,21 @@ views.port = () => {
   }
   let body;
   if (UI.portView === 'cards') {
-    body = `<div class="grid g-3">${lines.map(l => {
-      const ps = P.filter(p => p.linea === l && (!q || prodMatches(p.producto, q) || true));
+    const card = l => {
+      const ps = P.filter(p => p.linea === l);
       const groups = groupBy(ps, p => p.area);
       const areaOrder = [...groups.keys()].sort((a,b) => (AREAS.indexOf(a)+99*(AREAS.indexOf(a)<0)) - (AREAS.indexOf(b)+99*(AREAS.indexOf(b)<0)));
       return `<div class="card pline" data-drop-line="${esc(l)}">
         <div class="card-h"><div><h2>${esc(l)}</h2><p class="sub">${esc(lineFdv(l))} · ${ps.length} productos · ${groups.size} áreas</p></div>
-        <button class="btn sm" data-act="add-prod" data-line="${esc(l)}">＋ Producto</button></div>
+        <span class="toolbar">${LINES.includes(l) ? '' : `<button class="iconbtn" data-act="line-ren" data-line="${esc(l)}" title="Cambiar nombre de la línea" aria-label="Cambiar nombre">✎</button><button class="iconbtn del" data-act="line-del" data-line="${esc(l)}" title="Eliminar línea" aria-label="Eliminar línea">🗑</button>`}<button class="btn sm" data-act="add-prod" data-line="${esc(l)}">＋ Producto</button></span></div>
         <div class="card-b">${areaOrder.map(a => `<div class="agroup"><h4><i class="dot" style="background:${AREA_VAR(a)}"></i>${esc(titleCase(a))} <span class="muted">(${groups.get(a).length})</span></h4>
           <div class="chips">${groups.get(a).map(p => { const pa = prodInfo(p.producto).principio; return `<span class="chip ${q && prodMatches(p.producto, q) ? 'hl':''}" draggable="true" data-pid="${p.id}" title="${esc(pa ? p.producto + ' · ' + pa : p.producto)} · clic para editar, arrastra para mover"><span class="cn" data-act="edit-prod" data-prod="${esc(p.producto)}">${esc(p.producto)}</span>
             <button class="mv" data-act="move-prod" data-id="${p.id}" title="Mover / copiar a otra línea" aria-label="Mover">⇄</button><button class="x" data-act="del-prod" data-id="${p.id}" title="Quitar de ${esc(l)}" aria-label="Quitar">×</button></span>`; }).join('')}</div></div>`).join('') || '<div class="empty">Sin productos. Arrastra aquí o usa “＋ Producto”.</div>'}</div></div>`;
-    }).join('')}${(!UI.fdv || UI.fdv === FDV_DEFAULT) && (!UI.linea || UI.linea === GD) ? gdCard(S.portafolio, q) : ''}</div>${!lines.length && UI.fdv ? `<div class="note">${esc(UI.fdv)} aún no tiene productos. Usa “＋ Nuevo producto” y escribe la línea nueva (por ejemplo “OTC 1”).</div>` : ''}`;
+    };
+    body = (UI.fdv ? [UI.fdv] : fdvList()).map(f => { const fl = lines.filter(l => lineFdv(l) === f); const showGd = f === FDV_DEFAULT && (!UI.linea || UI.linea === GD);
+      if (UI.linea && !fl.length && !(showGd && UI.linea === GD)) return '';
+      return `<div class="section-title"><h2>${esc(f)} <small class="muted" style="font-weight:500;font-size:13px">· ${fl.length} línea${fl.length===1?'':'s'}</small></h2><button class="btn sm" data-act="line-add" data-f="${esc(f)}">＋ Nueva línea en ${esc(f)}</button></div>
+        ${fl.length || showGd ? `<div class="grid g-3">${fl.map(card).join('')}${showGd ? gdCard(S.portafolio, q) : ''}</div>` : `<div class="note">${esc(f)} todavía no tiene líneas. Usa “＋ Nueva línea en ${esc(f)}” para crearlas (por ejemplo “OTC 1”) y luego agrégales productos.</div>`}`; }).join('');
   } else {
     const filtered = products.filter(pr => prodMatches(pr, q));
     body = `<div class="card"><div class="tbl-wrap"><table class="matrix"><thead><tr><th>Producto</th><th>Principio activo</th><th>Área terapéutica</th>${lines.map(l => `<th class="c" title="${esc(l)}">${esc(shortLine(l))}</th>`).join('')}<th class="c">Líneas</th></tr></thead><tbody>
@@ -1261,7 +1266,7 @@ views.port = () => {
   }
   return `<div class="section-title" style="margin-top:0"><div><h2>Portafolio de productos por línea${UI.fdv ? ' · ' + esc(UI.fdv) : ''}</h2>
     <p class="muted" style="margin:2px 0 0;font-size:12.5px">${P.length} asignaciones · ${products.length} productos. Usa el buscador de arriba para ver en qué líneas está un producto (también por principio activo). Clic en un producto para editarlo o corregir su nombre.</p></div>
-    <div class="toolbar"><button class="btn ${UI.portView==='cards'?'primary':''}" data-act="port-view" data-v="cards">Por línea</button><button class="btn ${UI.portView==='matrix'?'primary':''}" data-act="port-view" data-v="matrix">Matriz producto × línea</button><button class="btn" data-act="exp-port">⬇ CSV</button><button class="btn primary" data-act="add-prod">＋ Nuevo producto</button></div></div>
+    <div class="toolbar"><button class="btn ${UI.portView==='cards'?'primary':''}" data-act="port-view" data-v="cards">Por línea</button><button class="btn ${UI.portView==='matrix'?'primary':''}" data-act="port-view" data-v="matrix">Matriz producto × línea</button><button class="btn" data-act="exp-port">⬇ CSV</button><button class="btn" data-act="line-add">＋ Nueva línea</button><button class="btn primary" data-act="add-prod">＋ Nuevo producto</button></div></div>
     ${results}<div style="margin-bottom:12px">${legend}</div>${body}`;
 };
 
@@ -1649,6 +1654,35 @@ function evalForm(e, vid){
   });
 }
 function prodForm(line){ prodEdit(null, line); }
+function lineForm(fdv){
+  openForm('Nueva línea', [
+    {k:'nombre', label:'Nombre de la línea *', req:1, full:1, attrs:'placeholder="Ej. OTC 1" style="text-transform:uppercase"'},
+    {k:'fdv', label:'Fuerza de ventas', type:'select', full:1, options:fdvList()},
+    {k:'_i', type:'info', full:1, html:'Después de crearla, agrégale productos con “＋ Producto” en su tarjeta, y asigna representantes desde la pestaña Fuerza de Ventas (o cargándolos desde Excel).'}
+  ], {fdv: fdv || UI.fdv || FDV_DEFAULT}, d => {
+    const n = String(d.nombre || '').trim().toUpperCase().replace(/\s+/g, ' ');
+    if (!n) { toast('Escribe el nombre de la línea.'); return false; }
+    if (allLines().concat([GD, 'SIN ASIGNAR']).some(l => nrm(l) === nrm(n))) { toast(`La línea ${n} ya existe.`); return false; }
+    S.config.lineas = cfgLines().concat([{nombre:n, fdv:d.fdv}]); putConfig(); toast(`Línea ${n} creada en ${d.fdv}.`);
+  }, 'Crear línea');
+}
+function lineRename(old){
+  openForm(`Cambiar nombre de ${old}`, [
+    {k:'nombre', label:'Nuevo nombre *', req:1, full:1, attrs:'style="text-transform:uppercase"'},
+    {k:'fdv', label:'Fuerza de ventas', type:'select', full:1, options:fdvList()}
+  ], {nombre:old, fdv:lineFdv(old)}, d => {
+    const n = String(d.nombre || '').trim().toUpperCase().replace(/\s+/g, ' ');
+    if (!n) return false;
+    if (n !== old && allLines().concat([GD, 'SIN ASIGNAR']).some(l => nrm(l) === nrm(n))) { toast(`La línea ${n} ya existe.`); return false; }
+    S.config.lineas = cfgLines().filter(x => x.nombre !== old).concat([{nombre:n, fdv:d.fdv}]); putConfig();
+    const ops = S.portafolio.filter(p => p.linea === old).map(p => ({col:'portafolio', rec:Object.assign({}, p, {linea:n, fdv:d.fdv})}))
+      .concat(S.visitadores.filter(v => v.linea === old).map(v => ({col:'visitadores', rec:Object.assign({}, v, {linea:n})})))
+      .concat((S.cronograma || []).filter(s => s.linea === old).map(s => ({col:'cronograma', rec:Object.assign({}, s, {linea:n})})))
+      .concat((S.examenes || []).filter(x => arr(x.lineas).includes(old)).map(x => ({col:'examenes', rec:Object.assign({}, x, {lineas:arr(x.lineas).map(l => l === old ? n : l)})})));
+    runOps(ops).then(() => toast(n !== old ? `La línea ${old} ahora se llama ${n}.` : 'Línea actualizada.'));
+    if (UI.linea === old) UI.linea = n;
+  });
+}
 function prodEdit(name, line){
   const isNew = !name, c = isNew ? {producto:'', principio:'', alias:[]} : prodInfo(name);
   const cur = isNew ? [] : S.portafolio.filter(p => p.producto === name);
@@ -1833,6 +1867,12 @@ document.addEventListener('click', e => {
     case 'add-prod': prodForm(a.dataset.line); break;
     case 'edit-prod': e.stopPropagation(); if (document.body.classList.contains('ro')) break; prodEdit(a.dataset.prod); break;
     case 'del-prod-all': { const pr = a.dataset.prod; closeModal(); askConfirm(`¿Quitar ${pr} de todas las líneas del portafolio?`, () => { runOps(S.portafolio.filter(p => p.producto === pr).map(p => ({col:'portafolio', del:p.id}))).then(() => toast(`${pr} quitado del portafolio.`)); }, 'Quitar'); break; }
+    case 'line-add': lineForm(a.dataset.f); break;
+    case 'line-ren': lineRename(a.dataset.line); break;
+    case 'line-del': { const l = a.dataset.line, nv = S.visitadores.filter(v => v.linea === l).length, np = S.portafolio.filter(p => p.linea === l).length;
+      if (nv) { toast(`${l} tiene ${nv} representante${nv===1?'':'s'}. Cámbialos de línea antes de eliminarla.`); break; }
+      askConfirm(`¿Eliminar la línea ${l}${np ? ` y quitar sus ${np} productos asignados` : ''}?`, () => { S.config.lineas = cfgLines().filter(x => x.nombre !== l); putConfig(); if (UI.linea === l) UI.linea = '';
+        runOps(S.portafolio.filter(p => p.linea === l).map(p => ({col:'portafolio', del:p.id}))).then(() => toast(`Línea ${l} eliminada.`)); }, 'Eliminar'); break; }
     case 'fdv-pick': UI.fdv = UI.fdv === a.dataset.f ? '' : a.dataset.f; UI.linea = ''; render(); break;
     case 'fdv-add': openForm('Agregar fuerza de ventas', [{k:'nombre', label:'Nombre *', req:1, full:1, attrs:'placeholder="Ej. FDV HOSPITALARIA" style="text-transform:uppercase"'}], {}, d => { const n0 = d.nombre.trim().toUpperCase(); if (fdvList().includes(n0)) { toast('Esa fuerza de ventas ya existe.'); return false; } S.config.fdvs = fdvList().concat([n0]); putConfig(); toast(`${n0} agregada.`); }); break;
     case 'fdv-ren': { e.stopPropagation(); const old = a.dataset.f; openForm(`Cambiar nombre de ${old}`, [{k:'nombre', label:'Nuevo nombre *', req:1, full:1, attrs:'style="text-transform:uppercase"'}], {nombre:old}, d => { const n0 = d.nombre.trim().toUpperCase(); if (!n0 || n0 === old) return; if (fdvList().includes(n0)) { toast('Ya existe una fuerza de ventas con ese nombre.'); return false; }
