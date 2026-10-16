@@ -277,7 +277,7 @@ textarea.paste{width:100%;min-height:170px;font-family:ui-monospace,SFMono-Regul
 body.ro [data-act="add-vis"],body.ro [data-act="edit-vis"],body.ro [data-act="toggle-vis"],body.ro [data-act="del-vis"],body.ro [data-act="add-eval"],body.ro [data-act="edit-eval"],body.ro [data-act="del-eval"],body.ro [data-act="add-prod"],body.ro [data-act="del-prod"],body.ro [data-act="move-prod"],body.ro [data-act="add-med"],body.ro [data-act="edit-med"],body.ro [data-act="del-med"],body.ro [data-act="k-commit"],body.ro [data-act="imp-json"]{display:none!important}
 body.ro .tick{pointer-events:none}
 body.ro [data-act="add-ses"],body.ro [data-act="edit-ses"]{pointer-events:none}
-body.ro [data-act="new-ses"]{display:none!important}
+body.ro [data-act="new-ses"],body.ro [data-act="del-all-ses"]{display:none!important}
 /* calendar / schedule */
 .cal-nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .cal-nav h2{min-width:170px;text-align:center}
@@ -701,7 +701,7 @@ views.crono = () => {
   const monthCount = sess.filter(s => overlaps(s, mStart, mEnd)).length;
   return `<div class="card"><div class="card-h">
       <div class="cal-nav"><button class="btn sm" data-act="cal-prev" aria-label="Mes anterior">‹</button><h2>${MONTHS[m-1]} ${y}</h2><button class="btn sm" data-act="cal-next" aria-label="Mes siguiente">›</button><button class="btn sm ghost" data-act="cal-today">Hoy</button></div>
-      <div class="toolbar"><span class="muted" style="font-size:12.5px">${monthCount} actividad${monthCount===1?'':'es'} este mes · clic en un día para programar</span><button class="btn primary" data-act="new-ses">＋ Programar</button></div></div>
+      <div class="toolbar"><span class="muted" style="font-size:12.5px">${monthCount} actividad${monthCount===1?'':'es'} este mes · clic en un día para programar</span><button class="btn danger" data-act="del-all-ses" ${(S.cronograma || []).length ? '' : 'disabled'}>🗑 Borrar todo</button><button class="btn primary" data-act="new-ses">＋ Programar</button></div></div>
     <div class="card-b">${cal}</div></div>
   <div class="card" style="margin-top:16px"><div class="card-h"><div><h2>Cronograma armado para compartir</h2><p class="sub">${inRange.length - nEx} períodos de estudio · ${nEx} exámenes · ${nReps} representantes${UI.linea ? ' · ' + esc(UI.linea) : ''}${UI.region ? ' · ' + esc(UI.region) : ''}${UI.vis && vm[UI.vis] ? ' · ' + esc(fullName(vm[UI.vis])) : ''}</p></div>
     <div class="toolbar">
@@ -1614,6 +1614,12 @@ document.addEventListener('click', e => {
     case 'cal-today': UI.calMonth = today().slice(0,7); UI.cronFrom = UI.cronTo = ''; render(); break;
     case 'cron-mode': UI.cronMode = a.dataset.v; render(); break;
     case 'cron-copy-text': copyText(cronText(UI.cronMode || 'fecha'), 'Cronograma'); break;
+    case 'del-all-ses': { const all = S.cronograma || []; if (!all.length) { toast('El calendario ya está vacío.'); break; }
+      const nEx = all.filter(s => sesTipo(s) === 'examen').length;
+      askConfirm(`¿Borrar todo el cronograma? Se eliminarán ${all.length} actividades (${all.length - nEx} períodos de estudio y ${nEx} exámenes) de todos los meses, para todas las personas que usan el panel. No se puede deshacer.`, async () => {
+        const ok = await runOps(all.map(s => ({col:'cronograma', del:s.id})));
+        toast(ok === all.length ? 'Cronograma borrado.' : `Se borraron ${ok} de ${all.length} actividades. Inténtalo de nuevo para borrar el resto.`);
+      }, 'Borrar todo'); break; }
     case 'cron-img': exportCronImage(); break;
     case 'img-copy': (async () => { try { await navigator.clipboard.write([new ClipboardItem({'image/png': UI.img.blob})]); toast('Imagen copiada. Pégala en WhatsApp o en el correo.'); } catch(err) { toast('Este navegador no permite copiar la imagen aquí. Usa “Descargar PNG”.'); } })(); break;
     case 'cron-copy-xls': copyText(cronTSV(), 'Cronograma para Excel', 'Selecciona el texto, cópialo y pégalo en una hoja de Excel o Google Sheets: cada columna quedará en su celda.'); break;
