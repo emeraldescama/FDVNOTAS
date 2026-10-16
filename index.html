@@ -188,7 +188,19 @@ tr.open .chev{transform:rotate(90deg)}
 .pie .slice.on{stroke:var(--text);stroke-width:3}
 .pie-big{font-size:30px;font-weight:700;fill:var(--text)}
 .pie-sub{font-size:11px;fill:var(--muted);letter-spacing:.3px}
-.pie-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.pie-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.podium{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+.podium.compact{grid-template-columns:1fr;gap:8px;margin-top:8px;width:100%;text-align:left;border-top:1px solid var(--border);padding-top:8px}
+.podium h4{margin:0 0 6px;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--text-2)}
+.podium ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px}
+.podium li{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:8px;align-items:center;font-size:13px}
+.podium.compact li{grid-template-columns:20px minmax(0,1fr) auto;font-size:12px;gap:6px}
+.podium.compact .pos{min-width:20px;height:20px;font-size:11px;border-radius:5px}
+.podium .pn{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.podium .pn small{display:block;color:var(--muted);font-size:11px;overflow:hidden;text-overflow:ellipsis}
+.podium b{font-variant-numeric:tabular-nums}
+.pos.low{background:var(--bad-soft);border-color:color-mix(in srgb,var(--bad) 35%,var(--border));color:var(--bad-text)}
+@media (max-width:520px){.podium{grid-template-columns:1fr}}
 .pie-mini{border:1px solid var(--border);border-radius:10px;background:var(--surface);padding:10px 8px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;text-align:center;min-width:0}
 .pie-mini:hover{border-color:var(--brand-2)}
 .pie-mini b{font-size:13px}
@@ -518,13 +530,28 @@ function pieChart(vs){
     <div class="pie-legend">${BAND_ORDER.filter(k => k !== 'sin' || counts.sin).map(k => `<button type="button" class="${UI.band===k?'on':''}" data-act="band" data-band="${k}" title="Clic para ver solo este grupo en el ranking">
       <i class="dot" style="background:${BAND_META[k].color};width:12px;height:12px"></i><span class="nm">${BAND_META[k].label}<small>${bandRange(k)}</small></span><span class="c">${counts[k]}</span><span class="p">${pct(counts[k]/total)}</span></button>`).join('')}</div></div>`;
 }
+function podium(vs){
+  const r = vs.filter(s => s.avg != null).sort((a,b) => b.avg - a.avg || b.n - a.n);
+  const top = r.slice(0, 3), bottom = r.slice(top.length).slice(-3).reverse();
+  const tieTop = top.length === 3 ? r.slice(3).filter(s => s.avg === top[2].avg).length : 0;
+  const tieLow = bottom.length === 3 ? r.slice(0, r.length - 3).filter(s => s.avg === bottom[2].avg && !top.includes(s)).length : 0;
+  return {top, bottom, tieTop, tieLow};
+}
+function podiumHtml(vs, compact){
+  const {top, bottom, tieTop, tieLow} = podium(vs), min = S.config.min;
+  const tie = (n, v) => n ? `<li class="muted" style="display:block;font-size:11.5px">+${n} más empatado${n===1?'':'s'} con ${fmt(v)} (ver ranking)</li>` : '';
+  const li = (s, i, kind) => `<li title="${esc(fullName(s.v))} · ${esc(s.v.linea)} · promedio ${fmt(s.avg, 2)} en ${s.n} nota${s.n===1?'':'s'}"><span class="pos ${kind === 'top' ? 'p' + (i+1) : 'low'}">${i+1}</span><span class="pn">${esc(fullName(s.v))}${compact ? '' : `<small>${esc(s.v.linea)}${s.v.region && s.v.region !== '—' ? ' · ' + esc(s.v.region) : ''} · ${s.n} nota${s.n===1?'':'s'}</small>`}</span><b class="${s.avg < min ? 't-bad' : 't-good'}">${fmt(s.avg)}</b></li>`;
+  return `<div class="podium ${compact ? 'compact' : ''}">
+    <div><h4>▲ Top 3 · mejores promedios</h4><ol>${top.map((s,i) => li(s, i, 'top')).join('') || '<li class="muted">Sin notas</li>'}${top.length ? tie(tieTop, top[top.length-1].avg) : ''}</ol></div>
+    <div><h4>▼ Top 3 · promedios más bajos</h4><ol>${bottom.length ? bottom.map((s,i) => li(s, i, 'low')).join('') + tie(tieLow, bottom[bottom.length-1].avg) : `<li class="muted" style="display:block">${top.length ? 'Hay 3 estudiantes o menos con nota' : 'Sin notas'}</li>`}</ol></div></div>`;
+}
 function pieGroups(vs, by){
   if (!vs.length) return pieChart(vs);
   const key = by === 'region' ? s => (s.v.region && s.v.region !== '—' ? s.v.region : 'Sin región') : s => s.v.linea;
   const groups = [...groupBy(vs, key)].sort((a,b) => (meanAvg(b[1]) ?? -1) - (meanAvg(a[1]) ?? -1));
   return `<div class="pie-grid">${groups.map(([g, list]) => { const c = bandCounts(list);
-    return `<button type="button" class="pie-mini" data-act="pie-group" data-by="${by}" data-g="${esc(g)}" title="Ver solo ${esc(g)}"><b>${esc(g)}</b><small>${list.length} estudiante${list.length===1?'':'s'}</small>${pieSvg(list, false)}
-      <span class="mini-counts">${BAND_ORDER.filter(k => c[k]).map(k => `<span title="${BAND_META[k].label}"><i class="dot" style="background:${BAND_META[k].color}"></i>${c[k]}</span>`).join('')}</span></button>`; }).join('')}</div>
+    return `<div class="pie-mini" role="button" tabindex="0" data-act="pie-group" data-by="${by}" data-g="${esc(g)}" title="Ver solo ${esc(g)}"><b>${esc(g)}</b><small>${list.length} estudiante${list.length===1?'':'s'}</small>${pieSvg(list, false)}
+      <span class="mini-counts">${BAND_ORDER.filter(k => c[k]).map(k => `<span title="${BAND_META[k].label}"><i class="dot" style="background:${BAND_META[k].color}"></i>${c[k]}</span>`).join('')}</span>${podiumHtml(list, true)}</div>`; }).join('')}</div>
     <div class="legend-compact">${BAND_ORDER.map(k => `<span><i class="dot" style="background:${BAND_META[k].color}"></i>${BAND_META[k].label} (${bandRange(k)})</span>`).join('')}</div>`;
 }
 function pieCard(vs, title, sub){
@@ -823,6 +850,7 @@ views.ranking = () => {
         <div><span>Aprobados</span><b>${ranked.filter(r => r.avg >= min).length} <small class="muted" style="font-size:13px">/ ${ranked.length}</small></b></div>
         <div><span>Mín. aprobatorio</span><b>${fmt(min)}</b></div>
       </div>
+      ${podiumHtml(vs, false)}
       <div style="margin-top:14px">${bars(exams.map(ex => { const st = stats(evs.filter(e => e.examen === ex)); return {label:esc(ex), value:st.avg, tip:`${ex}: promedio ${fmt(st.avg,2)} · aprobación ${pct(st.rate)} · n=${st.n}`}; }))}</div></div></div>
   </div>
   <div class="card" style="margin-top:16px"><div class="card-h"><div><h2>Ranking por promedio general</h2><p class="sub">Promedio acumulado de todas las notas de cada estudiante${UI.exam ? ' (solo ' + esc(UI.exam) + ')' : ''} · clic en una cabecera para reordenar</p></div>
@@ -1613,7 +1641,7 @@ document.addEventListener('change', e => {
   const k = e.target.closest('[data-krow]'); if (k && UI.kahoot) { const r = UI.kahoot.rows[+k.dataset.krow]; r.vid = k.value; r.matchBy = 'manual'; }
 });
 document.addEventListener('keydown', e => {
-  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-line-card],.tick,.cal-day')) { e.preventDefault(); e.target.click(); }
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-line-card],.tick,.cal-day,.pie-mini')) { e.preventDefault(); e.target.click(); }
 });
 /* drag & drop: portfolio + kahoot file */
 let dragPid = null;
