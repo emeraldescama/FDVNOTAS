@@ -1,0 +1,1110 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>FDV Terapias de Marca</title>
+<style>
+:root{
+  color-scheme:light;
+  --bg:#f3f5f9; --surface:#ffffff; --surface-2:#f7f8fb; --border:#e1e5ee; --border-strong:#cbd2df;
+  --text:#14213d; --text-2:#4a5672; --muted:#7a849b;
+  --brand:#123a73; --brand-2:#1d5fb4; --brand-soft:#e7effb; --accent:#0f9488;
+  --good:#0ca30c; --good-text:#0a6b0a; --good-soft:#e5f6e5;
+  --warn:#fab219; --warn-text:#8a5a00; --warn-soft:#fff4dc;
+  --bad:#d03b3b; --bad-text:#b12c2c; --bad-soft:#fdeaea;
+  --bar:#2a78d6; --track:#edf0f5;
+  --a1:#2a78d6; --a2:#eb6834; --a3:#1baf7a; --a4:#eda100; --a5:#e87ba4; --a6:#008300; --a7:#6250d6;
+  --shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.08);
+  --radius:12px;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0f141c; --surface:#171d27; --surface-2:#1c2330; --border:#2a3342; --border-strong:#3a4558;
+    --text:#eef1f6; --text-2:#b9c2d3; --muted:#8a95aa;
+    --brand:#8db8f2; --brand-2:#5b9cec; --brand-soft:#1d2b40; --accent:#2cc2b2;
+    --good-text:#5fd35f; --good-soft:#15301a; --warn-text:#fac557; --warn-soft:#33290f; --bad-text:#f08585; --bad-soft:#3a1c1c;
+    --bar:#3987e5; --track:#252e3c;
+    --a1:#3987e5; --a2:#d95926; --a3:#199e70; --a4:#c98500; --a5:#d55181; --a6:#008300; --a7:#9085e9;
+    --shadow:0 1px 2px rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0f141c; --surface:#171d27; --surface-2:#1c2330; --border:#2a3342; --border-strong:#3a4558;
+  --text:#eef1f6; --text-2:#b9c2d3; --muted:#8a95aa;
+  --brand:#8db8f2; --brand-2:#5b9cec; --brand-soft:#1d2b40; --accent:#2cc2b2;
+  --good-text:#5fd35f; --good-soft:#15301a; --warn-text:#fac557; --warn-soft:#33290f; --bad-text:#f08585; --bad-soft:#3a1c1c;
+  --bar:#3987e5; --track:#252e3c;
+  --a1:#3987e5; --a2:#d95926; --a3:#199e70; --a4:#c98500; --a5:#d55181; --a6:#008300; --a7:#9085e9;
+  --shadow:0 1px 2px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--brand-2)}
+.num{font-variant-numeric:tabular-nums}
+/* header */
+.top{background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:env(safe-area-inset-top,0px);z-index:20}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--surface)}
+.top-in,.tabs,.filters,main{padding-left:max(20px,env(safe-area-inset-left,0px))!important;padding-right:max(20px,env(safe-area-inset-right,0px))!important}
+.top-in{max-width:1400px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px;flex:1;min-width:220px}
+.logo{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#123a73,#1d5fb4);color:#fff;display:grid;place-items:center;font-weight:700;font-size:13px;letter-spacing:.5px;flex:none}
+.brand h1{font-size:16px;margin:0;line-height:1.2}
+.brand p{margin:0;color:var(--muted);font-size:12px}
+.tabs{max-width:1400px;margin:0 auto;padding:0 20px;display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{border:0;background:none;padding:10px 14px;border-bottom:2px solid transparent;color:var(--text-2);cursor:pointer;white-space:nowrap;font-weight:500}
+.tab:hover{color:var(--text)}
+.tab[aria-selected="true"]{color:var(--brand-2);border-bottom-color:var(--brand-2)}
+.tab .cnt{display:inline-block;min-width:18px;padding:0 5px;border-radius:9px;font-size:11px;background:var(--bad);color:#fff;margin-left:4px;text-align:center}
+.filters{max-width:1400px;margin:16px auto 0;padding:0 20px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.search{flex:1 1 260px;position:relative}
+.search input[type=search]{width:100%;padding:9px 12px 9px 34px}
+.search svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted)}
+input[type=text],input[type=email],input[type=number],input[type=date],input[type=search],select,textarea{background:var(--surface);border:1px solid var(--border-strong);border-radius:8px;padding:8px 10px;outline:none;min-width:0}
+input:focus,select:focus,textarea:focus{border-color:var(--brand-2);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand-2) 20%,transparent)}
+.fld{display:flex;align-items:center;gap:6px;color:var(--text-2);font-size:13px}
+.fld input[type=number]{width:70px}
+.chk{display:inline-flex;align-items:center;gap:6px;color:var(--text-2);font-size:13px;cursor:pointer;user-select:none}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border-strong);background:var(--surface);border-radius:8px;padding:8px 12px;cursor:pointer;font-weight:500;white-space:nowrap}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--brand-2);border-color:var(--brand-2);color:#fff}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.danger{color:var(--bad-text);border-color:color-mix(in srgb,var(--bad) 40%,var(--border))}
+.btn.sm{padding:4px 8px;font-size:12px;border-radius:6px}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.ghost:hover{background:var(--surface-2)}
+.iconbtn{border:0;background:none;cursor:pointer;color:var(--muted);padding:4px;border-radius:6px;line-height:0}
+.iconbtn:hover{background:var(--surface-2);color:var(--text)}
+.iconbtn.del:hover{color:var(--bad-text)}
+main{max-width:1400px;margin:0 auto;padding:16px 20px 60px}
+.grid{display:grid;gap:16px}
+.g-kpi{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
+.g-2{grid-template-columns:repeat(auto-fit,minmax(min(100%,520px),1fr))}
+.g-3{grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr))}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);min-width:0}
+.card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px 0;flex-wrap:wrap}
+.card-h h2{font-size:15px;margin:0}
+.card-h .sub{color:var(--muted);font-size:12px;margin:2px 0 0}
+.card-b{padding:14px 16px 16px}
+.kpi{padding:14px 16px}
+.kpi .lbl{color:var(--text-2);font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:.4px}
+.kpi .val{font-size:28px;font-weight:700;margin-top:4px;line-height:1.1}
+.kpi .val small{font-size:14px;color:var(--muted);font-weight:500}
+.kpi .foot{font-size:12px;color:var(--muted);margin-top:6px}
+.kpi .val.txt{font-size:17px}
+.status{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.status.good{background:var(--good-soft);color:var(--good-text)}
+.status.bad{background:var(--bad-soft);color:var(--bad-text)}
+.status.warn{background:var(--warn-soft);color:var(--warn-text)}
+.status.neutral{background:var(--surface-2);color:var(--text-2);border:1px solid var(--border)}
+.t-good{color:var(--good-text)} .t-bad{color:var(--bad-text)} .t-warn{color:var(--warn-text)}
+.section-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:22px 0 10px;flex-wrap:wrap}
+.section-title h2{font-size:17px;margin:0}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+/* risk */
+.risk{border:1px solid color-mix(in srgb,var(--bad) 45%,var(--border));background:linear-gradient(0deg,var(--surface),var(--surface)) padding-box;border-left:5px solid var(--bad);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:16px}
+.risk-h{display:flex;gap:12px;align-items:center;padding:14px 16px;background:var(--bad-soft);border-radius:8px 11px 0 0;flex-wrap:wrap}
+.risk-h h2{margin:0;font-size:16px;color:var(--bad-text)}
+.risk-h p{margin:0;font-size:12.5px;color:var(--text-2)}
+.risk-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,290px),1fr));gap:10px;padding:14px 16px}
+.risk-item{border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:var(--surface)}
+.risk-item .nm{font-weight:600;display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.risk-item ul{margin:6px 0 0;padding-left:18px;color:var(--text-2);font-size:12.5px}
+.risk-ok{display:flex;gap:10px;align-items:center;padding:12px 16px;border:1px solid var(--border);border-left:5px solid var(--good);border-radius:var(--radius);background:var(--surface);margin-bottom:16px}
+/* bars */
+.bars{display:flex;flex-direction:column;gap:6px}
+.bar-row{display:grid;grid-template-columns:minmax(110px,190px) 1fr 52px;gap:10px;align-items:center;font-size:13px;padding:2px 0;border-radius:6px}
+.bar-row:hover{background:var(--surface-2)}
+.bar-row .lab{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+.bar-row .lab small{color:var(--muted)}
+.track{position:relative;height:14px;background:var(--track);border-radius:4px}
+.fill{position:absolute;left:0;top:0;bottom:0;background:var(--bar);border-radius:0 4px 4px 0}
+.fill.bad{background:var(--bad)}
+.minline{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--text);opacity:.55;border-radius:1px}
+.bar-row .v{text-align:right;font-weight:600}
+.bar-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--text-2);margin-top:10px}
+.sw{display:inline-block;width:10px;height:10px;border-radius:3px;vertical-align:-1px;margin-right:5px}
+.sw.line{width:2px;height:12px;background:var(--text);opacity:.55;border-radius:1px}
+/* table */
+.tbl-wrap{overflow-x:auto;border-top:1px solid var(--border)}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--border);vertical-align:middle}
+th{font-size:11.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--text-2);font-weight:600;background:var(--surface-2);white-space:nowrap;position:sticky;top:0}
+th.sortable{cursor:pointer;user-select:none}
+th.sortable:hover{color:var(--text)}
+th .arr{opacity:.35;margin-left:3px;font-size:10px}
+th.sorted .arr{opacity:1;color:var(--brand-2)}
+td.r,th.r{text-align:right}
+tbody tr:hover td{background:color-mix(in srgb,var(--surface-2) 70%,transparent)}
+tr.inactive td{opacity:.55}
+tr.expandable{cursor:pointer}
+tr.sub td{background:var(--surface-2);padding:10px 16px 14px}
+.empty{padding:28px;text-align:center;color:var(--muted)}
+.pill{display:inline-block;padding:1px 8px;border-radius:999px;font-size:11.5px;font-weight:600;background:var(--brand-soft);color:var(--brand);white-space:nowrap}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px}
+.muted{color:var(--muted)}
+.chev{display:inline-block;transition:transform .15s;color:var(--muted);margin-right:4px}
+tr.open .chev{transform:rotate(90deg)}
+/* line chips */
+.linesum{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:16px}
+.linesum .card{padding:10px 12px;cursor:pointer}
+.linesum .card.on{outline:2px solid var(--brand-2)}
+.linesum .t{font-weight:700;font-size:13px}
+.linesum .s{font-size:12px;color:var(--muted)}
+/* portfolio */
+.areas-legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--text-2)}
+.areas-legend span{display:inline-flex;align-items:center;gap:5px}
+.dot{width:9px;height:9px;border-radius:50%;flex:none;display:inline-block}
+.pline{display:flex;flex-direction:column}
+.pline.drag-over{outline:2px dashed var(--brand-2);outline-offset:-2px}
+.pline .card-b{flex:1}
+.agroup{margin-bottom:10px}
+.agroup h4{margin:0 0 6px;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--text-2);display:flex;align-items:center;gap:6px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border-strong);background:var(--surface);border-radius:8px;padding:4px 4px 4px 8px;font-size:12.5px;font-weight:500;cursor:grab}
+.chip:active{cursor:grabbing}
+.chip.dragging{opacity:.4}
+.chip.hl{box-shadow:0 0 0 2px var(--warn)}
+.chip .x{border:0;background:none;color:var(--muted);cursor:pointer;padding:0 3px;font-size:14px;line-height:1;border-radius:4px}
+.chip .x:hover{color:var(--bad-text);background:var(--bad-soft)}
+.chip .mv{border:0;background:none;color:var(--muted);cursor:pointer;padding:0 3px;font-size:12px;border-radius:4px}
+.chip .mv:hover{color:var(--brand-2);background:var(--brand-soft)}
+.matrix td.c,.matrix th.c{text-align:center}
+.tick{display:inline-block;width:18px;height:18px;border-radius:5px;background:var(--brand-2);color:#fff;font-size:12px;line-height:18px;cursor:pointer}
+.tick.off{background:transparent;border:1px dashed var(--border-strong);color:transparent}
+.tick.off:hover{border-color:var(--brand-2)}
+/* fichero */
+.quota-cell{display:flex;align-items:center;gap:8px;min-width:140px}
+.quota-cell .track{flex:1;height:10px}
+.retired td{color:var(--muted)}
+/* modal */
+.modal-bg{position:fixed;inset:0;background:rgba(10,16,28,.5);display:none;align-items:flex-start;justify-content:center;z-index:50;padding:40px 16px;overflow:auto}
+.modal-bg.on{display:flex}
+.modal{background:var(--surface);border-radius:14px;width:100%;max-width:560px;box-shadow:0 20px 50px rgba(0,0,0,.3);border:1px solid var(--border)}
+.modal-h{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid var(--border)}
+.modal-h h3{margin:0;font-size:16px}
+.modal-b{padding:16px 18px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.modal-b .full{grid-column:1/-1}
+.modal-b label{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--text-2);font-weight:500}
+.modal-f{display:flex;justify-content:flex-end;gap:8px;padding:14px 18px;border-top:1px solid var(--border)}
+@media (max-width:520px){.modal-b{grid-template-columns:1fr}}
+/* tooltip/toast/menu */
+#tip{position:fixed;pointer-events:none;background:var(--text);color:var(--surface);padding:6px 9px;border-radius:7px;font-size:12px;max-width:280px;z-index:60;display:none;box-shadow:0 4px 14px rgba(0,0,0,.2)}
+#toasts{position:fixed;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:8px;z-index:70}
+.toast{background:var(--text);color:var(--surface);padding:10px 14px;border-radius:9px;font-size:13px;box-shadow:0 6px 18px rgba(0,0,0,.25);max-width:340px;animation:tin .2s ease}
+@keyframes tin{from{transform:translateY(8px);opacity:0}}
+.menu{position:relative}
+.menu-pop{position:absolute;right:0;top:calc(100% + 6px);background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.15);padding:6px;min-width:230px;display:none;z-index:40}
+.menu-pop.on{display:block}
+.menu-pop button{display:block;width:100%;text-align:left;border:0;background:none;padding:8px 10px;border-radius:6px;cursor:pointer}
+.menu-pop button:hover{background:var(--surface-2)}
+.menu-pop hr{border:0;border-top:1px solid var(--border);margin:4px 0}
+/* kahoot */
+textarea.paste{width:100%;min-height:170px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;resize:vertical}
+.form-row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-bottom:12px}
+.form-row label{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--text-2);font-weight:500}
+.drop{border:2px dashed var(--border-strong);border-radius:10px;padding:14px;text-align:center;color:var(--muted);font-size:13px;margin-bottom:12px}
+.drop.on{border-color:var(--brand-2);background:var(--brand-soft)}
+.note{font-size:12.5px;color:var(--text-2);background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
+.note ul{margin:4px 0 0;padding-left:18px}
+.kv{display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;color:var(--text-2);margin-top:8px}
+.kv b{color:var(--text)}
+@media (max-width:640px){
+  .top-in,.tabs,.filters,main{padding-left:max(16px,env(safe-area-inset-left,0px))!important;padding-right:max(16px,env(safe-area-inset-right,0px))!important}
+  .bar-row{grid-template-columns:100px 1fr 44px}
+  .kpi .val{font-size:24px}
+}
+body.ro [data-act="add-vis"],body.ro [data-act="edit-vis"],body.ro [data-act="toggle-vis"],body.ro [data-act="del-vis"],body.ro [data-act="add-eval"],body.ro [data-act="edit-eval"],body.ro [data-act="del-eval"],body.ro [data-act="add-prod"],body.ro [data-act="del-prod"],body.ro [data-act="move-prod"],body.ro [data-act="add-med"],body.ro [data-act="edit-med"],body.ro [data-act="del-med"],body.ro [data-act="k-commit"],body.ro [data-act="imp-json"]{display:none!important}
+body.ro .tick{pointer-events:none}
+body.ro .chip{cursor:default}
+.loading{padding:40px;text-align:center;color:var(--muted)}
+@media print{.top,.filters,.toolbar,.iconbtn,.btn{display:none!important}.card{box-shadow:none}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">FDV</div>
+      <div><h1>Fuerza de Ventas · Terapias de Marca</h1><p>Nueva estructura promocional · vigente desde Octubre 2026</p></div>
+    </div>
+    <div class="toolbar">
+      <span class="status neutral" id="syncStatus" aria-live="polite">Conectando…</span>
+      <button class="btn ghost" id="btnTheme" title="Cambiar tema" aria-label="Cambiar tema">◐ Tema</button>
+      <div class="menu">
+        <button class="btn" id="btnData" aria-haspopup="true">Datos ▾</button>
+        <div class="menu-pop" id="dataMenu" role="menu">
+          <button data-act="exp-json">⬇ Exportar respaldo (JSON)</button>
+          <button data-act="imp-json">⬆ Importar respaldo (JSON)</button>
+          <hr>
+          <button data-act="exp-evals">⬇ Exportar evaluaciones (CSV)</button>
+          <button data-act="exp-fdv">⬇ Exportar FDV (CSV)</button>
+          <button data-act="exp-port">⬇ Exportar portafolio (CSV)</button>
+        </div>
+        <input type="file" id="fileJson" accept=".json,application/json" hidden>
+      </div>
+    </div>
+  </div>
+  <nav class="tabs" role="tablist" id="tabs">
+    <button class="tab" data-tab="resumen">Métricas y KPIs</button>
+    <button class="tab" data-tab="fdv">Fuerza de Ventas</button>
+    <button class="tab" data-tab="evals">Evaluaciones</button>
+    <button class="tab" data-tab="port">Portafolio</button>
+    <button class="tab" data-tab="fichero">Fichero Médico</button>
+    <button class="tab" data-tab="carga">Cargar Kahoot</button>
+  </nav>
+</header>
+
+<section class="filters" aria-label="Filtros">
+  <div class="search">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input type="search" id="q" placeholder="Buscar visitador, correo, examen, producto, médico…" autocomplete="off">
+  </div>
+  <select id="fLinea" aria-label="Filtrar por línea"></select>
+  <select id="fVis" aria-label="Filtrar por visitador"></select>
+  <label class="fld" title="Nota mínima aprobatoria (escala 0–20)">Mín. aprobatorio <input type="number" id="fMin" min="0" max="20" step="0.5"> /20</label>
+  <label class="chk" title="Si se activa, los registros 'No presentó' cuentan como nota 0 en promedios y tasas"><input type="checkbox" id="fAus"> Ausencias = 0</label>
+  <button class="btn ghost sm" id="btnClear">Limpiar filtros</button>
+</section>
+
+<main id="view"></main>
+
+<div class="modal-bg" id="modalBg" role="dialog" aria-modal="true">
+  <form class="modal" id="modalForm" novalidate>
+    <div class="modal-h"><h3 id="modalTitle"></h3><button type="button" class="iconbtn" data-close aria-label="Cerrar">✕</button></div>
+    <div class="modal-b" id="modalBody"></div>
+    <div class="modal-f"><button type="button" class="btn" data-close>Cancelar</button><button type="submit" class="btn primary" id="modalOk">Guardar</button></div>
+  </form>
+</div>
+<div id="tip" role="tooltip"></div>
+<div id="toasts" aria-live="polite"></div>
+
+<script>
+"use strict";
+const SEED = {"visitadores": [{"id": "v1", "nombre": "Laura", "apellidos": "Garcia", "correo": "laura.garcia@lasante.com.ve", "linea": "HÍBRIDA 3", "region": "Andes", "zona": "Merida", "estado": "Activo"}, {"id": "v2", "nombre": "Marvi", "apellidos": "Garcia", "correo": "marvi.garcia@lasante.com.ve", "linea": "HÍBRIDA 3", "region": "Andes", "zona": "San Cristobal", "estado": "Activo"}, {"id": "v3", "nombre": "Maribel", "apellidos": "Barrios", "correo": "maribel.barrios@lasante.com.ve", "linea": "HÍBRIDA 3", "region": "Andes", "zona": "Trujillo", "estado": "Activo"}, {"id": "v4", "nombre": "Daniccy", "apellidos": "Baptista", "correo": "daniccy.baptista@lasante.com.ve", "linea": "LÍNEA 1", "region": "Caracas", "zona": "Caracas Nor Este", "estado": "Activo"}, {"id": "v5", "nombre": "Mariangela", "apellidos": "Pinto", "correo": "", "linea": "LÍNEA 2", "region": "Caracas", "zona": "Caracas Nor Este", "estado": "Activo"}, {"id": "v6", "nombre": "Jimmy", "apellidos": "Vega", "correo": "jimmy.vega@lasante.com.ve", "linea": "LÍNEA 3", "region": "Caracas", "zona": "Caracas Nor Este", "estado": "Activo"}, {"id": "v7", "nombre": "Ada", "apellidos": "Dascenzo", "correo": "ada.dascenzo@lasante.com.ve", "linea": "LÍNEA 1", "region": "Caracas", "zona": "Caracas Nor Oeste", "estado": "Activo"}, {"id": "v8", "nombre": "Johana", "apellidos": "Borjas", "correo": "", "linea": "LÍNEA 2", "region": "Caracas", "zona": "Caracas Nor Oeste", "estado": "Activo"}, {"id": "v9", "nombre": "Juana", "apellidos": "Araujo", "correo": "juana.araujo@lasante.com.ve", "linea": "LÍNEA 3", "region": "Caracas", "zona": "Caracas Nor Oeste", "estado": "Activo"}, {"id": "v10", "nombre": "Tatiana", "apellidos": "Silva", "correo": "tatiana.silva@lasante.com.ve", "linea": "LÍNEA 1", "region": "Caracas", "zona": "Caracas Sur Este", "estado": "Activo"}, {"id": "v11", "nombre": "Andrea", "apellidos": "Ballesteros", "correo": "", "linea": "LÍNEA 2", "region": "Caracas", "zona": "Caracas Sur Este", "estado": "Activo"}, {"id": "v12", "nombre": "Nazareth", "apellidos": "Alayza", "correo": "nazareth.alayza@lasante.com.ve", "linea": "LÍNEA 3", "region": "Caracas", "zona": "Caracas Sur Este", "estado": "Activo"}, {"id": "v13", "nombre": "Gregorio", "apellidos": "Carrero", "correo": "gregorio.carrero@lasante.com.ve", "linea": "LÍNEA 1", "region": "Caracas", "zona": "Caracas Sur Oeste", "estado": "Activo"}, {"id": "v14", "nombre": "Edwar", "apellidos": "Barazarte", "correo": "", "linea": "LÍNEA 2", "region": "Caracas", "zona": "Caracas Sur Oeste", "estado": "Activo"}, {"id": "v15", "nombre": "Mariana", "apellidos": "Guzman", "correo": "mariana.guzman@lasante.com.ve", "linea": "LÍNEA 3", "region": "Caracas", "zona": "Caracas Sur Oeste", "estado": "Activo"}, {"id": "v16", "nombre": "Dayana", "apellidos": "Montiel", "correo": "dayana.montiel@lasante.com.ve", "linea": "HÍBRIDA 1", "region": "Centro Este", "zona": "Maracay", "estado": "Activo"}, {"id": "v17", "nombre": "Daisy", "apellidos": "Perez", "correo": "daisy.perez@lasante.com.ve", "linea": "HÍBRIDA 2", "region": "Centro Este", "zona": "Maracay", "estado": "Activo"}, {"id": "v18", "nombre": "Veronica", "apellidos": "Polanco", "correo": "veronica.polanco@lasante.com.ve", "linea": "HÍBRIDA 1", "region": "Centro Este", "zona": "Valencia Norte", "estado": "Activo"}, {"id": "v19", "nombre": "Joansy", "apellidos": "Marin", "correo": "joansy.marin@lasante.com.ve", "linea": "HÍBRIDA 2", "region": "Centro Este", "zona": "Valencia Norte", "estado": "Activo"}, {"id": "v20", "nombre": "Jesus", "apellidos": "Camacho", "correo": "jesus.camacho@lasante.com.ve", "linea": "HÍBRIDA 1", "region": "Centro Este", "zona": "Valencia Sur", "estado": "Activo"}, {"id": "v21", "nombre": "Argenis", "apellidos": "Duran", "correo": "argenis.duran@lasante.com.ve", "linea": "HÍBRIDA 2", "region": "Centro Este", "zona": "Valencia Sur", "estado": "Activo"}, {"id": "v22", "nombre": "", "apellidos": "", "correo": "", "linea": "HÍBRIDA 1", "region": "Centro Oeste", "zona": "Barquisimeto Este", "estado": "Vacante"}, {"id": "v23", "nombre": "Vanessa", "apellidos": "Alviarez", "correo": "vanessa.alviarez@lasante.com.ve", "linea": "HÍBRIDA 2", "region": "Centro Oeste", "zona": "Barquisimeto Este", "estado": "Activo"}, {"id": "v24", "nombre": "Victor", "apellidos": "Barazarte", "correo": "victor.barazarte@lasante.com.ve", "linea": "HÍBRIDA 1", "region": "Centro Oeste", "zona": "Barquisimeto Oeste", "estado": "Activo"}, {"id": "v25", "nombre": "Hector", "apellidos": "Perez", "correo": "hector.perez@lasante.com.ve", "linea": "HÍBRIDA 2", "region": "Centro Oeste", "zona": "Barquisimeto Oeste", "estado": "Activo"}, {"id": "v26", "nombre": "Leonardo", "apellidos": "Guillén", "correo": "leonardo.guillen@lasante.com.ve", "linea": "HÍBRIDA 1", "region": "Centro Oeste", "zona": "Barinas - Portuguesa", "estado": "Activo"}, {"id": "v27", "nombre": "Giuseppe", "apellidos": "Catanzaro", "correo": "giuseppe.catanzaro@lasante.com.ve", "linea": "HÍBRIDA 2", "region": "Centro Oeste", "zona": "Barinas - Portuguesa", "estado": "Activo"}, {"id": "v28", "nombre": "July", "apellidos": "Villalobos", "correo": "july.villalobos@lasante.com.ve", "linea": "HÍBRIDA 1", "region": "Maracaibo", "zona": "Maracaibo Norte", "estado": "Activo"}, {"id": "v29", "nombre": "Leonidas", "apellidos": "Melendez", "correo": "leonidas.melendez@lasante.com.ve", "linea": "HÍBRIDA 2", "region": "Maracaibo", "zona": "Maracaibo Norte", "estado": "Activo"}, {"id": "v30", "nombre": "Gerardo", "apellidos": "Rodriguez", "correo": "gerardo.rodriguez@lasante.com.ve", "linea": "HÍBRIDA 1", "region": "Maracaibo", "zona": "Maracaibo Sur", "estado": "Activo"}, {"id": "v31", "nombre": "Elvis", "apellidos": "Malave", "correo": "elvis.malave@lasante.com.ve", "linea": "HÍBRIDA 2", "region": "Maracaibo", "zona": "Maracaibo Sur", "estado": "Activo"}, {"id": "v32", "nombre": "Lubia", "apellidos": "Quintero", "correo": "lubia.quintero@lasante.com.ve", "linea": "HÍBRIDA 3", "region": "Maracaibo", "zona": "Falcon", "estado": "Activo"}, {"id": "v33", "nombre": "Genesis", "apellidos": "Martinez", "correo": "genesis.martinez@lasante.com.ve", "linea": "LÍNEA 1", "region": "Oriente Norte", "zona": "Anzoategui - Nueva Esparta", "estado": "Activo"}, {"id": "v34", "nombre": "Neivis", "apellidos": "Parra", "correo": "", "linea": "LÍNEA 2", "region": "Oriente Norte", "zona": "Anzoategui - Nueva Esparta", "estado": "Activo"}, {"id": "v35", "nombre": "Aries", "apellidos": "Carrizales", "correo": "aries.carrizales@lasante.com.ve", "linea": "LÍNEA 3", "region": "Oriente Norte", "zona": "Anzoategui - Nueva Esparta", "estado": "Activo"}, {"id": "v36", "nombre": "Edgaris", "apellidos": "Vallejo", "correo": "edgaris.vallejo@lasante.com.ve", "linea": "HÍBRIDA 3", "region": "Oriente Norte", "zona": "Cumana - Carupano", "estado": "Activo"}, {"id": "v37", "nombre": "Carolina", "apellidos": "Vasquez", "correo": "carolina.vasquez@lasante.com.ve", "linea": "HÍBRIDA 3", "region": "Oriente Sur", "zona": "Puerto Ordaz - San Felix", "estado": "Activo"}, {"id": "v38", "nombre": "Hernan", "apellidos": "Guevara", "correo": "hernan.guevara@lasante.com.ve", "linea": "HÍBRIDA 3", "region": "Oriente Sur", "zona": "Ciudad Bolivar - El Tigre", "estado": "Activo"}, {"id": "v39", "nombre": "Daysis", "apellidos": "Mora", "correo": "", "linea": "HÍBRIDA 1", "region": "Oriente Sur", "zona": "Maturin", "estado": "Activo"}, {"id": "v40", "nombre": "Greisely", "apellidos": "Rosal", "correo": "gresely.rosal@lasante.com.ve", "linea": "HÍBRIDA 2", "region": "Oriente Sur", "zona": "Maturin", "estado": "Activo"}, {"id": "v41", "nombre": "Angela", "apellidos": "Castillo", "correo": "angela.castillo@lasante.com.ve", "linea": "SIN ASIGNAR", "region": "—", "zona": "—", "estado": "Fuera de estructura"}, {"id": "v42", "nombre": "Ricardo", "apellidos": "Guevara", "correo": "ricardo.guevara@lasante.com.ve", "linea": "SIN ASIGNAR", "region": "—", "zona": "—", "estado": "Fuera de estructura"}, {"id": "v43", "nombre": "Jhoselyn", "apellidos": "Sanchez", "correo": "jhoselyn.sanchez@lasante.com.ve", "linea": "SIN ASIGNAR", "region": "—", "zona": "—", "estado": "Fuera de estructura"}, {"id": "v44", "nombre": "Marahy", "apellidos": "Churion", "correo": "marahy.churion@lasante.com.ve", "linea": "SIN ASIGNAR", "region": "—", "zona": "—", "estado": "Fuera de estructura"}, {"id": "v45", "nombre": "Tonny", "apellidos": "Espinoza", "correo": "tonny.espinoza@lasante.com.ve", "linea": "SIN ASIGNAR", "region": "—", "zona": "—", "estado": "Fuera de estructura"}, {"id": "v46", "nombre": "Andrea", "apellidos": "Alarcon", "correo": "andrea.alarcon@lasante.com.ve", "linea": "SIN ASIGNAR", "region": "—", "zona": "—", "estado": "Fuera de estructura"}, {"id": "v47", "nombre": "Randolph", "apellidos": "Gramcko", "correo": "randolph.gramcko@lasante.com.ve", "linea": "SIN ASIGNAR", "region": "—", "zona": "—", "estado": "Fuera de estructura"}], "evaluaciones": [{"id": "e1", "vid": "v7", "examen": "Alzheimer y Donepezilo: Claves de la Ficha Técnica", "fecha": "", "nota": 20.0, "kahoot": 19057, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e2", "vid": "v7", "examen": "SNC", "fecha": "", "nota": 20.0, "kahoot": 19900, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e3", "vid": "v7", "examen": "Olanzatique", "fecha": "", "nota": 20.0, "kahoot": 18964, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e4", "vid": "v4", "examen": "Alzheimer y Donepezilo: Claves de la Ficha Técnica", "fecha": "", "nota": 20.0, "kahoot": 18844, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e5", "vid": "v4", "examen": "SNC", "fecha": "", "nota": 20.0, "kahoot": 19826, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e6", "vid": "v4", "examen": "Olanzatique", "fecha": "", "nota": 19.0, "kahoot": 17947, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e7", "vid": "v20", "examen": "Alzheimer y Donepezilo: Claves de la Ficha Técnica", "fecha": "", "nota": 20.0, "kahoot": 18265, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e8", "vid": "v20", "examen": "SNC", "fecha": "", "nota": 19.0, "kahoot": 18565, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e9", "vid": "v20", "examen": "Olanzatique", "fecha": "", "nota": 18.5, "kahoot": 174669, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx", "obs": "Puntaje Kahoot original \"17 4669\" (dato inconsistente)"}, {"id": "e10", "vid": "v30", "examen": "Alzheimer y Donepezilo: Claves de la Ficha Técnica", "fecha": "", "nota": 20.0, "kahoot": 18199, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e11", "vid": "v30", "examen": "SNC", "fecha": "", "nota": 19.0, "kahoot": 16797, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e12", "vid": "v30", "examen": "Olanzatique", "fecha": "", "nota": 16.5, "kahoot": 14390, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e13", "vid": "v18", "examen": "Alzheimer y Donepezilo: Claves de la Ficha Técnica", "fecha": "", "nota": 19.0, "kahoot": 18195, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e14", "vid": "v18", "examen": "SNC", "fecha": "", "nota": 18.5, "kahoot": 18990, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e15", "vid": "v18", "examen": "Olanzatique", "fecha": "", "nota": 20.0, "kahoot": 19493, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e16", "vid": "v33", "examen": "Alzheimer y Donepezilo: Claves de la Ficha Técnica", "fecha": "", "nota": 19.0, "kahoot": 18174, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e17", "vid": "v33", "examen": "SNC", "fecha": "", "nota": 18.5, "kahoot": 17889, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e18", "vid": "v33", "examen": "Olanzatique", "fecha": "", "nota": 17.5, "kahoot": 15624, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e19", "vid": "v10", "examen": "Alzheimer y Donepezilo: Claves de la Ficha Técnica", "fecha": "", "nota": 20.0, "kahoot": 18112, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e20", "vid": "v10", "examen": "SNC", "fecha": "", "nota": 19.0, "kahoot": 17287, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e21", "vid": "v10", "examen": "Olanzatique", "fecha": "", "nota": 20.0, "kahoot": 17604, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e22", "vid": "v28", "examen": "Alzheimer y Donepezilo: Claves de la Ficha Técnica", "fecha": "", "nota": 20.0, "kahoot": 17993, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e23", "vid": "v28", "examen": "SNC", "fecha": "", "nota": 19.0, "kahoot": 16407, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e24", "vid": "v28", "examen": "Olanzatique", "fecha": "", "nota": 19.5, "kahoot": 16431, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e25", "vid": "v13", "examen": "Alzheimer y Donepezilo: Claves de la Ficha Técnica", "fecha": "", "nota": 20.0, "kahoot": 17765, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e26", "vid": "v13", "examen": "SNC", "fecha": "", "nota": 20.0, "kahoot": 19451, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e27", "vid": "v13", "examen": "Olanzatique", "fecha": "", "nota": 17.5, "kahoot": 18008, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e28", "vid": "v24", "examen": "Alzheimer y Donepezilo: Claves de la Ficha Técnica", "fecha": "", "nota": 19.0, "kahoot": 17752, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e29", "vid": "v24", "examen": "SNC", "fecha": "", "nota": 20.0, "kahoot": 19748, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e30", "vid": "v24", "examen": "Olanzatique", "fecha": "", "nota": 20.0, "kahoot": 19637, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e31", "vid": "v41", "examen": "Alzheimer y Donepezilo: Claves de la Ficha Técnica", "fecha": "", "nota": 18.0, "kahoot": 16058, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e32", "vid": "v41", "examen": "SNC", "fecha": "", "nota": 20.0, "kahoot": 19670, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e33", "vid": "v41", "examen": "Olanzatique", "fecha": "", "nota": 17.5, "kahoot": 15719, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e34", "vid": "v16", "examen": "Alzheimer y Donepezilo: Claves de la Ficha Técnica", "fecha": "", "nota": 19.0, "kahoot": 16589, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e35", "vid": "v16", "examen": "SNC", "fecha": "", "nota": 20.0, "kahoot": 19609, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e36", "vid": "v16", "examen": "Olanzatique", "fecha": "", "nota": 19.0, "kahoot": 18279, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e37", "vid": "v32", "examen": "Alzheimer y Donepezilo: Claves de la Ficha Técnica", "fecha": "", "nota": 19.0, "kahoot": 16576, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e38", "vid": "v32", "examen": "SNC", "fecha": "", "nota": 18.0, "kahoot": 14929, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e39", "vid": "v32", "examen": "Olanzatique", "fecha": "", "nota": 19.0, "kahoot": 15792, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e40", "vid": "v26", "examen": "Alzheimer y Donepezilo: Claves de la Ficha Técnica", "fecha": "", "nota": 19.0, "kahoot": 16735, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e41", "vid": "v26", "examen": "SNC", "fecha": "", "nota": 15.5, "kahoot": 13679, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e42", "vid": "v26", "examen": "Olanzatique", "fecha": "", "nota": 20.0, "kahoot": 19159, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e43", "vid": "v42", "examen": "Alzheimer y Donepezilo: Claves de la Ficha Técnica", "fecha": "", "nota": 0, "kahoot": null, "estado": "No presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e44", "vid": "v43", "examen": "Alzheimer y Donepezilo: Claves de la Ficha Técnica", "fecha": "", "nota": 0, "kahoot": null, "estado": "No presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e45", "vid": "v43", "examen": "Vonoprazan", "fecha": null, "nota": 18.0, "kahoot": 15202, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e46", "vid": "v44", "examen": "Alzheimer y Donepezilo: Claves de la Ficha Técnica", "fecha": "", "nota": 0, "kahoot": null, "estado": "No presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e47", "vid": "v45", "examen": "Alzheimer y Donepezilo: Claves de la Ficha Técnica", "fecha": "", "nota": 0, "kahoot": null, "estado": "No presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e48", "vid": "v46", "examen": "Alzheimer y Donepezilo: Claves de la Ficha Técnica", "fecha": "", "nota": 0, "kahoot": null, "estado": "No presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e49", "vid": "v46", "examen": "Vonoprazan", "fecha": null, "nota": 20.0, "kahoot": 15849, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e50", "vid": "v47", "examen": "Alzheimer y Donepezilo: Claves de la Ficha Técnica", "fecha": "", "nota": 0, "kahoot": null, "estado": "No presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e51", "vid": "v35", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 15.0, "kahoot": 10493, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e52", "vid": "v6", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 19.0, "kahoot": 15786, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e53", "vid": "v9", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 15.0, "kahoot": 15120, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e54", "vid": "v15", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 20.0, "kahoot": 16867, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e55", "vid": "v12", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 9.0, "kahoot": 7157, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx", "obs": "Nota original 0.45 (45%) → 9/20"}, {"id": "e56", "vid": "v21", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 8.0, "kahoot": 5752, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e57", "vid": "v17", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 0.0, "kahoot": 0, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e58", "vid": "v31", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 19.0, "kahoot": 17545, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e59", "vid": "v27", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 17.0, "kahoot": 13595, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e60", "vid": "v40", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 18.0, "kahoot": 17092, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e61", "vid": "v25", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 17.0, "kahoot": 10880, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e62", "vid": "v19", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 0.0, "kahoot": 0, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e63", "vid": "v29", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 15.0, "kahoot": 12989, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e64", "vid": "v23", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 20.0, "kahoot": 18509, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e65", "vid": "v37", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 19.0, "kahoot": 16283, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e66", "vid": "v36", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 15.0, "kahoot": 11942, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e67", "vid": "v38", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 20.0, "kahoot": 13474, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e68", "vid": "v1", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 15.0, "kahoot": 11906, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e69", "vid": "v3", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 18.0, "kahoot": 15162, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e70", "vid": "v2", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 18.0, "kahoot": 14808, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}, {"id": "e71", "vid": "v32", "examen": "Vonoprazan", "fecha": "2026-09-29", "nota": 16.0, "kahoot": 11063, "estado": "Presentó", "origen": "RESUMEN NOTAS.xlsx"}], "portafolio": [{"id": "p1", "linea": "LÍNEA 1", "area": "ALERGO RESPIRATORIA", "producto": "DESLER"}, {"id": "p2", "linea": "LÍNEA 1", "area": "ALERGO RESPIRATORIA", "producto": "DESLER M"}, {"id": "p3", "linea": "LÍNEA 1", "area": "ALERGO RESPIRATORIA", "producto": "MOMEQ CREMA"}, {"id": "p4", "linea": "LÍNEA 1", "area": "ALERGO RESPIRATORIA", "producto": "MOMEQ NASAL"}, {"id": "p5", "linea": "LÍNEA 1", "area": "ALERGO RESPIRATORIA", "producto": "PULMOLIX"}, {"id": "p6", "linea": "LÍNEA 1", "area": "ANTIINFECCIOSA", "producto": "SULAMP"}, {"id": "p7", "linea": "LÍNEA 1", "area": "SISTEMA NERVIOSO CENTRAL", "producto": "FLUDIL"}, {"id": "p8", "linea": "LÍNEA 1", "area": "SISTEMA NERVIOSO CENTRAL", "producto": "JULITAM"}, {"id": "p9", "linea": "LÍNEA 1", "area": "SISTEMA NERVIOSO CENTRAL", "producto": "LAMIDUS"}, {"id": "p10", "linea": "LÍNEA 1", "area": "SISTEMA NERVIOSO CENTRAL", "producto": "OLANZATIQUE"}, {"id": "p11", "linea": "LÍNEA 1", "area": "SISTEMA NERVIOSO CENTRAL", "producto": "ZILDON"}, {"id": "p12", "linea": "LÍNEA 1", "area": "SISTEMA NERVIOSO CENTRAL", "producto": "ZOCLONAX"}, {"id": "p13", "linea": "LÍNEA 1", "area": "ANTIINFECCIOSA", "producto": "RIXIGAL SUSP"}, {"id": "p14", "linea": "LÍNEA 2", "area": "CARDIOMETABÓLICA", "producto": "AMSARTIQUE"}, {"id": "p15", "linea": "LÍNEA 2", "area": "CARDIOMETABÓLICA", "producto": "CANDETIQUE"}, {"id": "p16", "linea": "LÍNEA 2", "area": "CARDIOMETABÓLICA", "producto": "CIRGREL"}, {"id": "p17", "linea": "LÍNEA 2", "area": "CARDIOMETABÓLICA", "producto": "GLIMERID"}, {"id": "p18", "linea": "LÍNEA 2", "area": "CARDIOMETABÓLICA", "producto": "GLUSTAR"}, {"id": "p19", "linea": "LÍNEA 2", "area": "CARDIOMETABÓLICA", "producto": "IVAZYD"}, {"id": "p20", "linea": "LÍNEA 2", "area": "CARDIOMETABÓLICA", "producto": "LANZAMIENTO CARDIO 1"}, {"id": "p21", "linea": "LÍNEA 2", "area": "CARDIOMETABÓLICA", "producto": "LANZAMIENTO CARDIO 2"}, {"id": "p22", "linea": "LÍNEA 2", "area": "CARDIOMETABÓLICA", "producto": "OLMETIQUE"}, {"id": "p23", "linea": "LÍNEA 2", "area": "CARDIOMETABÓLICA", "producto": "XAROX"}, {"id": "p24", "linea": "LÍNEA 2", "area": "CARDIOMETABÓLICA", "producto": "XEROGRAX"}, {"id": "p25", "linea": "LÍNEA 2", "area": "GASTROINTESTINAL", "producto": "ESOZ"}, {"id": "p26", "linea": "LÍNEA 3", "area": "ANTIINFECCIOSA", "producto": "DAKSOL"}, {"id": "p27", "linea": "LÍNEA 3", "area": "ANTIINFECCIOSA", "producto": "NITAX"}, {"id": "p28", "linea": "LÍNEA 3", "area": "ANTIINFECCIOSA", "producto": "RIXIGAL"}, {"id": "p29", "linea": "LÍNEA 3", "area": "ANTIINFECCIOSA", "producto": "TRIPUR"}, {"id": "p30", "linea": "LÍNEA 3", "area": "GASTROINTESTINAL", "producto": "BUMETIN"}, {"id": "p31", "linea": "LÍNEA 3", "area": "GASTROINTESTINAL", "producto": "LANZAMIENTO GI"}, {"id": "p32", "linea": "LÍNEA 3", "area": "GASTROINTESTINAL", "producto": "LEPRIT"}, {"id": "p33", "linea": "LÍNEA 3", "area": "GENITOURINARIA", "producto": "TALYSTOR"}, {"id": "p34", "linea": "LÍNEA 3", "area": "MÚSCULO ESQUELÉTICA", "producto": "TIOCOL"}, {"id": "p35", "linea": "LÍNEA 3", "area": "MÚSCULO ESQUELÉTICA", "producto": "TIOCOLFEN"}, {"id": "p36", "linea": "HÍBRIDA 1", "area": "ALERGO RESPIRATORIA", "producto": "DESLER"}, {"id": "p37", "linea": "HÍBRIDA 1", "area": "ALERGO RESPIRATORIA", "producto": "DESLER M"}, {"id": "p38", "linea": "HÍBRIDA 1", "area": "ALERGO RESPIRATORIA", "producto": "MOMEQ CREMA"}, {"id": "p39", "linea": "HÍBRIDA 1", "area": "ALERGO RESPIRATORIA", "producto": "MOMEQ NASAL"}, {"id": "p40", "linea": "HÍBRIDA 1", "area": "ALERGO RESPIRATORIA", "producto": "PULMOLIX"}, {"id": "p41", "linea": "HÍBRIDA 1", "area": "ANTIINFECCIOSA", "producto": "SULAMP"}, {"id": "p42", "linea": "HÍBRIDA 1", "area": "ANTIINFECCIOSA", "producto": "TRIPUR"}, {"id": "p43", "linea": "HÍBRIDA 1", "area": "ANTIINFECCIOSA", "producto": "RIXIGAL SUSP"}, {"id": "p44", "linea": "HÍBRIDA 1", "area": "GASTROINTESTINAL", "producto": "ESOZ"}, {"id": "p45", "linea": "HÍBRIDA 1", "area": "GENITOURINARIA", "producto": "TALYSTOR"}, {"id": "p46", "linea": "HÍBRIDA 1", "area": "SISTEMA NERVIOSO CENTRAL", "producto": "FLUDIL"}, {"id": "p47", "linea": "HÍBRIDA 1", "area": "SISTEMA NERVIOSO CENTRAL", "producto": "JULITAM"}, {"id": "p48", "linea": "HÍBRIDA 1", "area": "SISTEMA NERVIOSO CENTRAL", "producto": "LAMIDUS"}, {"id": "p49", "linea": "HÍBRIDA 1", "area": "SISTEMA NERVIOSO CENTRAL", "producto": "OLANZATIQUE"}, {"id": "p50", "linea": "HÍBRIDA 1", "area": "SISTEMA NERVIOSO CENTRAL", "producto": "ZILDON"}, {"id": "p51", "linea": "HÍBRIDA 1", "area": "SISTEMA NERVIOSO CENTRAL", "producto": "ZOCLONAX"}, {"id": "p52", "linea": "HÍBRIDA 2", "area": "ANTIINFECCIOSA", "producto": "RIXIGAL"}, {"id": "p53", "linea": "HÍBRIDA 2", "area": "CARDIOMETABÓLICA", "producto": "AMSARTIQUE"}, {"id": "p54", "linea": "HÍBRIDA 2", "area": "CARDIOMETABÓLICA", "producto": "CANDETIQUE"}, {"id": "p55", "linea": "HÍBRIDA 2", "area": "CARDIOMETABÓLICA", "producto": "CIRGREL"}, {"id": "p56", "linea": "HÍBRIDA 2", "area": "CARDIOMETABÓLICA", "producto": "GLUSTAR"}, {"id": "p57", "linea": "HÍBRIDA 2", "area": "CARDIOMETABÓLICA", "producto": "IVAZYD"}, {"id": "p58", "linea": "HÍBRIDA 2", "area": "CARDIOMETABÓLICA", "producto": "LANZAMIENTO CARDIO 1"}, {"id": "p59", "linea": "HÍBRIDA 2", "area": "CARDIOMETABÓLICA", "producto": "LANZAMIENTO CARDIO 2"}, {"id": "p60", "linea": "HÍBRIDA 2", "area": "CARDIOMETABÓLICA", "producto": "OLMETIQUE"}, {"id": "p61", "linea": "HÍBRIDA 2", "area": "CARDIOMETABÓLICA", "producto": "XAROX"}, {"id": "p62", "linea": "HÍBRIDA 2", "area": "CARDIOMETABÓLICA", "producto": "XEROGRAX"}, {"id": "p63", "linea": "HÍBRIDA 2", "area": "GASTROINTESTINAL", "producto": "BUMETIN"}, {"id": "p64", "linea": "HÍBRIDA 2", "area": "GASTROINTESTINAL", "producto": "LANZAMIENTO GI"}, {"id": "p65", "linea": "HÍBRIDA 2", "area": "GASTROINTESTINAL", "producto": "LEPRIT"}, {"id": "p66", "linea": "HÍBRIDA 2", "area": "MÚSCULO ESQUELÉTICA", "producto": "TIOCOL"}, {"id": "p67", "linea": "HÍBRIDA 2", "area": "MÚSCULO ESQUELÉTICA", "producto": "TIOCOLFEN"}, {"id": "p68", "linea": "HÍBRIDA 3", "area": "ALERGO RESPIRATORIA", "producto": "DESLER M"}, {"id": "p69", "linea": "HÍBRIDA 3", "area": "ALERGO RESPIRATORIA", "producto": "MOMEQ CREMA"}, {"id": "p70", "linea": "HÍBRIDA 3", "area": "ALERGO RESPIRATORIA", "producto": "MOMEQ NASAL"}, {"id": "p71", "linea": "HÍBRIDA 3", "area": "ALERGO RESPIRATORIA", "producto": "PULMOLIX"}, {"id": "p72", "linea": "HÍBRIDA 3", "area": "ANTIINFECCIOSA", "producto": "RIXIGAL"}, {"id": "p73", "linea": "HÍBRIDA 3", "area": "ANTIINFECCIOSA", "producto": "SULAMP"}, {"id": "p74", "linea": "HÍBRIDA 3", "area": "CARDIOMETABÓLICA", "producto": "AMSARTIQUE"}, {"id": "p75", "linea": "HÍBRIDA 3", "area": "CARDIOMETABÓLICA", "producto": "CIRGREL"}, {"id": "p76", "linea": "HÍBRIDA 3", "area": "CARDIOMETABÓLICA", "producto": "IVAZYD"}, {"id": "p77", "linea": "HÍBRIDA 3", "area": "CARDIOMETABÓLICA", "producto": "LANZAMIENTO CARDIO 1"}, {"id": "p78", "linea": "HÍBRIDA 3", "area": "CARDIOMETABÓLICA", "producto": "LANZAMIENTO CARDIO 2"}, {"id": "p79", "linea": "HÍBRIDA 3", "area": "CARDIOMETABÓLICA", "producto": "OLMETIQUE"}, {"id": "p80", "linea": "HÍBRIDA 3", "area": "CARDIOMETABÓLICA", "producto": "XAROX"}, {"id": "p81", "linea": "HÍBRIDA 3", "area": "CARDIOMETABÓLICA", "producto": "XEROGRAX"}, {"id": "p82", "linea": "HÍBRIDA 3", "area": "GASTROINTESTINAL", "producto": "BUMETIN"}, {"id": "p83", "linea": "HÍBRIDA 3", "area": "GASTROINTESTINAL", "producto": "ESOZ"}, {"id": "p84", "linea": "HÍBRIDA 3", "area": "GASTROINTESTINAL", "producto": "LANZAMIENTO GI"}, {"id": "p85", "linea": "HÍBRIDA 3", "area": "GASTROINTESTINAL", "producto": "LEPRIT"}, {"id": "p86", "linea": "HÍBRIDA 3", "area": "GENITOURINARIA", "producto": "TALYSTOR"}, {"id": "p87", "linea": "HÍBRIDA 3", "area": "MÚSCULO ESQUELÉTICA", "producto": "TIOCOLFEN"}, {"id": "p88", "linea": "HÍBRIDA 3", "area": "SISTEMA NERVIOSO CENTRAL", "producto": "FLUDIL"}, {"id": "p89", "linea": "HÍBRIDA 3", "area": "SISTEMA NERVIOSO CENTRAL", "producto": "JULITAM"}, {"id": "p90", "linea": "HÍBRIDA 3", "area": "SISTEMA NERVIOSO CENTRAL", "producto": "LAMIDUS"}, {"id": "p91", "linea": "HÍBRIDA 3", "area": "SISTEMA NERVIOSO CENTRAL", "producto": "OLANZATIQUE"}, {"id": "p92", "linea": "HÍBRIDA 3", "area": "SISTEMA NERVIOSO CENTRAL", "producto": "ZILDON"}, {"id": "p93", "linea": "HÍBRIDA 3", "area": "SISTEMA NERVIOSO CENTRAL", "producto": "ZOCLONAX"}], "fichero": [{"esp": "Alergologia", "cuota": {"LÍNEA 1": 3, "LÍNEA 2": 0, "LÍNEA 3": 0, "HÍBRIDA 1": 2, "HÍBRIDA 2": 0, "HÍBRIDA 3": 1}, "nacional": 40, "universo": 50, "alcance": 0.8, "ficheroAgo": 36, "crec": 0.1111111111111111}, {"esp": "Cirugía Cardio", "cuota": {"LÍNEA 1": 0, "LÍNEA 2": 5, "LÍNEA 3": 0, "HÍBRIDA 1": 0, "HÍBRIDA 2": 5, "HÍBRIDA 3": 1}, "nacional": 77, "universo": 78, "alcance": 0.9871794871794872, "ficheroAgo": 21, "crec": 2.6666666666666665}, {"esp": "Cardiologia", "cuota": {"LÍNEA 1": 0, "LÍNEA 2": 50, "LÍNEA 3": 0, "HÍBRIDA 1": 0, "HÍBRIDA 2": 40, "HÍBRIDA 3": 30}, "nacional": 820, "universo": 1378, "alcance": 0.5950653120464441, "ficheroAgo": 555, "crec": 0.4774774774774775}, {"esp": "Cirugía", "cuota": {"LÍNEA 1": 0, "LÍNEA 2": 0, "LÍNEA 3": 0, "HÍBRIDA 1": 0, "HÍBRIDA 2": 0, "HÍBRIDA 3": 0}, "nacional": 0, "universo": 14197, "alcance": 0, "ficheroAgo": 27, "crec": -1}, {"esp": "Dermatologia", "cuota": {"LÍNEA 1": 0, "LÍNEA 2": 0, "LÍNEA 3": 0, "HÍBRIDA 1": 0, "HÍBRIDA 2": 0, "HÍBRIDA 3": 0}, "nacional": 0, "universo": 402, "alcance": 0, "ficheroAgo": 37, "crec": -1}, {"esp": "Endocrinologia", "cuota": {"LÍNEA 1": 0, "LÍNEA 2": 10, "LÍNEA 3": 0, "HÍBRIDA 1": 0, "HÍBRIDA 2": 5, "HÍBRIDA 3": 5}, "nacional": 130, "universo": 251, "alcance": 0.5179282868525896, "ficheroAgo": 100, "crec": 0.3}, {"esp": "Gastroenterología", "cuota": {"LÍNEA 1": 0, "LÍNEA 2": 0, "LÍNEA 3": 60, "HÍBRIDA 1": 0, "HÍBRIDA 2": 30, "HÍBRIDA 3": 20}, "nacional": 710, "universo": 713, "alcance": 0.9957924263674615, "ficheroAgo": 491, "crec": 0.4460285132382892}, {"esp": "Ginecologia Obstetricia", "cuota": {"LÍNEA 1": 0, "LÍNEA 2": 0, "LÍNEA 3": 0, "HÍBRIDA 1": 0, "HÍBRIDA 2": 0, "HÍBRIDA 3": 0}, "nacional": 0, "universo": 4227, "alcance": 0, "ficheroAgo": 18, "crec": -1}, {"esp": "Infectologia", "cuota": {"LÍNEA 1": 0, "LÍNEA 2": 0, "LÍNEA 3": 0, "HÍBRIDA 1": 0, "HÍBRIDA 2": 0, "HÍBRIDA 3": 0}, "nacional": 0, "universo": 69, "alcance": 0, "ficheroAgo": 8, "crec": -1}, {"esp": "Inmunologia", "cuota": {"LÍNEA 1": 0, "LÍNEA 2": 0, "LÍNEA 3": 0, "HÍBRIDA 1": 0, "HÍBRIDA 2": 0, "HÍBRIDA 3": 0}, "nacional": 0, "universo": 33, "alcance": 0, "ficheroAgo": 5, "crec": -1}, {"esp": "Medicina Familiar", "cuota": {"LÍNEA 1": 0, "LÍNEA 2": 0, "LÍNEA 3": 0, "HÍBRIDA 1": 0, "HÍBRIDA 2": 0, "HÍBRIDA 3": 0}, "nacional": 0, "universo": 751, "alcance": 0, "ficheroAgo": 46, "crec": -1}, {"esp": "Medicina General", "cuota": {"LÍNEA 1": 10, "LÍNEA 2": 20, "LÍNEA 3": 20, "HÍBRIDA 1": 20, "HÍBRIDA 2": 20, "HÍBRIDA 3": 10}, "nacional": 680, "universo": 14369, "alcance": 0.04732410049411928, "ficheroAgo": 513, "crec": 0.3255360623781676}, {"esp": "Medicina Interna", "cuota": {"LÍNEA 1": 30, "LÍNEA 2": 60, "LÍNEA 3": 60, "HÍBRIDA 1": 40, "HÍBRIDA 2": 50, "HÍBRIDA 3": 30}, "nacional": 1770, "universo": 5637, "alcance": 0.3139968068121341, "ficheroAgo": 1003, "crec": 0.7647058823529411}, {"esp": "Neumonologia", "cuota": {"LÍNEA 1": 20, "LÍNEA 2": 0, "LÍNEA 3": 0, "HÍBRIDA 1": 20, "HÍBRIDA 2": 0, "HÍBRIDA 3": 5}, "nacional": 315, "universo": 462, "alcance": 0.6818181818181818, "ficheroAgo": 235, "crec": 0.3404255319148936}, {"esp": "Neurocirugia", "cuota": {"LÍNEA 1": 6, "LÍNEA 2": 0, "LÍNEA 3": 0, "HÍBRIDA 1": 4, "HÍBRIDA 2": 0, "HÍBRIDA 3": 3}, "nacional": 87, "universo": 350, "alcance": 0.24857142857142858, "ficheroAgo": 38, "crec": 1.2894736842105263}, {"esp": "Neurologia", "cuota": {"LÍNEA 1": 6, "LÍNEA 2": 0, "LÍNEA 3": 0, "HÍBRIDA 1": 5, "HÍBRIDA 2": 0, "HÍBRIDA 3": 5}, "nacional": 110, "universo": 423, "alcance": 0.26004728132387706, "ficheroAgo": 108, "crec": 0.018518518518518517}, {"esp": "Oftalmologia", "cuota": {"LÍNEA 1": 0, "LÍNEA 2": 0, "LÍNEA 3": 0, "HÍBRIDA 1": 0, "HÍBRIDA 2": 0, "HÍBRIDA 3": 0}, "nacional": 0, "universo": 842, "alcance": 0, "ficheroAgo": 63, "crec": -1}, {"esp": "Otorrinolaringologia", "cuota": {"LÍNEA 1": 30, "LÍNEA 2": 0, "LÍNEA 3": 0, "HÍBRIDA 1": 20, "HÍBRIDA 2": 0, "HÍBRIDA 3": 10}, "nacional": 400, "universo": 613, "alcance": 0.6525285481239804, "ficheroAgo": 289, "crec": 0.38408304498269896}, {"esp": "Pediatria", "cuota": {"LÍNEA 1": 40, "LÍNEA 2": 0, "LÍNEA 3": 0, "HÍBRIDA 1": 34, "HÍBRIDA 2": 0, "HÍBRIDA 3": 20}, "nacional": 646, "universo": 3689, "alcance": 0.17511520737327188, "ficheroAgo": 788, "crec": -0.1802030456852792}, {"esp": "Psiquiatria", "cuota": {"LÍNEA 1": 15, "LÍNEA 2": 0, "LÍNEA 3": 0, "HÍBRIDA 1": 5, "HÍBRIDA 2": 0, "HÍBRIDA 3": 5}, "nacional": 155, "universo": 1202, "alcance": 0.12895174708818635, "ficheroAgo": 127, "crec": 0.2204724409448819}, {"esp": "Traumatologia", "cuota": {"LÍNEA 1": 0, "LÍNEA 2": 0, "LÍNEA 3": 10, "HÍBRIDA 1": 0, "HÍBRIDA 2": 10, "HÍBRIDA 3": 10}, "nacional": 210, "universo": 1954, "alcance": 0.10747185261003071, "ficheroAgo": 214, "crec": -0.018691588785046728}, {"esp": "Urologia", "cuota": {"LÍNEA 1": 0, "LÍNEA 2": 0, "LÍNEA 3": 10, "HÍBRIDA 1": 10, "HÍBRIDA 2": 0, "HÍBRIDA 3": 5}, "nacional": 175, "universo": 630, "alcance": 0.2777777777777778, "ficheroAgo": 185, "crec": -0.05405405405405406}], "contactos": {"LÍNEA 1": 160, "LÍNEA 2": 145, "LÍNEA 3": 160, "HÍBRIDA 1": 160, "HÍBRIDA 2": 160, "HÍBRIDA 3": 160}, "lineas": ["LÍNEA 1", "LÍNEA 2", "LÍNEA 3", "HÍBRIDA 1", "HÍBRIDA 2", "HÍBRIDA 3"]};
+const LS_KEY = 'fdv-terapias-marca-oct2026-v1';
+const LINES = SEED.lineas;
+const HEAD_TARGET = {'LÍNEA 1':5,'LÍNEA 2':5,'LÍNEA 3':5,'HÍBRIDA 1':9,'HÍBRIDA 2':9,'HÍBRIDA 3':7};
+const AREAS = ['ALERGO RESPIRATORIA','ANTIINFECCIOSA','CARDIOMETABÓLICA','GASTROINTESTINAL','GENITOURINARIA','MÚSCULO ESQUELÉTICA','SISTEMA NERVIOSO CENTRAL'];
+const AREA_VAR = a => { const i = AREAS.indexOf(a); return i < 0 ? 'var(--muted)' : `var(--a${i+1})`; };
+const clone = o => JSON.parse(JSON.stringify(o));
+
+function fresh(){
+  return { version:1, visitadores:clone(SEED.visitadores||[]), evaluaciones:clone(SEED.evaluaciones||[]),
+    portafolio:clone(SEED.portafolio||[]), fichero:clone(SEED.fichero), contactos:clone(SEED.contactos),
+    medicos:[], config:{min:15, ausCero:false} };
+}
+let S = null;
+try { S = JSON.parse(localStorage.getItem(LS_KEY)); } catch(e) { S = null; }
+if (!S || !Array.isArray(S.visitadores)) S = fresh();
+S.medicos = S.medicos || []; S.config = Object.assign({min:15, ausCero:false}, S.config || {});
+function save(){ if (DBS.mode === 'db') return; try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch(e) {} }
+
+/* ---------- data layer: shared db when published, browser storage when opened as a local file ---------- */
+const COLS = ['visitadores','evaluaciones','portafolio','medicos'];
+const DBS = { db:null, mode: SEED.visitadores ? 'local' : 'connecting', canWrite:true, loaded:new Set() };
+const plain = o => JSON.parse(JSON.stringify(o));
+function dbErr(e){
+  const c = e && e.code;
+  toast(c === 'invalid_argument' ? 'No tienes permiso para modificar los datos compartidos. Pide acceso de Colaborador al propietario.'
+    : c === 'quota_exceeded' ? 'La base de datos alcanzó su límite de capacidad. Elimina registros antiguos e inténtalo de nuevo.'
+    : 'No se pudo guardar el cambio. Revisa tu conexión e inténtalo de nuevo.');
+}
+async function put(col, rec){
+  if (DBS.mode === 'db') { const body = plain(rec); delete body.id; try { await DBS.db.collection(col).doc(rec.id).set(body); return true; } catch(e) { dbErr(e); return false; } }
+  if (DBS.mode !== 'local') { toast('Sin conexión a la base compartida: el cambio no se guardó.'); return false; }
+  const arr = S[col], i = arr.findIndex(x => x.id === rec.id); if (i >= 0) arr[i] = rec; else arr.push(rec); save(); schedule(); return true;
+}
+async function del(col, id){
+  if (DBS.mode === 'db') { try { await DBS.db.collection(col).doc(id).delete(); return true; } catch(e) { dbErr(e); return false; } }
+  if (DBS.mode !== 'local') { toast('Sin conexión a la base compartida: el cambio no se guardó.'); return false; }
+  S[col] = S[col].filter(x => x.id !== id); save(); schedule(); return true;
+}
+async function runOps(ops){
+  let ok = 0;
+  for (let i = 0; i < ops.length; i += 8) { const r = await Promise.all(ops.slice(i, i+8).map(o => o.del ? del(o.col, o.del) : put(o.col, o.rec))); ok += r.filter(Boolean).length; if (r.includes(false)) break; }
+  return ok;
+}
+async function putConfig(){
+  if (DBS.mode === 'db') { try { await DBS.db.doc('config/main').set(plain(S.config)); } catch(e) { dbErr(e); } }
+  else save();
+  schedule();
+}
+let rq = 0;
+function schedule(){ if (rq) return; rq = requestAnimationFrame(() => { rq = 0; render(); }); }
+async function connect(){
+  let db = null;
+  try { db = window.claude && typeof window.claude.use === 'function' ? await window.claude.use('db') : null; } catch(e) { db = null; }
+  if (!db) { if (DBS.mode === 'connecting') DBS.mode = 'offline'; schedule(); return; }
+  DBS.db = db; DBS.mode = 'db';
+  COLS.forEach(c => { S[c] = []; }); S.config = {min:15, ausCero:false};
+  try { const user = await window.claude.use('user'); if (user && typeof user.can === 'function') { const w = await user.can('data.write'); if (w === false) DBS.canWrite = false; } } catch(e) {}
+  COLS.forEach(c => db.collection(c).onSnapshot(snap => {
+    S[c] = snap.docs.map(d => Object.assign({}, d.data(), {id:d.id})); DBS.loaded.add(c); schedule();
+  }, () => { DBS.mode = 'offline'; toast('Se perdió la conexión con la base compartida. Recarga la página.'); schedule(); }));
+  db.doc('config/main').onSnapshot(s => { if (s.exists) S.config = Object.assign({min:15, ausCero:false}, s.data()); schedule(); }, () => {});
+  schedule();
+}
+
+const UI = { tab:'resumen', q:'', linea:'', vis:'', sort:{}, open:new Set(), showInactive:false, portView:'cards', rankDir:'asc', kahoot:null, ficheroLinea:'' };
+try { const t = localStorage.getItem(LS_KEY+'-tab'); if (t) UI.tab = t; } catch(e) {}
+
+/* ---------- helpers ---------- */
+const $ = (s, el=document) => el.querySelector(s);
+const $$ = (s, el=document) => [...el.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const nrm = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+const fmt = (n, d=1) => (n == null || isNaN(n)) ? '—' : Number(n).toLocaleString('es-VE', {minimumFractionDigits:d, maximumFractionDigits:d});
+const pct = n => (n == null || isNaN(n)) ? '—' : fmt(n*100, 0) + '%';
+const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+const fullName = v => v ? ((v.nombre || v.apellidos) ? `${v.nombre} ${v.apellidos}`.trim() : '(Vacante)') : '(eliminado)';
+const fdate = d => d ? d.split('-').reverse().join('/') : '';
+const titleCase = s => String(s||'').toLowerCase().replace(/(^|\s)\S/g, m => m.toUpperCase());
+const shortLine = l => l.replace('LÍNEA','L').replace('HÍBRIDA','H');
+const VM = () => Object.fromEntries(S.visitadores.map(v => [v.id, v]));
+const matchesQ = (...vals) => !UI.q || vals.some(v => nrm(v).includes(UI.q));
+const today = () => new Date().toISOString().slice(0,10);
+
+function toast(msg){ const t = document.createElement('div'); t.className='toast'; t.textContent = msg; $('#toasts').appendChild(t); setTimeout(()=>t.remove(), 3200); }
+
+/* ---------- metrics ---------- */
+function scopeVis(){
+  return S.visitadores.filter(v => (UI.showInactive || v.estado !== 'Inactivo') && (!UI.linea || v.linea === UI.linea) && (!UI.vis || v.id === UI.vis));
+}
+function scopeEvals(){ const ids = new Set(scopeVis().map(v => v.id)); return S.evaluaciones.filter(e => ids.has(e.vid)); }
+const counts = e => e.nota != null && !isNaN(e.nota) && (e.estado !== 'No presentó' || S.config.ausCero);
+const passes = e => e.nota >= S.config.min;
+function stats(evs){
+  const c = evs.filter(counts); const n = c.length;
+  if (!n) return {n:0, total:evs.length, avg:null, rate:null, min:null, max:null, pass:0};
+  const sum = c.reduce((a,e)=>a+e.nota,0), pass = c.filter(passes).length;
+  return {n, total:evs.length, avg:sum/n, rate:pass/n, pass, min:Math.min(...c.map(e=>e.nota)), max:Math.max(...c.map(e=>e.nota))};
+}
+function groupBy(arr, f){ const m = new Map(); arr.forEach(x => { const k = f(x); if (!m.has(k)) m.set(k, []); m.get(k).push(x); }); return m; }
+function examStats(evs){ return [...groupBy(evs, e => e.examen)].map(([examen, list]) => Object.assign({examen, fechas:[...new Set(list.map(e=>e.fecha).filter(Boolean))]}, stats(list))); }
+function visStats(evs){ const vm = VM(); return [...groupBy(evs, e => e.vid)].filter(([id]) => vm[id]).map(([vid, list]) => Object.assign({vid, v:vm[vid], list}, stats(list))); }
+function riskList(evs){
+  const out = [];
+  visStats(evs).forEach(s => {
+    const reasons = []; let level = 'alerta';
+    if (s.avg != null && s.avg < S.config.min) { reasons.push(`Promedio ${fmt(s.avg)}/20 por debajo del mínimo (${fmt(S.config.min)})`); level = 'crítico'; }
+    s.list.forEach(e => {
+      if (e.estado === 'No presentó') reasons.push(`No presentó: ${e.examen}`);
+      else if (e.nota != null && e.nota < S.config.min) { reasons.push(`${e.examen}: ${fmt(e.nota)}/20`); if (e.nota < 10) level = 'crítico'; }
+    });
+    if (reasons.length) out.push({...s, reasons, level});
+  });
+  return out.sort((a,b) => (a.level === b.level ? (a.avg ?? 99) - (b.avg ?? 99) : a.level === 'crítico' ? -1 : 1));
+}
+function statusBadge(e){
+  if (e.estado === 'No presentó') return '<span class="status warn">⦸ No presentó</span>';
+  if (e.nota == null) return '<span class="status neutral">Sin nota</span>';
+  return passes(e) ? '<span class="status good">✓ Aprobado</span>' : '<span class="status bad">✕ Reprobado</span>';
+}
+function avgBadge(avg){
+  if (avg == null) return '<span class="muted">—</span>';
+  return `<span class="${avg >= S.config.min ? 't-good' : 't-bad'} num" style="font-weight:700">${avg >= S.config.min ? '' : '▼ '}${fmt(avg)}</span>`;
+}
+
+/* ---------- sortable table ---------- */
+function table(key, cols, rows, opts={}){
+  const st = UI.sort[key] || opts.defaultSort || {k:cols[0].k, dir:1};
+  const col = cols.find(c => c.k === st.k) || cols[0];
+  const sv = col.sv || (r => r[col.k]);
+  const sorted = [...rows].sort((a,b) => {
+    let x = sv(a), y = sv(b);
+    if (x == null || x === '') return 1; if (y == null || y === '') return -1;
+    return (typeof x === 'number' && typeof y === 'number' ? x - y : String(x).localeCompare(String(y), 'es', {numeric:true})) * st.dir;
+  });
+  const head = cols.map(c => c.nosort ? `<th class="${c.r?'r':''}">${c.label}</th>` :
+    `<th class="sortable ${c.r?'r':''} ${st.k===c.k?'sorted':''}" data-sort="${key}" data-k="${c.k}" aria-sort="${st.k===c.k?(st.dir>0?'ascending':'descending'):'none'}">${c.label}<span class="arr">${st.k===c.k?(st.dir>0?'▲':'▼'):'⇅'}</span></th>`).join('');
+  const body = sorted.length ? sorted.map(r => {
+    const tr = `<tr ${opts.rowAttr ? opts.rowAttr(r) : ''}>${cols.map(c => `<td class="${c.r?'r num':''}">${c.f ? c.f(r) : esc(r[c.k])}</td>`).join('')}</tr>`;
+    return tr + (opts.after ? opts.after(r) : '');
+  }).join('') : `<tr><td colspan="${cols.length}" class="empty">${opts.empty || 'Sin resultados para los filtros actuales.'}</td></tr>`;
+  return `<div class="tbl-wrap"><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
+}
+
+/* ---------- bars ---------- */
+function bars(items, opts={}){
+  const min = S.config.min;
+  if (!items.length) return '<div class="empty">Sin datos para mostrar.</div>';
+  return `<div class="bars">${items.map(it => {
+    const w = Math.max(0, Math.min(100, (it.value ?? 0) / 20 * 100));
+    const bad = it.value != null && it.value < min;
+    return `<div class="bar-row" data-tip="${esc(it.tip)}"><div class="lab">${it.label}</div>
+      <div class="track"><div class="fill ${bad?'bad':''}" style="width:${w}%"></div><div class="minline" style="left:calc(${min/20*100}% - 1px)"></div></div>
+      <div class="v num ${bad?'t-bad':''}">${bad?'▼ ':''}${fmt(it.value)}</div></div>`;
+  }).join('')}</div>
+  <div class="bar-legend"><span><i class="sw" style="background:var(--bar)"></i>Promedio ≥ mínimo</span><span><i class="sw" style="background:var(--bad)"></i>▼ Bajo el mínimo</span><span><i class="sw line"></i>Mínimo aprobatorio (${fmt(min)}/20)</span></div>`;
+}
+
+/* ---------- views ---------- */
+const views = {};
+
+views.resumen = () => {
+  const evs = scopeEvals(), all = stats(evs), ex = examStats(evs), risk = riskList(evs);
+  const vis = scopeVis().filter(v => v.estado !== 'Vacante');
+  const vs = visStats(evs);
+  const evaluated = new Set(evs.map(e => e.vid));
+  const pending = vis.filter(v => !evaluated.has(v.id) && v.estado === 'Activo');
+  const withAvg = ex.filter(e => e.avg != null);
+  const hard = withAvg.length ? withAvg.reduce((a,b) => (b.avg < a.avg || (b.avg === a.avg && b.rate < a.rate)) ? b : a) : null;
+  const easy = withAvg.length ? withAvg.reduce((a,b) => (b.avg > a.avg || (b.avg === a.avg && b.rate > a.rate)) ? b : a) : null;
+  const noShow = evs.filter(e => e.estado === 'No presentó').length;
+
+  let h = '';
+  if (risk.length) {
+    h += `<section class="risk" aria-label="Visitadores en riesgo académico">
+      <div class="risk-h"><span style="font-size:22px" aria-hidden="true">⚠</span><div><h2>${risk.length} visitador${risk.length>1?'es':''} en riesgo académico</h2>
+      <p>Promedio o alguna evaluación por debajo de ${fmt(S.config.min)}/20, o evaluación no presentada. Crítico = promedio bajo el mínimo o alguna nota &lt; 10.</p></div></div>
+      <div class="risk-list">${risk.map(r => `<div class="risk-item">
+        <div class="nm"><span>${esc(fullName(r.v))}<br><small class="muted">${esc(r.v.linea)} · ${esc(r.v.zona)}</small></span>
+        <span class="status ${r.level==='crítico'?'bad':'warn'}">${r.level==='crítico'?'✕ Crítico':'! Alerta'}</span></div>
+        <ul>${r.reasons.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+        <div class="kv"><span>Promedio <b class="num">${fmt(r.avg)}</b></span><span>Evaluaciones <b>${r.total}</b></span></div></div>`).join('')}</div></section>`;
+  } else if (evs.length) {
+    h += `<div class="risk-ok"><span class="status good">✓</span> Ningún visitador en riesgo académico con el mínimo actual (${fmt(S.config.min)}/20).</div>`;
+  }
+
+  h += `<div class="grid g-kpi">
+    <div class="card kpi"><div class="lbl">Promedio general</div><div class="val num ${all.avg!=null&&all.avg<S.config.min?'t-bad':''}">${fmt(all.avg, 2)} <small>/20</small></div><div class="foot">${all.n} notas contabilizadas${noShow&&!S.config.ausCero?` · ${noShow} ausencias excluidas`:''}</div></div>
+    <div class="card kpi"><div class="lbl">Tasa de aprobación</div><div class="val num ${all.rate!=null&&all.rate<.8?'t-warn':'t-good'}">${pct(all.rate)}</div><div class="foot">${all.pass} de ${all.n} evaluaciones ≥ ${fmt(S.config.min)}</div></div>
+    <div class="card kpi"><div class="lbl">Visitadores evaluados</div><div class="val num">${vs.length} <small>/ ${vis.length}</small></div><div class="foot">${pending.length} activos sin evaluación</div></div>
+    <div class="card kpi"><div class="lbl">En riesgo académico</div><div class="val num ${risk.length?'t-bad':'t-good'}">${risk.length}</div><div class="foot">${risk.filter(r=>r.level==='crítico').length} críticos · ${risk.filter(r=>r.level!=='crítico').length} en alerta</div></div>
+    <div class="card kpi"><div class="lbl">▲ Mayor dificultad</div><div class="val txt">${hard?esc(hard.examen):'—'}</div><div class="foot">${hard?`Promedio ${fmt(hard.avg)} · Aprobación ${pct(hard.rate)} · n=${hard.n}`:''}</div></div>
+    <div class="card kpi"><div class="lbl">▽ Menor dificultad</div><div class="val txt">${easy?esc(easy.examen):'—'}</div><div class="foot">${easy?`Promedio ${fmt(easy.avg)} · Aprobación ${pct(easy.rate)} · n=${easy.n}`:''}</div></div>
+  </div>`;
+
+  const exRows = ex.map(e => Object.assign({}, e, {dif: e === hard ? 'Mayor' : e === easy ? 'Menor' : ''}));
+  h += `<div class="grid g-2" style="margin-top:16px">
+    <div class="card"><div class="card-h"><div><h2>Promedio por examen / capacitación</h2><p class="sub">Escala 0–20 · la línea vertical marca el mínimo aprobatorio</p></div></div>
+      <div class="card-b">${bars([...ex].sort((a,b)=>(a.avg??99)-(b.avg??99)).map(e => ({label:esc(e.examen), value:e.avg, tip:`${e.examen}: promedio ${fmt(e.avg,2)} · aprobación ${pct(e.rate)} · n=${e.n}`})))}</div>
+      ${table('exams', [
+        {k:'examen', label:'Examen', f:r => `${esc(r.examen)} ${r.dif==='Mayor'?'<span class="status bad">▲ Mayor dificultad</span>':r.dif==='Menor'?'<span class="status good">▽ Menor dificultad</span>':''}`},
+        {k:'n', label:'N', r:1},
+        {k:'avg', label:'Promedio', r:1, f:r => avgBadge(r.avg)},
+        {k:'rate', label:'Aprobación', r:1, f:r => `<span class="${r.rate!=null&&r.rate<.8?'t-warn':''}">${pct(r.rate)}</span>`},
+        {k:'min', label:'Mín–Máx', r:1, f:r => r.n ? `${fmt(r.min)}–${fmt(r.max)}` : '—'},
+        {k:'fechas', label:'Fecha', sv:r => r.fechas[0]||'', f:r => r.fechas.length ? r.fechas.map(fdate).join(', ') : '<span class="muted">Sin fecha</span>'}
+      ], exRows, {defaultSort:{k:'avg', dir:1}})}
+    </div>
+    <div class="card"><div class="card-h"><div><h2>Promedio acumulado por visitador</h2><p class="sub">${vs.length} visitadores con evaluaciones</p></div>
+      <button class="btn sm" data-act="rank-dir">${UI.rankDir==='asc'?'Menor → mayor':'Mayor → menor'}</button></div>
+      <div class="card-b" style="max-height:620px;overflow:auto">${bars(vs.filter(s => matchesQ(fullName(s.v), s.v.linea)).sort((a,b)=>((a.avg??-1)-(b.avg??-1))*(UI.rankDir==='asc'?1:-1)).map(s => ({
+        label:`${esc(fullName(s.v))} <small>${esc(shortLine(s.v.linea))}</small>`, value:s.avg,
+        tip:`${fullName(s.v)} (${s.v.linea}) · promedio ${fmt(s.avg,2)} · ${s.n} notas · ${s.list.map(e=>e.examen+': '+(e.estado==='No presentó'?'NP':fmt(e.nota))).join(' | ')}`})))}</div></div>
+  </div>`;
+
+  const byLine = LINES.concat(['SIN ASIGNAR']).map(l => { const st = stats(evs.filter(e => (VM()[e.vid]||{}).linea === l)); return {l, ...st}; }).filter(x => x.total);
+  h += `<div class="grid g-2" style="margin-top:16px">
+    <div class="card"><div class="card-h"><div><h2>Promedio por línea</h2><p class="sub">Agregado de todas las evaluaciones de la línea</p></div></div>
+      <div class="card-b">${bars(byLine.map(x => ({label:esc(x.l), value:x.avg, tip:`${x.l}: promedio ${fmt(x.avg,2)} · aprobación ${pct(x.rate)} · ${x.n} notas`})))}</div></div>
+    <div class="card"><div class="card-h"><div><h2>Visitadores activos sin evaluaciones</h2><p class="sub">Cobertura pendiente de capacitación</p></div></div>
+      ${table('pending', [
+        {k:'nombre', label:'Visitador', sv:r=>fullName(r), f:r => esc(fullName(r))},
+        {k:'linea', label:'Línea', f:r => `<span class="pill">${esc(r.linea)}</span>`},
+        {k:'zona', label:'Zona'}
+      ], pending.filter(v => matchesQ(fullName(v), v.linea, v.zona)), {empty:'Todos los visitadores activos tienen al menos una evaluación.'})}
+    </div></div>`;
+  return h;
+};
+
+views.fdv = () => {
+  const vm = VM();
+  const evAll = S.evaluaciones;
+  const list = S.visitadores.filter(v => (UI.showInactive || v.estado !== 'Inactivo') && (!UI.linea || v.linea === UI.linea) && (!UI.vis || v.id === UI.vis)
+    && matchesQ(fullName(v), v.correo, v.linea, v.zona, v.region, v.estado, ...evAll.filter(e => e.vid === v.id).map(e => e.examen)));
+  const rows = list.map(v => { const evs = evAll.filter(e => e.vid === v.id); return Object.assign({}, v, {full:fullName(v), evs, st:stats(evs)}); });
+  const lineCards = LINES.concat(['SIN ASIGNAR']).map(l => {
+    const vs = S.visitadores.filter(v => v.linea === l && v.estado !== 'Inactivo');
+    const act = vs.filter(v => v.estado === 'Activo' || v.estado === 'Fuera de estructura').length, vac = vs.filter(v => v.estado === 'Vacante').length;
+    const target = HEAD_TARGET[l];
+    return `<div class="card ${UI.linea===l?'on':''}" data-line-card="${esc(l)}" role="button" tabindex="0">
+      <div class="t">${esc(l)}</div><div class="s">${act} activos${vac?` · <span class="t-warn">${vac} vacante</span>`:''}${target?` · meta ${target}`:''}</div></div>`;
+  }).join('');
+  return `<div class="linesum">${lineCards}</div>
+  <div class="card"><div class="card-h"><div><h2>Visitadores por línea</h2><p class="sub">${rows.length} registros · clic en una fila para ver su historial de evaluaciones</p></div>
+    <div class="toolbar"><label class="chk"><input type="checkbox" data-act="show-inactive" ${UI.showInactive?'checked':''}> Mostrar inactivos</label>
+    <button class="btn primary" data-act="add-vis">＋ Nuevo visitador</button></div></div>
+    <div class="card-b" style="padding:10px 0 0">
+    ${table('fdv', [
+      {k:'nombre', label:'Nombre', f:r => `<span class="chev">▸</span>${r.nombre?esc(r.nombre):'<span class="muted">—</span>'}`},
+      {k:'apellidos', label:'Apellidos'},
+      {k:'correo', label:'Correo', f:r => r.correo ? `<span class="mono">${esc(r.correo)}</span>` : '<span class="muted">—</span>'},
+      {k:'linea', label:'Línea', f:r => `<span class="pill">${esc(r.linea)}</span>`},
+      {k:'zona', label:'Región / Zona', f:r => `${esc(r.zona)}<br><small class="muted">${esc(r.region)}</small>`},
+      {k:'estado', label:'Estado', f:r => `<span class="status ${r.estado==='Activo'?'good':r.estado==='Vacante'?'warn':'neutral'}">${esc(r.estado)}</span>`},
+      {k:'n', label:'Evals', r:1, sv:r => r.evs.length, f:r => r.evs.length},
+      {k:'avg', label:'Promedio', r:1, sv:r => r.st.avg, f:r => avgBadge(r.st.avg)},
+      {k:'act', label:'', nosort:1, f:r => `<span style="white-space:nowrap"><button class="iconbtn" data-act="edit-vis" data-id="${r.id}" title="Editar" aria-label="Editar">✎</button><button class="iconbtn" data-act="toggle-vis" data-id="${r.id}" title="${r.estado==='Inactivo'?'Reactivar':'Desactivar'}" aria-label="Desactivar">${r.estado==='Inactivo'?'↺':'⏸'}</button><button class="iconbtn del" data-act="del-vis" data-id="${r.id}" title="Eliminar" aria-label="Eliminar">🗑</button></span>`}
+    ], rows, {defaultSort:{k:'linea', dir:1},
+      rowAttr: r => `class="expandable ${UI.open.has(r.id)?'open':''} ${r.estado==='Inactivo'?'inactive':''}" data-expand="${r.id}"`,
+      after: r => UI.open.has(r.id) ? `<tr class="sub"><td colspan="9">${historyTable(r)}</td></tr>` : ''})}
+    </div></div>`;
+};
+function historyTable(v){
+  if (!v.evs.length) return '<span class="muted">Sin evaluaciones registradas.</span> <button class="btn sm" data-act="add-eval" data-vid="'+v.id+'">＋ Agregar evaluación</button>';
+  return `<table><thead><tr><th>Examen / Capacitación</th><th>Fecha</th><th class="r">Nota /20</th><th class="r">Pts Kahoot</th><th>Estado</th><th></th></tr></thead><tbody>
+    ${v.evs.map(e => `<tr><td>${esc(e.examen)}${e.obs?`<br><small class="muted">${esc(e.obs)}</small>`:''}</td><td>${e.fecha?fdate(e.fecha):'<span class="muted">Sin fecha</span>'}</td><td class="r num"><b>${e.estado==='No presentó'?'—':fmt(e.nota)}</b></td><td class="r num">${e.kahoot!=null?e.kahoot.toLocaleString('es-VE'):'—'}</td><td>${statusBadge(e)}</td>
+    <td><button class="iconbtn" data-act="edit-eval" data-id="${e.id}" aria-label="Editar">✎</button><button class="iconbtn del" data-act="del-eval" data-id="${e.id}" aria-label="Eliminar">🗑</button></td></tr>`).join('')}
+    </tbody></table><div style="margin-top:8px"><button class="btn sm" data-act="add-eval" data-vid="${v.id}">＋ Agregar evaluación</button></div>`;
+}
+
+views.evals = () => {
+  const vm = VM();
+  const rows = scopeEvals().map(e => { const v = vm[e.vid]; return Object.assign({}, e, {nombre:v.nombre, apellidos:v.apellidos, correo:v.correo, linea:v.linea}); })
+    .filter(r => matchesQ(r.nombre+' '+r.apellidos, r.correo, r.examen, r.linea, r.estado, r.fecha && fdate(r.fecha)));
+  const exams = [...new Set(rows.map(r => r.examen))];
+  return `<div class="card"><div class="card-h"><div><h2>Historial de evaluaciones</h2><p class="sub">${rows.length} registros · ${exams.length} exámenes · nota escalada a 20 puntos</p></div>
+    <div class="toolbar"><button class="btn" data-act="exp-evals">⬇ CSV</button><button class="btn primary" data-act="add-eval">＋ Nueva evaluación</button></div></div>
+    <div class="card-b" style="padding:10px 0 0">
+    ${table('evals', [
+      {k:'nombre', label:'Nombre'}, {k:'apellidos', label:'Apellidos'},
+      {k:'correo', label:'Correo', f:r => r.correo ? `<span class="mono">${esc(r.correo)}</span>` : '<span class="muted">—</span>'},
+      {k:'linea', label:'Línea', f:r => `<span class="pill">${esc(r.linea)}</span>`},
+      {k:'examen', label:'Examen / Capacitación', f:r => `${esc(r.examen)}${r.obs?`<br><small class="muted">${esc(r.obs)}</small>`:''}`},
+      {k:'fecha', label:'Fecha', f:r => r.fecha ? fdate(r.fecha) : '<span class="muted">Sin fecha</span>'},
+      {k:'nota', label:'Nota /20', r:1, sv:r => r.estado==='No presentó' ? -1 : r.nota, f:r => r.estado==='No presentó' ? '—' : `<b class="${passes(r)?'':'t-bad'}">${fmt(r.nota)}</b>`},
+      {k:'kahoot', label:'Pts Kahoot', r:1, f:r => r.kahoot!=null ? r.kahoot.toLocaleString('es-VE') : '—'},
+      {k:'estado', label:'Resultado', sv:r => r.estado==='No presentó' ? 0 : passes(r) ? 2 : 1, f:statusBadge},
+      {k:'act', label:'', nosort:1, f:r => `<span style="white-space:nowrap"><button class="iconbtn" data-act="edit-eval" data-id="${r.id}" aria-label="Editar">✎</button><button class="iconbtn del" data-act="del-eval" data-id="${r.id}" aria-label="Eliminar">🗑</button></span>`}
+    ], rows, {defaultSort:{k:'nota', dir:-1}})}</div></div>`;
+};
+
+views.port = () => {
+  const P = S.portafolio;
+  const q = UI.q;
+  const usedAreas = AREAS.filter(a => P.some(p => p.area === a)).concat([...new Set(P.map(p=>p.area))].filter(a => !AREAS.includes(a)));
+  const legend = `<div class="areas-legend">${usedAreas.map(a => `<span><i class="dot" style="background:${AREA_VAR(a)}"></i>${esc(titleCase(a))}</span>`).join('')}</div>`;
+  const lines = UI.linea ? [UI.linea] : LINES;
+  const products = [...new Set(P.map(p => p.producto))].sort((a,b)=>a.localeCompare(b,'es'));
+  let body;
+  if (UI.portView === 'cards') {
+    body = `<div class="grid g-3">${lines.map(l => {
+      const ps = P.filter(p => p.linea === l);
+      const groups = groupBy(ps, p => p.area);
+      const areaOrder = [...groups.keys()].sort((a,b) => (AREAS.indexOf(a)+99*(AREAS.indexOf(a)<0)) - (AREAS.indexOf(b)+99*(AREAS.indexOf(b)<0)));
+      return `<div class="card pline" data-drop-line="${esc(l)}">
+        <div class="card-h"><div><h2>${esc(l)}</h2><p class="sub">${ps.length} productos · ${groups.size} áreas terapéuticas</p></div>
+        <button class="btn sm" data-act="add-prod" data-line="${esc(l)}">＋ Producto</button></div>
+        <div class="card-b">${areaOrder.map(a => `<div class="agroup"><h4><i class="dot" style="background:${AREA_VAR(a)}"></i>${esc(titleCase(a))} <span class="muted">(${groups.get(a).length})</span></h4>
+          <div class="chips">${groups.get(a).map(p => `<span class="chip ${q && nrm(p.producto+' '+p.area).includes(q) ? 'hl':''}" draggable="true" data-pid="${p.id}" title="Arrastra a otra línea para moverlo">${esc(p.producto)}
+            <button class="mv" data-act="move-prod" data-id="${p.id}" title="Mover / copiar a otra línea" aria-label="Mover">⇄</button><button class="x" data-act="del-prod" data-id="${p.id}" title="Quitar de ${esc(l)}" aria-label="Eliminar">×</button></span>`).join('')}</div></div>`).join('') || '<div class="empty">Sin productos. Arrastra aquí.</div>'}</div></div>`;
+    }).join('')}</div>`;
+  } else {
+    const filtered = products.filter(pr => !q || nrm(pr + ' ' + (P.find(p=>p.producto===pr)||{}).area).includes(q));
+    body = `<div class="card"><div class="tbl-wrap"><table class="matrix"><thead><tr><th>Producto</th><th>Área terapéutica</th>${lines.map(l => `<th class="c">${esc(shortLine(l))}</th>`).join('')}<th class="c">Líneas</th></tr></thead><tbody>
+      ${filtered.map(pr => { const area = (P.find(p => p.producto === pr)||{}).area; const n = lines.filter(l => P.some(p => p.producto===pr && p.linea===l)).length;
+        return `<tr><td><b>${esc(pr)}</b></td><td><i class="dot" style="background:${AREA_VAR(area)}"></i> ${esc(titleCase(area))}</td>${lines.map(l => { const on = P.some(p => p.producto===pr && p.linea===l);
+          return `<td class="c"><span class="tick ${on?'':'off'}" role="checkbox" aria-checked="${on}" tabindex="0" data-act="toggle-cell" data-prod="${esc(pr)}" data-line="${esc(l)}" data-area="${esc(area)}" title="${on?'Quitar de':'Agregar a'} ${esc(l)}">✓</span></td>`; }).join('')}<td class="c num">${n}</td></tr>`; }).join('')}
+      <tr><th>Total</th><th></th>${lines.map(l => `<th class="c num">${P.filter(p=>p.linea===l).length}</th>`).join('')}<th></th></tr>
+      </tbody></table></div></div>`;
+  }
+  return `<div class="section-title" style="margin-top:0"><div><h2>Portafolio de productos por línea · Octubre 2026</h2>
+    <p class="muted" style="margin:2px 0 0;font-size:12.5px">${P.length} asignaciones · ${products.length} productos únicos. Arrastra un producto a otra línea para moverlo (mantén <b>Ctrl/⌥</b> al soltar para copiarlo).</p></div>
+    <div class="toolbar"><button class="btn ${UI.portView==='cards'?'primary':''}" data-act="port-view" data-v="cards">Por línea</button><button class="btn ${UI.portView==='matrix'?'primary':''}" data-act="port-view" data-v="matrix">Matriz producto × línea</button><button class="btn" data-act="add-prod">＋ Nuevo producto</button></div></div>
+    <div style="margin-bottom:12px">${legend}</div>${body}`;
+};
+
+views.fichero = () => {
+  const vm = VM();
+  const F = S.fichero, C = S.contactos;
+  const selVis = UI.vis ? vm[UI.vis] : null;
+  const line = selVis ? selVis.linea : (UI.linea || UI.ficheroLinea || '');
+  const lineOk = LINES.includes(line);
+  const nac = F.reduce((a,f) => a + (f.nacional||0), 0);
+  let h = '';
+  // national matrix
+  h += `<div class="card"><div class="card-h"><div><h2>Nuevo fichero médico · cuota de contactos por visitador</h2><p class="sub">Unidad de Negocios Terapias de Marca · efectivo desde Octubre 2026 · clic en una línea para ver su detalle</p></div></div>
+    <div class="card-b" style="padding:10px 0 0"><div class="tbl-wrap"><table><thead><tr><th>Especialidad</th>${LINES.map(l => `<th class="r"><button class="btn sm ${line===l?'primary':'ghost'}" data-act="fich-line" data-line="${esc(l)}">${esc(shortLine(l))}</button></th>`).join('')}<th class="r">Nacional</th><th class="r">%</th><th class="r">Universo Close-Up</th><th class="r">Alcance</th><th class="r">Fichero Ago-26</th><th class="r">Crecimiento</th></tr></thead><tbody>
+    <tr><th>Visitadores (meta)</th>${LINES.map(l => `<th class="r num">${HEAD_TARGET[l]}</th>`).join('')}<th class="r num">40</th><th colspan="5"></th></tr>
+    ${F.filter(f => matchesQ(f.esp)).map(f => { const alt = /familiar/i.test(f.esp), retired = f.nacional === 0 && !alt; return `<tr class="${retired?'retired':''}"><td>${esc(f.esp)} ${retired?'<span class="status warn" title="Se retira del fichero según nueva estructura">Retirar</span>':alt?'<span class="status neutral" title="Alternativa en zonas con pocos médicos generales o internistas">Alternativa</span>':''}</td>
+      ${LINES.map(l => `<td class="r num" ${line===l?'style="background:var(--brand-soft);font-weight:700"':''}>${f.cuota[l]||'<span class="muted">·</span>'}</td>`).join('')}
+      <td class="r num"><b>${f.nacional.toLocaleString('es-VE')}</b></td><td class="r num">${pct(nac ? f.nacional/nac : 0)}</td><td class="r num">${(f.universo||0).toLocaleString('es-VE')}</td><td class="r num">${pct(f.alcance)}</td><td class="r num">${(f.ficheroAgo||0).toLocaleString('es-VE')}</td>
+      <td class="r num ${f.crec<0?'t-bad':'t-good'}">${f.crec<0?'▼':'▲'} ${pct(Math.abs(f.crec))}</td></tr>`; }).join('')}
+    <tr><th>Contactos por visitador</th>${LINES.map(l => `<th class="r num">${C[l]}</th>`).join('')}<th class="r num">${F.reduce((a,f)=>a+f.nacional,0).toLocaleString('es-VE')}</th><th colspan="5"></th></tr>
+    </tbody></table></div></div>
+    <div class="card-b"><div class="note"><b>Lineamientos (estructura Octubre 2026):</b><ul>
+      <li>Retirar del fichero Cirugía, Dermatología, Ginecología, Infectología e Inmunología, así como oftalmólogos y odontólogos que aún permanezcan.</li>
+      <li>Medicina Familiar es alternativa en zonas con pocos médicos generales o internistas.</li>
+      <li>Ajustar ficheros dando prioridad a Gastroenterólogos y Médicos Internistas. Entrenar en SNC a Líneas 1 e Híbrida 1.</li></ul></div></div></div>`;
+  if (lineOk) {
+    const reps = S.visitadores.filter(v => v.linea === line && v.estado !== 'Inactivo');
+    const target = selVis ? [selVis] : reps.filter(v => v.estado !== 'Vacante');
+    const meds = S.medicos.filter(m => target.some(v => v.id === m.vid));
+    const esp = F.filter(f => f.cuota[line] > 0);
+    const regBy = e => meds.filter(m => m.esp === e).length;
+    const mult = target.length || 1;
+    h += `<div class="grid g-2" style="margin-top:16px">
+      <div class="card"><div class="card-h"><div><h2>${selVis ? 'Fichero de ' + esc(fullName(selVis)) : 'Fichero ' + esc(line)}</h2><p class="sub">${selVis ? esc(line) + ' · ' + esc(selVis.zona) : `${target.length} visitadores × ${C[line]} contactos = ${(C[line]*target.length).toLocaleString('es-VE')}`} · Registrados vs. cuota</p></div></div>
+      <div class="card-b" style="padding:10px 0 0">${table('fichq', [
+        {k:'esp', label:'Especialidad'},
+        {k:'cuota', label:'Cuota', r:1, sv:r=>r.q, f:r => r.q},
+        {k:'reg', label:'Registrados', r:1, sv:r=>r.reg, f:r => r.reg},
+        {k:'av', label:'Avance', nosort:1, f:r => { const p = r.q ? Math.min(1, r.reg/r.q) : 0; return `<div class="quota-cell" data-tip="${esc(r.esp)}: ${r.reg} de ${r.q}"><div class="track"><div class="fill" style="width:${p*100}%"></div></div><span class="num">${pct(r.reg/r.q)}</span></div>`; }}
+      ], esp.map(f => ({esp:f.esp, q:f.cuota[line]*mult, reg:regBy(f.esp)})), {defaultSort:{k:'cuota', dir:-1}})}
+      <div class="card-b"><div class="kv"><span>Total cuota <b class="num">${(C[line]*mult).toLocaleString('es-VE')}</b></span><span>Registrados <b class="num">${meds.length}</b></span><span>Especialidades <b>${esp.length}</b></span></div></div></div></div>
+      <div class="card"><div class="card-h"><div><h2>Panel de clientes (médicos)</h2><p class="sub">${meds.length} médicos registrados · ${selVis ? 'visitador seleccionado' : 'todos los visitadores de la línea'}</p></div>
+        <button class="btn primary" data-act="add-med" data-line="${esc(line)}">＋ Agregar médico</button></div>
+        <div class="card-b" style="padding:10px 0 0">${table('meds', [
+          {k:'nombre', label:'Médico'}, {k:'esp', label:'Especialidad'},
+          {k:'centro', label:'Centro / Ciudad'},
+          {k:'vis', label:'Visitador', sv:r => fullName(vm[r.vid]), f:r => esc(fullName(vm[r.vid]))},
+          {k:'act', label:'', nosort:1, f:r => `<span style="white-space:nowrap"><button class="iconbtn" data-act="edit-med" data-id="${r.id}" aria-label="Editar">✎</button><button class="iconbtn del" data-act="del-med" data-id="${r.id}" aria-label="Eliminar">🗑</button></span>`}
+        ], meds.filter(m => matchesQ(m.nombre, m.esp, m.centro, fullName(vm[m.vid]))), {empty:'Aún no hay médicos registrados. Usa “Agregar médico” para construir el panel de clientes del visitador.'})}</div></div>
+    </div>`;
+  } else {
+    h += `<div class="note" style="margin-top:16px">Selecciona una línea (botones de la tabla o filtro superior) o un visitador para ver su fichero asignado y gestionar su panel de médicos.</div>`;
+  }
+  return h;
+};
+
+views.carga = () => {
+  const k = UI.kahoot;
+  const exams = [...new Set(S.evaluaciones.map(e => e.examen))];
+  let h = `<div class="grid g-2">
+  <div class="card"><div class="card-h"><div><h2>Cargar reporte de Kahoot</h2><p class="sub">Pega desde Excel / CSV o arrastra un archivo .csv / .txt</p></div><button class="btn sm" data-act="k-sample">Ver ejemplo</button></div>
+  <div class="card-b">
+    <div class="form-row">
+      <label style="flex:2 1 220px">Examen / Capacitación<input type="text" id="kExam" list="examList" placeholder="Ej. Lanzamiento GI" value="${esc(k?.exam||'')}"></label>
+      <datalist id="examList">${exams.map(e => `<option value="${esc(e)}">`).join('')}</datalist>
+      <label style="flex:1 1 140px">Fecha<input type="date" id="kDate" value="${esc(k?.date||today())}"></label>
+    </div>
+    <div class="form-row">
+      <label style="flex:2 1 220px">Método de conversión a nota /20
+        <select id="kMode">
+          <option value="auto">Automático (según columnas detectadas)</option>
+          <option value="nota">Nota directa (x/20, %, 0–1 o 0–20)</option>
+          <option value="correct">Respuestas correctas ÷ total preguntas × 20</option>
+          <option value="pointsMax">Puntos Kahoot ÷ (N preguntas × 1000) × 20</option>
+          <option value="pointsTop">Puntos Kahoot ÷ mejor puntaje × 20</option>
+        </select></label>
+      <label style="flex:1 1 120px">N° de preguntas<input type="number" id="kN" min="1" step="1" placeholder="auto" value="${esc(k?.n||'')}"></label>
+    </div>
+    <div class="drop" id="kDrop">Arrastra aquí un archivo .csv / .tsv / .txt — o pega abajo</div>
+    <textarea class="paste" id="kText" placeholder="Jugador&#9;Correo&#9;Puntaje total&#9;Respuestas correctas&#9;Respuestas incorrectas&#10;Ana Pérez&#9;ana.perez@...&#9;15 230&#9;18&#9;2">${esc(k?.text||'')}</textarea>
+    <div class="toolbar" style="margin-top:10px"><button class="btn primary" data-act="k-parse">Procesar y previsualizar</button><button class="btn ghost" data-act="k-clear">Limpiar</button></div>
+  </div></div>
+  <div class="card"><div class="card-h"><h2>Formatos aceptados</h2></div><div class="card-b"><div class="note">
+    <ul>
+      <li><b>Reporte Kahoot (hoja “Final Scores”)</b>: columnas <span class="mono">Player / Jugador</span>, <span class="mono">Total Score / Puntaje</span>, <span class="mono">Correct Answers / Correctas</span>, <span class="mono">Incorrect Answers / Incorrectas</span>.</li>
+      <li><b>Resumen propio</b>: <span class="mono">Nombre</span>, <span class="mono">Correo</span>, <span class="mono">Nota</span> (acepta <span class="mono">18/20</span>, <span class="mono">90%</span>, <span class="mono">0,9</span> o <span class="mono">18</span>), opcional <span class="mono">Puntuación Kahoot</span>, <span class="mono">Examen</span>, <span class="mono">Fecha</span>.</li>
+      <li>Separadores: tabulador (copiar desde Excel), punto y coma o coma. Puntajes con espacios de miles (<span class="mono">19 057</span>) se interpretan correctamente.</li>
+      <li>Cada fila se asocia al visitador por correo o por coincidencia de nombre; puedes corregir la asociación antes de registrar.</li>
+      <li>Al registrar, todas las métricas, tasas y alertas de riesgo se recalculan al instante.</li>
+    </ul></div></div></div></div>`;
+  if (k && k.rows) {
+    const vm = VM();
+    const opts = v => `<option value="">— Omitir fila —</option><option value="__new" ${v==='__new'?'selected':''}>＋ Crear visitador nuevo</option>` +
+      [...S.visitadores].filter(x => x.estado !== 'Vacante').sort((a,b) => fullName(a).localeCompare(fullName(b),'es')).map(x => `<option value="${x.id}" ${x.id===v?'selected':''}>${esc(fullName(x))} · ${esc(shortLine(x.linea))}</option>`).join('');
+    const ok = k.rows.filter(r => r.vid && r.nota != null).length;
+    h += `<div class="card" style="margin-top:16px"><div class="card-h"><div><h2>Previsualización</h2><p class="sub">${k.rows.length} filas · método: <b>${esc(k.modeLabel)}</b>${k.info?` · ${esc(k.info)}`:''}</p></div>
+      <div class="toolbar"><label class="chk"><input type="checkbox" id="kReplace" checked> Reemplazar si ya existe nota del mismo examen</label><button class="btn primary" data-act="k-commit">✓ Registrar ${ok} notas</button></div></div>
+      <div class="card-b" style="padding:10px 0 0"><div class="tbl-wrap"><table><thead><tr><th>#</th><th>Jugador (reporte)</th><th>Correo</th><th>Examen</th><th class="r">Pts Kahoot</th><th class="r">Correctas</th><th class="r">Nota /20</th><th>Resultado</th><th>Asociar a visitador</th></tr></thead><tbody>
+      ${k.rows.map((r,i) => `<tr><td class="muted">${i+1}</td><td>${esc(r.name)}</td><td class="mono">${esc(r.email||'')}</td><td>${esc(r.exam||k.exam||'')}</td><td class="r num">${r.points!=null?r.points.toLocaleString('es-VE'):'—'}</td><td class="r num">${r.correct!=null?r.correct+(r.total?'/'+r.total:''):'—'}</td>
+        <td class="r num"><b class="${r.nota!=null&&r.nota<S.config.min?'t-bad':''}">${fmt(r.nota)}</b></td><td>${r.nota==null?'<span class="status neutral">Sin nota</span>':r.nota>=S.config.min?'<span class="status good">✓ Aprobado</span>':'<span class="status bad">✕ Reprobado</span>'}</td>
+        <td><select data-krow="${i}" style="max-width:260px">${opts(r.vid)}</select> ${r.matchBy?`<small class="muted">${esc(r.matchBy)}</small>`:''}</td></tr>`).join('')}
+      </tbody></table></div></div></div>`;
+  }
+  return h;
+};
+
+/* ---------- Kahoot parsing ---------- */
+function splitRow(line, d){
+  const out = []; let cur = '', q = false;
+  for (let i = 0; i < line.length; i++) { const c = line[i];
+    if (c === '"') { if (q && line[i+1] === '"') { cur += '"'; i++; } else q = !q; }
+    else if (c === d && !q) { out.push(cur.trim()); cur = ''; } else cur += c; }
+  out.push(cur.trim()); return out;
+}
+function parseNum(s){ if (s == null || s === '') return null; const t = String(s).replace(/\s| /g,'').replace(',', '.'); const n = parseFloat(t); return isNaN(n) ? null : n; }
+function parsePoints(s){ if (s == null || s === '') return null; const d = String(s).replace(/\D/g,''); return d ? parseInt(d,10) : null; }
+function parseNota(s){
+  if (s == null || String(s).trim() === '') return null; const t = String(s).trim();
+  let m = t.match(/^([\d.,]+)\s*\/\s*([\d.,]+)$/); if (m) { const a = parseNum(m[1]), b = parseNum(m[2]); return b ? a/b*20 : null; }
+  m = t.match(/^([\d.,]+)\s*%$/); if (m) return parseNum(m[1]) / 100 * 20;
+  const n = parseNum(t); if (n == null) return null;
+  if (n <= 1) return n * 20; if (n <= 20) return n; if (n <= 100) return n / 100 * 20; return null;
+}
+function matchVis(name, email){
+  const vs = S.visitadores.filter(v => v.estado !== 'Vacante');
+  if (email) { const v = vs.find(v => v.correo && nrm(v.correo) === nrm(email)); if (v) return {vid:v.id, by:'por correo'}; }
+  const toks = nrm(name).replace(/[^a-z0-9 ]/g,' ').split(' ').filter(t => t.length > 1);
+  if (!toks.length) return {vid:'', by:''};
+  let best = null, bestScore = 0, tie = false;
+  vs.forEach(v => { const vt = nrm(fullName(v)).split(' '); const sc = toks.filter(t => vt.includes(t)).length + (nrm(fullName(v)) === toks.join(' ') ? 5 : 0);
+    if (sc > bestScore) { best = v; bestScore = sc; tie = false; } else if (sc === bestScore && sc > 0) tie = true; });
+  if (best && bestScore >= 2 && !tie) return {vid:best.id, by:'por nombre'};
+  if (best && bestScore === 1 && !tie && toks.length === 1) return {vid:best.id, by:'coincidencia parcial — verificar'};
+  return {vid:'', by:tie ? 'nombre ambiguo' : 'sin coincidencia'};
+}
+function kahootParse(){
+  const text = $('#kText').value, exam = $('#kExam').value.trim(), date = $('#kDate').value, n = parseInt($('#kN').value,10) || null;
+  let mode = $('#kMode').value;
+  UI.kahoot = {text, exam, date, n, mode};
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  if (!lines.length) { toast('Pega o arrastra un reporte primero.'); return; }
+  const d = lines[0].includes('\t') ? '\t' : (lines[0].split(';').length > lines[0].split(',').length ? ';' : ',');
+  let rows = lines.map(l => splitRow(l, d));
+  const hdr = rows[0].map(nrm);
+  const find = (re, not) => hdr.findIndex(h => re.test(h) && !(not && not.test(h)));
+  const hasHeader = hdr.some(h => /player|jugador|nombre|name|participante|correo|email|score|punt|nota|correct/.test(h));
+  let ix;
+  if (hasHeader) {
+    ix = { name:find(/player|jugador|nombre|participante|nickname|^name|apellido/), email:find(/correo|e-?mail|mail/),
+      correct:find(/correct|correctas|aciertos/, /incorrect/), incorrect:find(/incorrect|incorrectas|errores|fallos/),
+      points:find(/score|puntaje|puntos|puntuacion|kahoot|points/, /nota|ponderal/), nota:find(/nota|calificacion|grade|ponderal/),
+      exam:find(/examen|tema|quiz|evaluacion|capacitacion/), date:find(/fecha|date/) };
+    rows = rows.slice(1);
+  } else {
+    ix = { name:0, email:rows[0].findIndex(c => c.includes('@')), correct:-1, incorrect:-1, points:-1, nota:-1, exam:-1, date:-1 };
+    const numCol = rows[0].findIndex((c,i) => i > 0 && parseNota(c) != null && !c.includes('@'));
+    ix.nota = numCol;
+  }
+  if (ix.name < 0) { toast('No se encontró la columna de nombre/jugador.'); return; }
+  const get = (r, k) => ix[k] >= 0 ? r[ix[k]] : null;
+  const parsed = rows.filter(r => (get(r,'name')||'').trim() && !/^(rank|total|promedio)/i.test(get(r,'name'))).map(r => {
+    const correct = parseNum(get(r,'correct')), incorrect = parseNum(get(r,'incorrect'));
+    return { name:get(r,'name').trim(), email:(get(r,'email')||'').trim(), points:parsePoints(get(r,'points')), correct, incorrect,
+      notaRaw:get(r,'nota'), exam:(get(r,'exam')||'').trim(), date:(get(r,'date')||'').trim() };
+  });
+  if (mode === 'auto') mode = ix.nota >= 0 ? 'nota' : ix.correct >= 0 ? 'correct' : ix.points >= 0 ? (n ? 'pointsMax' : 'pointsTop') : 'nota';
+  const top = Math.max(0, ...parsed.map(r => r.points || 0));
+  let info = '';
+  parsed.forEach(r => {
+    if (mode === 'nota') r.nota = parseNota(r.notaRaw);
+    else if (mode === 'correct') { r.total = n || ((r.correct ?? 0) + (r.incorrect ?? 0)) || null; r.nota = r.correct != null && r.total ? r.correct / r.total * 20 : null; }
+    else if (mode === 'pointsMax') { r.nota = n && r.points != null ? Math.min(20, r.points / (n * 1000) * 20) : null; }
+    else if (mode === 'pointsTop') { r.nota = top && r.points != null ? r.points / top * 20 : null; }
+    if (r.nota != null) r.nota = Math.round(r.nota * 100) / 100;
+    const m = matchVis(r.name, r.email); r.vid = m.vid; r.matchBy = m.by;
+    if (r.date) { const dm = r.date.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/); r.date = dm ? `${dm[3]}-${dm[2].padStart(2,'0')}-${dm[1].padStart(2,'0')}` : (/^\d{4}-\d{2}-\d{2}$/.test(r.date) ? r.date : ''); }
+  });
+  if (mode === 'pointsMax' && !n) info = 'indica el N° de preguntas';
+  if (mode === 'pointsTop') info = `mejor puntaje = ${top.toLocaleString('es-VE')} pts → 20/20`;
+  const labels = {nota:'Nota directa', correct:'Correctas ÷ total × 20', pointsMax:'Puntos ÷ (N×1000) × 20', pointsTop:'Puntos ÷ mejor puntaje × 20'};
+  UI.kahoot = Object.assign(UI.kahoot, {rows:parsed, modeLabel:labels[mode], info});
+  render();
+  setTimeout(() => { const s = $('#kMode'); if (s) s.value = UI.kahoot.mode; }, 0);
+}
+async function kahootCommit(){
+  const k = UI.kahoot; if (!k || !k.rows) return;
+  const replace = $('#kReplace')?.checked;
+  const exam = $('#kExam').value.trim() || k.exam;
+  if (!exam && k.rows.some(r => !r.exam)) { toast('Indica el nombre del examen / capacitación.'); $('#kExam').focus(); return; }
+  let added = 0, replaced = 0, created = 0; const ops = [];
+  k.rows.forEach(r => {
+    if (!r.vid || r.nota == null) return;
+    let vid = r.vid;
+    if (vid === '__new') {
+      const parts = titleCase(r.name).split(' ');
+      const v = {id:uid('v'), nombre:parts[0]||'', apellidos:parts.slice(1).join(' '), correo:r.email||'', linea:UI.linea||'SIN ASIGNAR', region:'—', zona:'—', estado:'Activo'};
+      ops.push({col:'visitadores', rec:v}); vid = v.id; created++;
+    } else { const cur = S.visitadores.find(v => v.id === vid); if (r.email && cur && !cur.correo) ops.push({col:'visitadores', rec:Object.assign({}, cur, {correo:r.email})}); }
+    const ex = r.exam || exam;
+    const rec = {id:uid('e'), vid, examen:ex, fecha:r.date || $('#kDate').value || '', nota:r.nota, kahoot:r.points, estado:'Presentó', origen:'Carga Kahoot '+today()};
+    const prev = S.evaluaciones.findIndex(e => e.vid === vid && nrm(e.examen) === nrm(ex));
+    if (prev >= 0 && replace) { rec.id = S.evaluaciones[prev].id; replaced++; } else added++;
+    ops.push({col:'evaluaciones', rec});
+  });
+  const okLabel = $('[data-act="k-commit"]'); if (okLabel) { okLabel.disabled = true; okLabel.textContent = 'Guardando…'; }
+  const ok = await runOps(ops);
+  if (ok < ops.length) { if (okLabel) { okLabel.disabled = false; okLabel.textContent = 'Reintentar registro'; } return; }
+  UI.kahoot = null;
+  toast(`Registradas ${added} notas nuevas${replaced?`, ${replaced} reemplazadas`:''}${created?`, ${created} visitadores creados`:''}. Métricas recalculadas.`);
+  UI.tab = 'resumen'; render();
+}
+const KAHOOT_SAMPLE = `Rank\tPlayer\tTotal Score (points)\tCorrect Answers\tIncorrect Answers
+1\tVanessa Alviarez\t18 420\t19\t1
+2\tJimmy Vega\t16 980\t18\t2
+3\tMariana Guzman\t15 310\t17\t3
+4\tHernan Guevara\t12 040\t14\t6
+5\tJoansy Marin\t8 230\t9\t11`;
+
+/* ---------- modal forms ---------- */
+let modalSubmit = null;
+function openForm(title, fields, values, onSubmit, okLabel='Guardar'){
+  $('#modalTitle').textContent = title; $('#modalOk').textContent = okLabel;
+  $('#modalBody').innerHTML = fields.map(f => {
+    const v = values[f.k] ?? f.def ?? '';
+    let input;
+    if (f.type === 'select') input = `<select name="${f.k}" ${f.req?'required':''}>${f.options.map(o => { const [val,lab] = Array.isArray(o) ? o : [o,o]; return `<option value="${esc(val)}" ${String(val)===String(v)?'selected':''}>${esc(lab)}</option>`; }).join('')}</select>`;
+    else if (f.type === 'info') input = `<div class="note">${f.html}</div>`;
+    else if (f.type === 'textarea') input = `<textarea name="${f.k}" id="fld_${f.k}" class="paste" ${f.attrs||''}>${esc(v)}</textarea>`;
+    else input = `<input name="${f.k}" type="${f.type||'text'}" value="${esc(v)}" ${f.req?'required':''} ${f.list?`list="${f.list}"`:''} ${f.attrs||''}>`;
+    return `<label class="${f.full?'full':''}">${esc(f.label||'')}${input}</label>`;
+  }).join('') + (fields.some(f=>f.list) ? fields.filter(f=>f.listOpts).map(f => `<datalist id="${f.list}">${f.listOpts.map(o=>`<option value="${esc(o)}">`).join('')}</datalist>`).join('') : '');
+  modalSubmit = onSubmit; $('#modalBg').classList.add('on');
+  setTimeout(() => { const i = $('#modalBody input, #modalBody select'); if (i) i.focus(); }, 30);
+}
+function askConfirm(msg, onYes, okLabel='Eliminar'){
+  openForm('Confirmar acción', [{k:'_i', type:'info', full:1, html:esc(msg)}], {}, () => { onYes(); }, okLabel);
+}
+function showExport(title, text){
+  openForm(title, [{k:'_i', type:'info', full:1, html:'Copia el contenido y pégalo en Excel (CSV separado por “;”) o guárdalo en un archivo de texto. Para restaurar un respaldo JSON usa “Importar respaldo”.'}, {k:'out', type:'textarea', full:1, attrs:'readonly style="min-height:260px"'}], {out:text}, () => {
+    const ta = $('#fld_out');
+    const fallback = () => { ta.focus(); ta.select(); try { document.execCommand('copy'); toast('Copiado al portapapeles.'); } catch(e) { toast('Selecciona el texto y cópialo con Ctrl/⌘+C.'); } };
+    try { navigator.clipboard.writeText(text).then(() => toast('Copiado al portapapeles.'), fallback); } catch(e) { fallback(); }
+    return false;
+  }, 'Copiar');
+}
+function closeModal(){ $('#modalBg').classList.remove('on'); modalSubmit = null; }
+$('#modalForm').addEventListener('submit', ev => {
+  ev.preventDefault();
+  const data = Object.fromEntries(new FormData(ev.target).entries());
+  const missing = $$('#modalBody [required]').find(i => !String(i.value).trim());
+  if (missing) { missing.focus(); toast('Completa los campos obligatorios.'); return; }
+  if (modalSubmit && modalSubmit(data) !== false) { closeModal(); schedule(); }
+});
+$$('[data-close]').forEach(b => b.addEventListener('click', closeModal));
+$('#modalBg').addEventListener('mousedown', e => { if (e.target.id === 'modalBg') closeModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); $('#dataMenu').classList.remove('on'); } });
+
+const lineOpts = () => LINES.concat(['SIN ASIGNAR']);
+function visForm(v){
+  const isNew = !v; v = v || {estado:'Activo', linea:UI.linea || LINES[0]};
+  const zonas = [...new Set(S.visitadores.map(x => x.zona).filter(z => z && z !== '—'))].sort();
+  const regiones = [...new Set(S.visitadores.map(x => x.region).filter(z => z && z !== '—'))].sort();
+  openForm(isNew ? 'Nuevo visitador' : 'Editar visitador', [
+    {k:'nombre', label:'Nombre *', req:1}, {k:'apellidos', label:'Apellidos *', req:1},
+    {k:'correo', label:'Correo', type:'email', full:1},
+    {k:'linea', label:'Línea', type:'select', options:lineOpts()},
+    {k:'estado', label:'Estado', type:'select', options:['Activo','Inactivo','Vacante','Fuera de estructura']},
+    {k:'region', label:'Región', list:'dlReg', listOpts:regiones}, {k:'zona', label:'Zona', list:'dlZona', listOpts:zonas}
+  ], v, d => {
+    if (d.correo && !/^\S+@\S+\.\S+$/.test(d.correo)) { toast('Correo no válido.'); return false; }
+    d.nombre = d.nombre.trim(); d.apellidos = d.apellidos.trim(); d.correo = d.correo.trim();
+    const rec = Object.assign({}, isNew ? {id:uid('v')} : S.visitadores.find(x => x.id === v.id), d);
+    put('visitadores', rec).then(ok => ok && toast(isNew ? 'Visitador agregado.' : 'Visitador actualizado.'));
+  });
+}
+function evalForm(e, vid){
+  const isNew = !e; e = e || {vid:vid || UI.vis || '', fecha:today(), estado:'Presentó'};
+  const vs = [...S.visitadores].filter(v => v.estado !== 'Vacante').sort((a,b) => fullName(a).localeCompare(fullName(b),'es'));
+  openForm(isNew ? 'Nueva evaluación' : 'Editar evaluación', [
+    {k:'vid', label:'Visitador *', type:'select', req:1, full:1, options:[['','— Selecciona —']].concat(vs.map(v => [v.id, `${fullName(v)} · ${v.linea}`]))},
+    {k:'examen', label:'Examen / Capacitación *', req:1, full:1, list:'dlEx', listOpts:[...new Set(S.evaluaciones.map(x=>x.examen))]},
+    {k:'fecha', label:'Fecha', type:'date'},
+    {k:'estado', label:'Estado', type:'select', options:['Presentó','No presentó']},
+    {k:'nota', label:'Nota (x/20, % o 0–20)', def:'', attrs:'placeholder="18/20"'},
+    {k:'kahoot', label:'Puntos Kahoot', type:'number', attrs:'min="0"'},
+    {k:'obs', label:'Observación', full:1}
+  ], Object.assign({}, e, {nota: e.nota != null ? String(e.nota) : ''}), d => {
+    const nota = d.estado === 'No presentó' ? 0 : parseNota(d.nota);
+    if (d.estado === 'Presentó' && (nota == null || nota > 20)) { toast('Nota no válida. Usa 18/20, 90% o un valor de 0 a 20.'); return false; }
+    const rec = {vid:d.vid, examen:d.examen.trim(), fecha:d.fecha, estado:d.estado, nota:Math.round(nota*100)/100, kahoot:parsePoints(d.kahoot), obs:d.obs};
+    const full = Object.assign({}, isNew ? {id:uid('e'), origen:'Manual'} : S.evaluaciones.find(x => x.id === e.id), rec);
+    put('evaluaciones', full).then(ok => ok && toast(isNew ? 'Evaluación agregada.' : 'Evaluación actualizada.'));
+  });
+}
+function prodForm(line){
+  const prods = [...new Set(S.portafolio.map(p => p.producto))].sort();
+  openForm('Nuevo producto', [
+    {k:'producto', label:'Producto *', req:1, list:'dlProd', listOpts:prods},
+    {k:'area', label:'Área terapéutica', type:'select', options:AREAS.map(a => [a, titleCase(a)])},
+    {k:'linea', label:'Línea', type:'select', full:1, options:[['__all','Todas las líneas']].concat(LINES.map(l=>[l,l]))}
+  ], {linea:line || UI.linea || LINES[0]}, d => {
+    const name = d.producto.trim().toUpperCase(); const lines = d.linea === '__all' ? LINES : [d.linea]; let n = 0;
+    const ops = lines.filter(l => !S.portafolio.some(p => p.producto === name && p.linea === l)).map(l => ({col:'portafolio', rec:{id:uid('p'), linea:l, area:d.area, producto:name}}));
+    n = ops.length; runOps(ops);
+    toast(n ? `${name} agregado a ${n} línea(s).` : `${name} ya existía en la(s) línea(s) seleccionada(s).`);
+  });
+}
+function moveForm(p){
+  openForm(`Mover / copiar ${p.producto}`, [
+    {k:'info', type:'info', full:1, html:`Actualmente en <b>${esc(p.linea)}</b> · ${esc(titleCase(p.area))}`},
+    {k:'dest', label:'Línea destino', type:'select', options:LINES.filter(l => l !== p.linea)},
+    {k:'modo', label:'Acción', type:'select', options:[['move','Mover (quitar de la línea actual)'],['copy','Copiar (mantener en ambas)']]},
+    {k:'area', label:'Área terapéutica', type:'select', full:1, options:AREAS.map(a => [a, titleCase(a)])}
+  ], {area:p.area}, d => movePart(p.id, d.dest, d.modo === 'copy', d.area), 'Aplicar');
+}
+function movePart(pid, dest, copy, area){
+  const p = S.portafolio.find(x => x.id === pid); if (!p || p.linea === dest) return;
+  if (S.portafolio.some(x => x.producto === p.producto && x.linea === dest)) { toast(`${p.producto} ya está en ${dest}.`); if (!copy) del('portafolio', pid); return; }
+  if (copy) put('portafolio', {id:uid('p'), linea:dest, area:area||p.area, producto:p.producto});
+  else put('portafolio', Object.assign({}, p, {linea:dest}, area ? {area} : {}));
+  toast(`${p.producto} ${copy?'copiado':'movido'} a ${dest}.`);
+}
+function medForm(m, line){
+  const isNew = !m; m = m || {vid:UI.vis || ''};
+  line = line || (m.vid && VM()[m.vid] ? VM()[m.vid].linea : UI.linea);
+  const vs = S.visitadores.filter(v => v.linea === line && v.estado !== 'Vacante' && v.estado !== 'Inactivo');
+  const esp = S.fichero.filter(f => (f.cuota[line]||0) > 0).map(f => f.esp);
+  openForm(isNew ? 'Agregar médico al fichero' : 'Editar médico', [
+    {k:'nombre', label:'Nombre del médico *', req:1, full:1},
+    {k:'esp', label:'Especialidad', type:'select', options:esp.length ? esp : S.fichero.map(f=>f.esp)},
+    {k:'vid', label:'Visitador *', type:'select', req:1, options:[['','— Selecciona —']].concat(vs.map(v => [v.id, fullName(v)]))},
+    {k:'centro', label:'Centro de salud / Ciudad', full:1}
+  ], m, d => {
+    put('medicos', Object.assign({}, isNew ? {id:uid('m')} : S.medicos.find(x => x.id === m.id), d)).then(ok => ok && toast(isNew ? 'Médico agregado al fichero.' : 'Médico actualizado.'));
+  });
+}
+
+async function importBackup(j){
+  if (!Array.isArray(j.visitadores) || !Array.isArray(j.evaluaciones)) throw new Error('bad');
+  if (DBS.mode !== 'db') { S = Object.assign(fresh(), j); save(); schedule(); toast('Respaldo importado.'); return; }
+  const ops = [];
+  COLS.forEach(c => { const incoming = Array.isArray(j[c]) ? j[c].filter(r => r && r.id) : []; const ids = new Set(incoming.map(r => String(r.id)));
+    S[c].forEach(r => { if (!ids.has(r.id)) ops.push({col:c, del:r.id}); }); incoming.forEach(r => ops.push({col:c, rec:Object.assign({}, r, {id:String(r.id)})})); });
+  toast('Importando respaldo…'); const ok = await runOps(ops);
+  if (j.config) { S.config = Object.assign({min:15, ausCero:false}, j.config); await putConfig(); }
+  toast(ok === ops.length ? 'Respaldo importado en la base compartida.' : `Importación incompleta: ${ok} de ${ops.length} cambios guardados.`);
+}
+/* ---------- exports ---------- */
+function download(name, content, type){ showExport('Exportar · ' + name, String(content).replace(/^\ufeff/,'')); }
+const csv = rows => '﻿' + rows.map(r => r.map(c => { const s = String(c ?? ''); return /[";\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s; }).join(';')).join('\n');
+function exportEvals(){ const vm = VM(); download('evaluaciones_fdv.csv', csv([['Nombre','Apellidos','Correo','Línea','Zona','Examen','Fecha','Nota /20','Puntos Kahoot','Estado','Resultado']].concat(
+  S.evaluaciones.map(e => { const v = vm[e.vid] || {}; return [v.nombre, v.apellidos, v.correo, v.linea, v.zona, e.examen, fdate(e.fecha), e.estado==='No presentó'?'':String(e.nota).replace('.',','), e.kahoot ?? '', e.estado, e.estado==='No presentó'?'No presentó':passes(e)?'Aprobado':'Reprobado']; }))), 'text/csv;charset=utf-8'); }
+function exportFdv(){ download('fuerza_de_ventas.csv', csv([['Nombre','Apellidos','Correo','Línea','Región','Zona','Estado','Evaluaciones','Promedio']].concat(
+  S.visitadores.map(v => { const st = stats(S.evaluaciones.filter(e => e.vid === v.id)); return [v.nombre, v.apellidos, v.correo, v.linea, v.region, v.zona, v.estado, st.total, st.avg!=null?st.avg.toFixed(2).replace('.',','):'']; }))), 'text/csv;charset=utf-8'); }
+function exportPort(){ download('portafolio_oct2026.csv', csv([['Línea','Área terapéutica','Producto']].concat(S.portafolio.map(p => [p.linea, p.area, p.producto]))), 'text/csv;charset=utf-8'); }
+
+/* ---------- render ---------- */
+function syncFilters(){
+  $('#fLinea').innerHTML = `<option value="">Todas las líneas</option>` + lineOpts().map(l => `<option ${UI.linea===l?'selected':''}>${esc(l)}</option>`).join('');
+  const vs = S.visitadores.filter(v => v.estado !== 'Vacante' && (!UI.linea || v.linea === UI.linea)).sort((a,b) => fullName(a).localeCompare(fullName(b),'es'));
+  if (UI.vis && !vs.some(v => v.id === UI.vis)) UI.vis = '';
+  $('#fVis').innerHTML = `<option value="">Todos los visitadores</option>` + vs.map(v => `<option value="${v.id}" ${UI.vis===v.id?'selected':''}>${esc(fullName(v))}</option>`).join('');
+  $('#fMin').value = S.config.min; $('#fAus').checked = !!S.config.ausCero;
+}
+function render(){
+  const ss = $('#syncStatus');
+  if (ss) {
+    const st = DBS.mode === 'db' ? (DBS.canWrite ? ['good','● En vivo · datos compartidos','Los cambios se guardan en la base compartida y se ven al instante en todos los navegadores.'] : ['warn','Solo lectura','Puedes consultar el panel; para editar pide acceso de Colaborador al propietario.'])
+      : DBS.mode === 'local' ? ['neutral','Modo local','Archivo local: los cambios se guardan solo en este navegador.']
+      : DBS.mode === 'connecting' ? ['neutral','Conectando…',''] : ['bad','Sin conexión','No se pudo conectar con la base compartida. Recarga la página.'];
+    ss.className = 'status ' + st[0]; ss.textContent = st[1]; ss.title = st[2];
+  }
+  document.body.classList.toggle('ro', DBS.mode === 'db' && !DBS.canWrite);
+  syncFilters();
+  const risk = riskList(scopeEvals()).length;
+  $$('.tab').forEach(t => { t.setAttribute('aria-selected', t.dataset.tab === UI.tab); t.setAttribute('role','tab');
+    if (t.dataset.tab === 'resumen') t.innerHTML = 'Métricas y KPIs' + (risk ? `<span class="cnt" title="Visitadores en riesgo">${risk}</span>` : ''); });
+  const y = window.scrollY;
+  const waiting = DBS.mode === 'connecting' || (DBS.mode === 'db' && DBS.loaded.size < COLS.length);
+  if (DBS.mode === 'db' && !waiting && !S.visitadores.length && !S.portafolio.length && UI.tab !== 'fichero') $('#view').innerHTML = '<div class="card loading">La base compartida está vacía. Agrega visitadores en “Fuerza de Ventas” o productos en “Portafolio” para empezar.</div>' + views[UI.tab]();
+  else if (waiting) $('#view').innerHTML = '<div class="card loading">Cargando datos compartidos…</div>';
+  else if (DBS.mode === 'offline') $('#view').innerHTML = '<div class="card loading">No se pudo conectar con la base de datos compartida. Recarga la página o verifica que tienes acceso a este panel.</div>';
+  else $('#view').innerHTML = views[UI.tab]();
+  if (UI.tab === 'carga' && UI.kahoot) { const s = $('#kMode'); if (s) s.value = UI.kahoot.mode || 'auto'; }
+  window.scrollTo(0, y);
+  try { localStorage.setItem(LS_KEY+'-tab', UI.tab); } catch(e) {}
+}
+
+/* ---------- events ---------- */
+$('#tabs').addEventListener('click', e => { const t = e.target.closest('.tab'); if (!t) return; UI.tab = t.dataset.tab; render(); window.scrollTo(0,0); });
+let qT; $('#q').addEventListener('input', e => { clearTimeout(qT); qT = setTimeout(() => { UI.q = nrm(e.target.value); render(); }, 120); });
+$('#fLinea').addEventListener('change', e => { UI.linea = e.target.value; render(); });
+$('#fVis').addEventListener('change', e => { UI.vis = e.target.value; render(); });
+$('#fMin').addEventListener('change', e => { const v = parseFloat(e.target.value); if (!isNaN(v) && v >= 0 && v <= 20) { S.config.min = v; putConfig(); } });
+$('#fAus').addEventListener('change', e => { S.config.ausCero = e.target.checked; putConfig(); });
+$('#btnClear').addEventListener('click', () => { UI.q = ''; UI.linea = ''; UI.vis = ''; UI.ficheroLinea = ''; $('#q').value = ''; render(); });
+$('#btnTheme').addEventListener('click', () => {
+  const r = document.documentElement, cur = r.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  r.dataset.theme = cur === 'dark' ? 'light' : 'dark'; try { localStorage.setItem(LS_KEY+'-theme', r.dataset.theme); } catch(e) {}
+});
+try { const t = localStorage.getItem(LS_KEY+'-theme'); if (t) document.documentElement.dataset.theme = t; } catch(e) {}
+$('#btnData').addEventListener('click', e => { e.stopPropagation(); $('#dataMenu').classList.toggle('on'); });
+document.addEventListener('click', e => { if (!e.target.closest('.menu')) $('#dataMenu').classList.remove('on'); });
+$('#fileJson').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return; const r = new FileReader();
+  r.onload = () => { try { const d = JSON.parse(r.result); if (!Array.isArray(d.visitadores) || !Array.isArray(d.evaluaciones)) throw 0;
+    importBackup(d).catch(() => toast('Archivo JSON no válido.')); } catch(err) { toast('Archivo JSON no válido.'); } };
+  r.readAsText(f); e.target.value = '';
+});
+
+document.addEventListener('click', e => {
+  const s = e.target.closest('th[data-sort]');
+  if (s) { const key = s.dataset.sort, k = s.dataset.k, cur = UI.sort[key]; UI.sort[key] = {k, dir: cur && cur.k === k ? -cur.dir : (/(avg|nota|n|kahoot|cuota|reg|rate)$/.test(k) ? -1 : 1)}; render(); return; }
+  const lc = e.target.closest('[data-line-card]');
+  if (lc) { UI.linea = UI.linea === lc.dataset.lineCard ? '' : lc.dataset.lineCard; render(); return; }
+  const a = e.target.closest('[data-act]');
+  if (!a) { const ex = e.target.closest('tr[data-expand]'); if (ex) { const id = ex.dataset.expand; UI.open.has(id) ? UI.open.delete(id) : UI.open.add(id); render(); } return; }
+  const act = a.dataset.act, id = a.dataset.id;
+  const menuClose = () => $('#dataMenu').classList.remove('on');
+  switch (act) {
+    case 'exp-json': menuClose(); download('respaldo_fdv_oct2026.json', JSON.stringify(S, null, 1), 'application/json'); break;
+    case 'imp-json': menuClose(); openForm('Importar respaldo (JSON)', [{k:'_i', type:'info', full:1, html:'Pega el contenido de un respaldo exportado desde este panel. Reemplazará los datos actuales en este navegador.'}, {k:'json', type:'textarea', full:1, attrs:'style="min-height:220px"'}], {}, d => {
+      let j; try { j = JSON.parse(d.json); if (!Array.isArray(j.visitadores) || !Array.isArray(j.evaluaciones)) throw 0; } catch(err) { toast('El texto no es un respaldo JSON válido.'); return false; } importBackup(j);
+    }, 'Importar'); break;
+    case 'exp-evals': menuClose(); exportEvals(); break;
+    case 'exp-fdv': menuClose(); exportFdv(); break;
+    case 'exp-port': menuClose(); exportPort(); break;
+    case 'rank-dir': UI.rankDir = UI.rankDir === 'asc' ? 'desc' : 'asc'; render(); break;
+    case 'show-inactive': UI.showInactive = a.checked; render(); break;
+    case 'add-vis': visForm(); break;
+    case 'edit-vis': e.stopPropagation(); visForm(S.visitadores.find(v => v.id === id)); break;
+    case 'toggle-vis': { e.stopPropagation(); const v = S.visitadores.find(v => v.id === id); const estado = v.estado === 'Inactivo' ? 'Activo' : 'Inactivo'; put('visitadores', Object.assign({}, v, {estado})).then(ok => ok && toast(`${fullName(v)}: ${estado}.`)); break; }
+    case 'del-vis': { e.stopPropagation(); const v = S.visitadores.find(v => v.id === id); const n = S.evaluaciones.filter(x => x.vid === id).length;
+      askConfirm(`¿Eliminar a ${fullName(v)}?${n ? ` También se eliminarán sus ${n} evaluaciones. Usa “Desactivar” si quieres conservar el historial.` : ''}`, () => {
+        runOps([{col:'visitadores', del:id}].concat(S.evaluaciones.filter(x => x.vid === id).map(x => ({col:'evaluaciones', del:x.id})), S.medicos.filter(x => x.vid === id).map(x => ({col:'medicos', del:x.id})))).then(() => toast('Visitador eliminado.')); }); break; }
+    case 'add-eval': e.stopPropagation(); evalForm(null, a.dataset.vid); break;
+    case 'edit-eval': e.stopPropagation(); evalForm(S.evaluaciones.find(x => x.id === id)); break;
+    case 'del-eval': e.stopPropagation(); askConfirm('¿Eliminar esta evaluación?', () => { del('evaluaciones', id).then(ok => ok && toast('Evaluación eliminada.')); }); break;
+    case 'port-view': UI.portView = a.dataset.v; render(); break;
+    case 'add-prod': prodForm(a.dataset.line); break;
+    case 'del-prod': { const p = S.portafolio.find(x => x.id === id); askConfirm(`¿Quitar ${p.producto} de ${p.linea}?`, () => { del('portafolio', id).then(ok => ok && toast(`${p.producto} quitado de ${p.linea}.`)); }, 'Quitar'); break; }
+    case 'move-prod': moveForm(S.portafolio.find(x => x.id === id)); break;
+    case 'toggle-cell': { const pr = a.dataset.prod, l = a.dataset.line; const ex = S.portafolio.find(p => p.producto === pr && p.linea === l);
+      if (ex) del('portafolio', ex.id); else put('portafolio', {id:uid('p'), linea:l, area:a.dataset.area, producto:pr});
+      break; }
+    case 'fich-line': UI.ficheroLinea = a.dataset.line; if (UI.linea && UI.linea !== a.dataset.line) UI.linea = ''; UI.vis = ''; render(); break;
+    case 'add-med': medForm(null, a.dataset.line); break;
+    case 'edit-med': medForm(S.medicos.find(x => x.id === id)); break;
+    case 'del-med': askConfirm('¿Eliminar este médico del fichero?', () => { del('medicos', id); }); break;
+    case 'k-parse': kahootParse(); break;
+    case 'k-clear': UI.kahoot = null; render(); break;
+    case 'k-sample': UI.kahoot = {text:KAHOOT_SAMPLE, exam:'Lanzamiento GI (ejemplo)', date:today(), mode:'auto', n:''}; render(); break;
+    case 'k-commit': kahootCommit(); break;
+  }
+});
+document.addEventListener('input', e => {
+  const map = {kText:'text', kExam:'exam', kDate:'date', kN:'n', kMode:'mode'}; const f = map[e.target.id];
+  if (f) { UI.kahoot = UI.kahoot || {}; UI.kahoot[f] = e.target.value; }
+});
+document.addEventListener('change', e => {
+  const map = {kMode:'mode', kDate:'date'}; const f = map[e.target.id]; if (f) { UI.kahoot = UI.kahoot || {}; UI.kahoot[f] = e.target.value; }
+  const k = e.target.closest('[data-krow]'); if (k && UI.kahoot) { const r = UI.kahoot.rows[+k.dataset.krow]; r.vid = k.value; r.matchBy = 'manual'; }
+});
+document.addEventListener('keydown', e => {
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-line-card],.tick')) { e.preventDefault(); e.target.click(); }
+});
+/* drag & drop: portfolio + kahoot file */
+let dragPid = null;
+document.addEventListener('dragstart', e => { const c = e.target.closest && e.target.closest('.chip'); if (!c) return; dragPid = c.dataset.pid; c.classList.add('dragging'); e.dataTransfer.effectAllowed = 'copyMove'; try { e.dataTransfer.setData('text/plain', dragPid); } catch(_) {} });
+document.addEventListener('dragend', () => { dragPid = null; $$('.dragging,.drag-over').forEach(x => x.classList.remove('dragging','drag-over')); });
+document.addEventListener('dragover', e => {
+  const z = e.target.closest && e.target.closest('[data-drop-line]');
+  if (z && dragPid) { e.preventDefault(); $$('.drag-over').forEach(x => x !== z && x.classList.remove('drag-over')); z.classList.add('drag-over'); return; }
+  const d = e.target.closest && e.target.closest('#kDrop,#kText'); if (d && e.dataTransfer.types.includes('Files')) { e.preventDefault(); $('#kDrop').classList.add('on'); }
+});
+document.addEventListener('drop', e => {
+  const z = e.target.closest && e.target.closest('[data-drop-line]');
+  if (z && dragPid) { e.preventDefault(); if (!(DBS.mode === 'db' && !DBS.canWrite)) movePart(dragPid, z.dataset.dropLine, e.ctrlKey || e.altKey || e.metaKey); return; }
+  const d = e.target.closest && e.target.closest('#kDrop,#kText');
+  if (d && e.dataTransfer.files.length) { e.preventDefault(); $('#kDrop').classList.remove('on'); const f = e.dataTransfer.files[0];
+    if (/\.xlsx?$/i.test(f.name)) { toast('Para Excel: abre el archivo, copia las celdas y pégalas aquí.'); return; }
+    const r = new FileReader(); r.onload = () => { $('#kText').value = r.result; toast(`Archivo ${f.name} cargado. Pulsa “Procesar”.`); }; r.readAsText(f); }
+});
+/* tooltip */
+const tip = $('#tip');
+document.addEventListener('mousemove', e => {
+  const t = e.target.closest && e.target.closest('[data-tip]');
+  if (!t || !t.dataset.tip) { tip.style.display = 'none'; return; }
+  tip.textContent = t.dataset.tip; tip.style.display = 'block';
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  tip.style.left = Math.min(window.innerWidth - w - 8, e.clientX + 12) + 'px';
+  tip.style.top = (e.clientY + 16 + h > window.innerHeight ? e.clientY - h - 10 : e.clientY + 16) + 'px';
+});
+render();
+connect();
+</script>
+</body>
+</html>
