@@ -66,7 +66,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .search{flex:1 1 260px;position:relative}
 .search input[type=search]{width:100%;padding:9px 12px 9px 34px}
 .search svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted)}
-input[type=text],input[type=email],input[type=number],input[type=date],input[type=search],select,textarea{background:var(--surface);border:1px solid var(--border-strong);border-radius:8px;padding:8px 10px;outline:none;min-width:0}
+input[type=text],input[type=email],input[type=number],input[type=date],input[type=time],input[type=search],select,textarea{background:var(--surface);border:1px solid var(--border-strong);border-radius:8px;padding:8px 10px;outline:none;min-width:0}
 input:focus,select:focus,textarea:focus{border-color:var(--brand-2);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand-2) 20%,transparent)}
 .fld{display:flex;align-items:center;gap:6px;color:var(--text-2);font-size:13px}
 .fld input[type=number]{width:70px}
@@ -250,6 +250,44 @@ textarea.paste{width:100%;min-height:170px;font-family:ui-monospace,SFMono-Regul
 }
 body.ro [data-act="add-vis"],body.ro [data-act="edit-vis"],body.ro [data-act="toggle-vis"],body.ro [data-act="del-vis"],body.ro [data-act="add-eval"],body.ro [data-act="edit-eval"],body.ro [data-act="del-eval"],body.ro [data-act="add-prod"],body.ro [data-act="del-prod"],body.ro [data-act="move-prod"],body.ro [data-act="add-med"],body.ro [data-act="edit-med"],body.ro [data-act="del-med"],body.ro [data-act="k-commit"],body.ro [data-act="imp-json"]{display:none!important}
 body.ro .tick{pointer-events:none}
+body.ro [data-act="add-ses"],body.ro [data-act="edit-ses"]{pointer-events:none}
+body.ro [data-act="new-ses"]{display:none!important}
+/* calendar / schedule */
+.cal-nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cal-nav h2{min-width:170px;text-align:center}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cal-h{font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--text-2);text-align:center;padding:4px 0;font-weight:600}
+.cal-day{min-height:104px;border:1px solid var(--border);border-radius:8px;padding:4px;background:var(--surface);cursor:pointer;display:flex;flex-direction:column;gap:3px;min-width:0;text-align:left}
+.cal-day:hover{border-color:var(--brand-2)}
+.cal-day:focus-visible{outline:2px solid var(--brand-2)}
+.cal-day.wkend{background:var(--surface-2)}
+.cal-day.out{background:transparent;border-style:dashed;cursor:default}
+.cal-day .dn{font-size:12px;font-weight:600;width:24px;height:24px;display:grid;place-items:center;border-radius:50%;color:var(--text-2)}
+.cal-day.today .dn{background:var(--brand-2);color:#fff}
+.ses{display:block;width:100%;text-align:left;border:0;border-left:3px solid var(--brand-2);background:var(--brand-soft);color:var(--text);border-radius:4px;padding:3px 5px;font-size:11px;line-height:1.3;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ses:hover{filter:brightness(.96)}
+.ses b{font-weight:700}
+@media (max-width:640px){.cal-day{min-height:58px;padding:3px}.ses{font-size:0;height:7px;padding:0;border-left-width:0;background:var(--brand-2)}.cal-h{font-size:10px}}
+.checks{max-height:230px;overflow:auto;border:1px solid var(--border);border-radius:8px;padding:6px 10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:2px 12px;background:var(--surface)}
+.checks h5{grid-column:1/-1;margin:8px 0 2px;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--text-2);display:flex;align-items:center;gap:6px}
+.checks h5:first-child{margin-top:2px}
+.modal-b .checks label{flex-direction:row;align-items:center;gap:7px;font-weight:400;color:var(--text);font-size:13px;padding:2px 0;cursor:pointer}
+.checks-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;font-size:12.5px;font-weight:600;color:var(--text-2)}
+.checks-h .toolbar{gap:4px}
+.modal{max-width:640px}
+.sched{width:100%}
+.sched td{vertical-align:top}
+.sched .dt{white-space:nowrap;font-weight:600}
+.sched .dt small{display:block;font-weight:400;color:var(--muted)}
+.prodtags{display:flex;flex-wrap:wrap;gap:4px}
+.prodtags span{background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:1px 6px;font-size:12px;font-weight:600}
+.repcard h3{margin:0;font-size:14px}
+.repcard ul{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.repcard li{border-left:3px solid var(--brand-2);padding:2px 0 2px 10px;font-size:13px}
+.repcard li .when{font-weight:600}
+.seg{display:inline-flex;border:1px solid var(--border-strong);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:var(--surface);padding:7px 12px;cursor:pointer;font-weight:500}
+.seg button.on{background:var(--brand-2);color:#fff}
 body.ro .chip{cursor:default}
 .loading{padding:40px;text-align:center;color:var(--muted)}
 @media print{.top,.filters,.toolbar,.iconbtn,.btn{display:none!important}.card{box-shadow:none}}
@@ -287,6 +325,7 @@ body.ro .chip{cursor:default}
     <button class="tab" data-tab="port">Portafolio</button>
     <button class="tab" data-tab="fichero">Fichero Médico</button>
     <button class="tab" data-tab="carga">Cargar Kahoot</button>
+    <button class="tab" data-tab="crono">Cronograma</button>
   </nav>
 </header>
 
@@ -329,16 +368,16 @@ const clone = o => JSON.parse(JSON.stringify(o));
 function fresh(){
   return { version:1, visitadores:clone(SEED.visitadores||[]), evaluaciones:clone(SEED.evaluaciones||[]),
     portafolio:clone(SEED.portafolio||[]), fichero:clone(SEED.fichero), contactos:clone(SEED.contactos),
-    medicos:[], config:{min:15, ausCero:false} };
+    medicos:[], cronograma:[], config:{min:15, ausCero:false} };
 }
 let S = null;
 try { S = JSON.parse(localStorage.getItem(LS_KEY)); } catch(e) { S = null; }
 if (!S || !Array.isArray(S.visitadores)) S = fresh();
-S.medicos = S.medicos || []; S.config = Object.assign({min:15, ausCero:false}, S.config || {});
+S.medicos = S.medicos || []; S.cronograma = S.cronograma || []; S.config = Object.assign({min:15, ausCero:false}, S.config || {});
 function save(){ if (DBS.mode === 'db') return; try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch(e) {} }
 
 /* ---------- data layer: shared db when published, browser storage when opened as a local file ---------- */
-const COLS = ['visitadores','evaluaciones','portafolio','medicos'];
+const COLS = ['visitadores','evaluaciones','portafolio','medicos','cronograma'];
 const DBS = { db:null, mode: SEED.visitadores ? 'local' : 'connecting', canWrite:true, loaded:new Set() };
 const plain = o => JSON.parse(JSON.stringify(o));
 function dbErr(e){
@@ -385,6 +424,7 @@ async function connect(){
 
 const UI = { tab:'ranking', q:'', linea:'', vis:'', exam:'', band:'', sort:{}, open:new Set(), showInactive:false, portView:'cards', rankDir:'asc', kahoot:null, ficheroLinea:'' };
 try { const t = localStorage.getItem(LS_KEY+'-tab'); if (t) UI.tab = t; } catch(e) {}
+if (/^#cronograma$/i.test(location.hash)) UI.tab = 'crono';
 
 /* ---------- helpers ---------- */
 const $ = (s, el=document) => el.querySelector(s);
@@ -400,7 +440,14 @@ const titleCase = s => String(s||'').toLowerCase().replace(/(^|\s)\S/g, m => m.t
 const shortLine = l => l.replace('LÍNEA','L').replace('HÍBRIDA','H');
 const VM = () => Object.fromEntries(S.visitadores.map(v => [v.id, v]));
 const matchesQ = (...vals) => !UI.q || vals.some(v => nrm(v).includes(UI.q));
-const today = () => new Date().toISOString().slice(0,10);
+const pad2 = n => String(n).padStart(2, '0');
+const today = () => { const d = new Date(); return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; };
+const DOW = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const parseD = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); };
+const dowName = s => DOW[(parseD(s).getDay() + 6) % 7];
+const longDate = s => `${dowName(s)} ${fdate(s)}`;
+const monthLast = ym => { const [y,m] = ym.split('-').map(Number); return `${ym}-${pad2(new Date(y, m, 0).getDate())}`; };
 
 function toast(msg){ const t = document.createElement('div'); t.className='toast'; t.textContent = msg; $('#toasts').appendChild(t); setTimeout(()=>t.remove(), 3200); }
 
@@ -509,6 +556,114 @@ function bars(items, opts={}){
 
 /* ---------- views ---------- */
 const views = {};
+
+/* ---------- training schedule ---------- */
+const arr = v => v == null || v === '' ? [] : [].concat(v);
+function scopeSessions(){
+  const vm = VM(), ids = new Set(scopeVis().map(v => v.id)), filtered = UI.linea || UI.vis;
+  return (S.cronograma || []).filter(s => !filtered || arr(s.reps).some(id => ids.has(id)))
+    .filter(s => matchesQ(s.titulo, s.notas, ...arr(s.productos), ...arr(s.reps).map(id => fullName(vm[id]))))
+    .sort((a,b) => (a.fecha + (a.hora || '')).localeCompare(b.fecha + (b.hora || '')));
+}
+function cronRange(){ const ym = UI.calMonth || today().slice(0,7); return [UI.cronFrom || ym + '-01', UI.cronTo || monthLast(ym)]; }
+function repsInScope(s){ const vm = VM(), ids = new Set(scopeVis().map(v => v.id)), filtered = UI.linea || UI.vis; return arr(s.reps).filter(id => vm[id] && (!filtered || ids.has(id))).map(id => vm[id]); }
+function cronText(mode){
+  const [from, to] = cronRange(), list = scopeSessions().filter(s => s.fecha >= from && s.fecha <= to);
+  const head = `CRONOGRAMA DE CAPACITACIONES\n${fdate(from)} al ${fdate(to)}${UI.linea ? ' · ' + UI.linea : ''}\n`;
+  if (!list.length) return head + '\nSin sesiones programadas en este período.';
+  if (mode === 'rep') {
+    const by = new Map(); list.forEach(s => repsInScope(s).forEach(v => { if (!by.has(v.id)) by.set(v.id, {v, items:[]}); by.get(v.id).items.push(s); }));
+    return head + [...by.values()].sort((a,b) => (a.v.linea + fullName(a.v)).localeCompare(b.v.linea + fullName(b.v), 'es')).map(({v, items}) =>
+      `\n${fullName(v)} (${v.linea})\n` + items.map(s => `  • ${longDate(s.fecha)}${s.hora ? ' ' + s.hora : ''}: ${arr(s.productos).join(', ')}${s.titulo ? ' (' + s.titulo + ')' : ''}`).join('\n')).join('\n');
+  }
+  return head + list.map(s => `\n${longDate(s.fecha)}${s.hora ? ' · ' + s.hora : ''}${s.titulo ? '\nTema: ' + s.titulo : ''}\nProductos: ${arr(s.productos).join(', ')}\nRepresentantes: ${repsInScope(s).map(fullName).join(', ')}${s.notas ? '\nNotas: ' + s.notas : ''}`).join('\n');
+}
+function cronTSV(){
+  const [from, to] = cronRange(), rows = [['Fecha','Día','Hora','Tema','Productos','Representante','Línea','Correo']];
+  scopeSessions().filter(s => s.fecha >= from && s.fecha <= to).forEach(s => repsInScope(s).forEach(v => rows.push([fdate(s.fecha), dowName(s.fecha), s.hora || '', s.titulo || '', arr(s.productos).join(', '), fullName(v), v.linea, v.correo || ''])));
+  return rows.map(r => r.map(c => String(c).replace(/[\t\n]+/g, ' ')).join('\t')).join('\n');
+}
+function copyText(text, label, info){
+  const fb = () => showExport(label, text, info || 'Selecciona el texto, cópialo y pégalo donde lo vayas a compartir (WhatsApp, correo o Excel).');
+  try { navigator.clipboard.writeText(text).then(() => toast(`${label}: copiado al portapapeles.`), fb); } catch(e) { fb(); }
+}
+views.crono = () => {
+  const ym = UI.calMonth || today().slice(0,7), [y, m] = ym.split('-').map(Number);
+  const sess = scopeSessions(), byDay = groupBy(sess, s => s.fecha), td = today(), vm = VM();
+  const offset = (new Date(y, m-1, 1).getDay() + 6) % 7, days = new Date(y, m, 0).getDate();
+  const cells = Array(offset).fill(null).concat(Array.from({length:days}, (_, i) => `${ym}-${pad2(i+1)}`)); while (cells.length % 7) cells.push(null);
+  const cal = `<div class="cal">${DOW.map(d => `<div class="cal-h">${d.slice(0,3)}</div>`).join('')}${cells.map((d, i) => !d ? '<div class="cal-day out" aria-hidden="true"></div>' :
+    `<div class="cal-day ${d===td?'today':''} ${i%7>4?'wkend':''}" role="button" tabindex="0" data-act="add-ses" data-date="${d}" title="Agregar sesión el ${longDate(d)}"><span class="dn">${+d.slice(8)}</span>
+      ${(byDay.get(d) || []).map(s => { const ps = arr(s.productos), nr = repsInScope(s).length;
+        return `<button type="button" class="ses" data-act="edit-ses" data-id="${s.id}" data-tip="${esc(`${longDate(s.fecha)}${s.hora?' '+s.hora:''} · ${ps.join(', ')} · ${nr} representante${nr===1?'':'s'}${s.titulo?' · '+s.titulo:''}`)}">${s.hora ? `<b>${esc(s.hora)}</b> ` : ''}${esc(ps.slice(0,2).join(', '))}${ps.length > 2 ? ` +${ps.length-2}` : ''} · ${nr}👤</button>`; }).join('')}</div>`).join('')}</div>`;
+  const [from, to] = cronRange(), inRange = sess.filter(s => s.fecha >= from && s.fecha <= to), mode = UI.cronMode || 'fecha';
+  let armado;
+  if (!inRange.length) armado = `<div class="empty">No hay sesiones entre el ${fdate(from)} y el ${fdate(to)}. Haz clic en un día del calendario para programar la primera.</div>`;
+  else if (mode === 'rep') {
+    const by = new Map(); inRange.forEach(s => repsInScope(s).forEach(v => { if (!by.has(v.id)) by.set(v.id, {v, items:[]}); by.get(v.id).items.push(s); }));
+    armado = `<div class="grid g-3">${[...by.values()].sort((a,b) => (a.v.linea + fullName(a.v)).localeCompare(b.v.linea + fullName(b.v), 'es')).map(({v, items}) => `<div class="card card-b repcard">
+      <h3>${esc(fullName(v))}</h3><small class="muted">${esc(v.linea)}${v.zona && v.zona !== '—' ? ' · ' + esc(v.zona) : ''} · ${items.length} sesi${items.length===1?'ón':'ones'}</small>
+      <ul>${items.map(s => `<li><span class="when">${longDate(s.fecha)}${s.hora ? ' · ' + esc(s.hora) : ''}</span><div class="prodtags" style="margin-top:3px">${arr(s.productos).map(p => `<span>${esc(p)}</span>`).join('')}</div>${s.titulo ? `<small class="muted">${esc(s.titulo)}</small>` : ''}</li>`).join('')}</ul></div>`).join('')}</div>`;
+  } else {
+    armado = `<div class="tbl-wrap"><table class="sched"><thead><tr><th>Fecha</th><th>Productos a estudiar</th><th>Representantes</th><th>Tema / notas</th><th></th></tr></thead><tbody>
+      ${inRange.map(s => { const reps = repsInScope(s); return `<tr><td class="dt">${fdate(s.fecha)}<small>${dowName(s.fecha)}${s.hora ? ' · ' + esc(s.hora) : ''}</small></td>
+        <td><div class="prodtags">${arr(s.productos).map(p => `<span>${esc(p)}</span>`).join('')}</div></td>
+        <td>${reps.map(v => esc(fullName(v))).join(', ')}<br><small class="muted">${[...new Set(reps.map(v => v.linea))].join(' · ')}</small></td>
+        <td>${esc(s.titulo || '')}${s.notas ? `<br><small class="muted">${esc(s.notas)}</small>` : ''}</td>
+        <td><button class="iconbtn" data-act="edit-ses" data-id="${s.id}" aria-label="Editar sesión">✎</button></td></tr>`; }).join('')}</tbody></table></div>`;
+  }
+  const nReps = new Set(inRange.flatMap(s => repsInScope(s).map(v => v.id))).size, nProds = new Set(inRange.flatMap(s => arr(s.productos))).size;
+  return `<div class="card"><div class="card-h">
+      <div class="cal-nav"><button class="btn sm" data-act="cal-prev" aria-label="Mes anterior">‹</button><h2>${MONTHS[m-1]} ${y}</h2><button class="btn sm" data-act="cal-next" aria-label="Mes siguiente">›</button><button class="btn sm ghost" data-act="cal-today">Hoy</button></div>
+      <div class="toolbar"><span class="muted" style="font-size:12.5px">${(byDay.size ? [...byDay.keys()].filter(d => d.startsWith(ym)).reduce((a,d) => a + byDay.get(d).length, 0) : 0)} sesiones este mes · clic en un día para agregar</span><button class="btn primary" data-act="new-ses">＋ Nueva sesión</button></div></div>
+    <div class="card-b">${cal}</div></div>
+  <div class="card" style="margin-top:16px"><div class="card-h"><div><h2>Cronograma armado para compartir</h2><p class="sub">${inRange.length} sesiones · ${nReps} representantes · ${nProds} productos${UI.linea ? ' · ' + esc(UI.linea) : ''}${UI.vis && vm[UI.vis] ? ' · ' + esc(fullName(vm[UI.vis])) : ''}</p></div>
+    <div class="toolbar">
+      <label class="fld">Desde <input type="date" id="cronFrom" value="${from}"></label><label class="fld">Hasta <input type="date" id="cronTo" value="${to}"></label>
+      <div class="seg" role="group" aria-label="Agrupar"><button type="button" class="${mode==='fecha'?'on':''}" data-act="cron-mode" data-v="fecha">Por fecha</button><button type="button" class="${mode==='rep'?'on':''}" data-act="cron-mode" data-v="rep">Por representante</button></div>
+      <button class="btn" data-act="cron-copy-text">📋 Copiar texto</button><button class="btn" data-act="cron-copy-xls">📋 Copiar para Excel</button></div></div>
+    <div class="card-b">${armado}</div></div>`;
+};
+function sesListsHtml(line, checkedReps, checkedProds){
+  const vm = VM(), cr = new Set(checkedReps), cp = new Set(checkedProds);
+  const reps = S.visitadores.filter(v => v.estado !== 'Vacante' && v.estado !== 'Inactivo' && (!line || v.linea === line || cr.has(v.id)));
+  const repHtml = [...groupBy(reps.sort((a,b) => fullName(a).localeCompare(fullName(b), 'es')), v => v.linea)].sort((a,b) => a[0].localeCompare(b[0], 'es')).map(([l, vs]) =>
+    `<h5>${esc(l)} <button type="button" class="btn sm ghost" data-act="ses-line" data-line="${esc(l)}">Marcar línea</button></h5>` + vs.map(v => `<label><input type="checkbox" name="reps" value="${v.id}" ${cr.has(v.id)?'checked':''}> ${esc(fullName(v))}</label>`).join('')).join('') || '<span class="muted">No hay representantes activos.</span>';
+  const lines = line ? [line] : [...new Set([...cr].map(id => vm[id] && vm[id].linea).filter(Boolean))];
+  const pool = S.portafolio.filter(p => !lines.length || lines.includes(p.linea) || cp.has(p.producto));
+  const prods = new Map(); pool.forEach(p => { if (!prods.has(p.producto)) prods.set(p.producto, p.area); }); cp.forEach(p => { if (!prods.has(p)) prods.set(p, ''); });
+  const byArea = groupBy([...prods].sort((a,b) => a[0].localeCompare(b[0], 'es')), ([, a]) => a);
+  const prodHtml = [...byArea].sort((a,b) => AREAS.indexOf(a[0]) - AREAS.indexOf(b[0])).map(([a, ps]) =>
+    `<h5><i class="dot" style="background:${AREA_VAR(a)}"></i>${esc(titleCase(a) || 'Otros')}</h5>` + ps.map(([p]) => `<label><input type="checkbox" name="productos" value="${esc(p)}" ${cp.has(p)?'checked':''}> ${esc(p)}</label>`).join('')).join('') || '<span class="muted">No hay productos en el portafolio.</span>';
+  return {repHtml, prodHtml, hint: line ? `Productos del portafolio de ${line}` : lines.length ? `Productos de: ${lines.join(', ')}` : 'Todos los productos (marca representantes para filtrar por su línea)'};
+}
+function refreshSesLists(){
+  const body = $('#modalBody'); if (!body || !$('#sesReps')) return;
+  const line = body.querySelector('[name="linea"]').value;
+  const r = $$('#sesReps input:checked').map(i => i.value), p = $$('#sesProds input:checked').map(i => i.value);
+  const h = sesListsHtml(line, r, p); $('#sesReps').innerHTML = h.repHtml; $('#sesProds').innerHTML = h.prodHtml; $('#sesProdHint').textContent = h.hint;
+  $('#sesCount').textContent = `${r.length} seleccionado${r.length===1?'':'s'}`; $('#sesPCount').textContent = `${p.length} seleccionado${p.length===1?'':'s'}`;
+}
+function sesForm(s, date){
+  const isNew = !s;
+  s = s || {fecha: date || today(), hora:'', linea: UI.linea || '', reps: UI.vis ? [UI.vis] : [], productos: []};
+  const h = sesListsHtml(s.linea || '', arr(s.reps), arr(s.productos));
+  openForm(isNew ? 'Nueva sesión de capacitación' : 'Editar sesión', [
+    {k:'fecha', label:'Fecha *', type:'date', req:1}, {k:'hora', label:'Hora', type:'time'},
+    {k:'titulo', label:'Tema u objetivo', full:1, attrs:'placeholder="Ej. Repaso SNC para Línea 1"'},
+    {k:'linea', label:'Línea', type:'select', full:1, options:[['', 'Todas las líneas']].concat(LINES.map(l => [l, l]))},
+    {k:'_r', type:'raw', html:`<div class="checks-h"><span>Representantes · <span id="sesCount">${arr(s.reps).length} seleccionados</span></span><span class="toolbar"><button type="button" class="btn sm" data-act="ses-all">Todos los visibles</button><button type="button" class="btn sm" data-act="ses-none">Ninguno</button></span></div><div class="checks" id="sesReps">${h.repHtml}</div>`},
+    {k:'_p', type:'raw', html:`<div class="checks-h"><span>Productos a estudiar · <span id="sesPCount">${arr(s.productos).length} seleccionados</span></span><small class="muted" id="sesProdHint">${esc(h.hint)}</small></div><div class="checks" id="sesProds">${h.prodHtml}</div>`},
+    {k:'notas', label:'Notas para los representantes', full:1, attrs:'placeholder="Ej. Estudiar ficha técnica y presentar Kahoot el viernes"'}
+  ].concat(isNew ? [] : [{k:'_d', type:'raw', html:`<button type="button" class="btn danger sm" data-act="del-ses" data-id="${s.id}">🗑 Eliminar sesión</button>`}]), s, d => {
+    const reps = arr(d.reps), productos = arr(d.productos);
+    if (!reps.length) { toast('Selecciona al menos un representante.'); return false; }
+    if (!productos.length) { toast('Selecciona al menos un producto a estudiar.'); return false; }
+    const rec = {id: isNew ? uid('s') : s.id, fecha:d.fecha, hora:d.hora || '', titulo:(d.titulo || '').trim(), linea:d.linea || '', reps, productos, notas:(d.notas || '').trim()};
+    put('cronograma', rec).then(ok => ok && toast(isNew ? `Sesión programada para el ${longDate(rec.fecha)}.` : 'Sesión actualizada.'));
+    UI.calMonth = rec.fecha.slice(0,7);
+  }, isNew ? 'Programar' : 'Guardar');
+}
 
 views.ranking = () => {
   const evs = scopeEvals(), vs = visStats(evs), exams = examOrder(evs), min = S.config.min;
@@ -937,6 +1092,7 @@ let modalSubmit = null;
 function openForm(title, fields, values, onSubmit, okLabel='Guardar'){
   $('#modalTitle').textContent = title; $('#modalOk').textContent = okLabel;
   $('#modalBody').innerHTML = fields.map(f => {
+    if (f.type === 'raw') return `<div class="full">${f.html}</div>`;
     const v = values[f.k] ?? f.def ?? '';
     let input;
     if (f.type === 'select') input = `<select name="${f.k}" ${f.req?'required':''}>${f.options.map(o => { const [val,lab] = Array.isArray(o) ? o : [o,o]; return `<option value="${esc(val)}" ${String(val)===String(v)?'selected':''}>${esc(lab)}</option>`; }).join('')}</select>`;
@@ -951,8 +1107,8 @@ function openForm(title, fields, values, onSubmit, okLabel='Guardar'){
 function askConfirm(msg, onYes, okLabel='Eliminar'){
   openForm('Confirmar acción', [{k:'_i', type:'info', full:1, html:esc(msg)}], {}, () => { onYes(); }, okLabel);
 }
-function showExport(title, text){
-  openForm(title, [{k:'_i', type:'info', full:1, html:'Copia el contenido y pégalo en Excel (CSV separado por “;”) o guárdalo en un archivo de texto. Para restaurar un respaldo JSON usa “Importar respaldo”.'}, {k:'out', type:'textarea', full:1, attrs:'readonly style="min-height:260px"'}], {out:text}, () => {
+function showExport(title, text, info){
+  openForm(title, [{k:'_i', type:'info', full:1, html: info || 'Copia el contenido y pégalo en Excel (CSV separado por “;”) o guárdalo en un archivo de texto. Para restaurar un respaldo JSON usa “Importar respaldo”.'}, {k:'out', type:'textarea', full:1, attrs:'readonly style="min-height:260px"'}], {out:text}, () => {
     const ta = $('#fld_out');
     const fallback = () => { ta.focus(); ta.select(); try { document.execCommand('copy'); toast('Copiado al portapapeles.'); } catch(e) { toast('Selecciona el texto y cópialo con Ctrl/⌘+C.'); } };
     try { navigator.clipboard.writeText(text).then(() => toast('Copiado al portapapeles.'), fallback); } catch(e) { fallback(); }
@@ -962,7 +1118,7 @@ function showExport(title, text){
 function closeModal(){ $('#modalBg').classList.remove('on'); modalSubmit = null; }
 $('#modalForm').addEventListener('submit', ev => {
   ev.preventDefault();
-  const data = Object.fromEntries(new FormData(ev.target).entries());
+  const data = {}; for (const [k, v] of new FormData(ev.target).entries()) data[k] = k in data ? [].concat(data[k], v) : v;
   const missing = $$('#modalBody [required]').find(i => !String(i.value).trim());
   if (missing) { missing.focus(); toast('Completa los campos obligatorios.'); return; }
   if (modalSubmit && modalSubmit(data) !== false) { closeModal(); schedule(); }
@@ -1055,7 +1211,7 @@ async function importBackup(j){
   if (!Array.isArray(j.visitadores) || !Array.isArray(j.evaluaciones)) throw new Error('bad');
   if (DBS.mode !== 'db') { S = Object.assign(fresh(), j); save(); schedule(); toast('Respaldo importado.'); return; }
   const ops = [];
-  COLS.forEach(c => { const incoming = Array.isArray(j[c]) ? j[c].filter(r => r && r.id) : []; const ids = new Set(incoming.map(r => String(r.id)));
+  COLS.forEach(c => { if (!Array.isArray(j[c])) return; const incoming = j[c].filter(r => r && r.id); const ids = new Set(incoming.map(r => String(r.id)));
     S[c].forEach(r => { if (!ids.has(r.id)) ops.push({col:c, del:r.id}); }); incoming.forEach(r => ops.push({col:c, rec:Object.assign({}, r, {id:String(r.id)})})); });
   toast('Importando respaldo…'); const ok = await runOps(ops);
   if (j.config) { S.config = Object.assign({min:15, ausCero:false}, j.config); await putConfig(); }
@@ -1182,6 +1338,18 @@ document.addEventListener('click', e => {
     case 'k-file': $('#kFile').click(); break;
     case 'band': UI.band = UI.band === a.dataset.band ? '' : a.dataset.band; if (UI.tab !== 'ranking') { UI.tab = 'ranking'; window.scrollTo(0,0); } render(); break;
     case 'exp-rank': exportRanking(); break;
+    case 'add-ses': if (document.body.classList.contains('ro')) break; sesForm(null, a.dataset.date); break;
+    case 'new-ses': sesForm(null, (UI.calMonth && UI.calMonth !== today().slice(0,7)) ? UI.calMonth + '-01' : today()); break;
+    case 'edit-ses': e.stopPropagation(); if (document.body.classList.contains('ro')) break; sesForm((S.cronograma || []).find(x => x.id === id)); break;
+    case 'del-ses': closeModal(); askConfirm('¿Eliminar esta sesión del cronograma?', () => { del('cronograma', id).then(ok => ok && toast('Sesión eliminada.')); }); break;
+    case 'ses-all': $$('#sesReps input').forEach(i => { i.checked = true; }); refreshSesLists(); break;
+    case 'ses-none': $$('#sesReps input').forEach(i => { i.checked = false; }); refreshSesLists(); break;
+    case 'ses-line': $$('#sesReps input').forEach(i => { const v = VM()[i.value]; if (v && v.linea === a.dataset.line) i.checked = true; }); refreshSesLists(); break;
+    case 'cal-prev': case 'cal-next': { const [yy, mm] = (UI.calMonth || today().slice(0,7)).split('-').map(Number); const dt = new Date(yy, mm - 1 + (act === 'cal-next' ? 1 : -1), 1); UI.calMonth = `${dt.getFullYear()}-${pad2(dt.getMonth()+1)}`; UI.cronFrom = UI.cronTo = ''; render(); break; }
+    case 'cal-today': UI.calMonth = today().slice(0,7); UI.cronFrom = UI.cronTo = ''; render(); break;
+    case 'cron-mode': UI.cronMode = a.dataset.v; render(); break;
+    case 'cron-copy-text': copyText(cronText(UI.cronMode || 'fecha'), 'Cronograma'); break;
+    case 'cron-copy-xls': copyText(cronTSV(), 'Cronograma para Excel', 'Selecciona el texto, cópialo y pégalo en una hoja de Excel o Google Sheets: cada columna quedará en su celda.'); break;
   }
 });
 document.addEventListener('input', e => {
@@ -1189,11 +1357,13 @@ document.addEventListener('input', e => {
   if (f) { UI.kahoot = UI.kahoot || {}; UI.kahoot[f] = e.target.value; }
 });
 document.addEventListener('change', e => {
+  if (e.target.closest && e.target.closest('#modalBody') && $('#sesReps') && (e.target.name === 'linea' || e.target.name === 'reps' || e.target.name === 'productos')) refreshSesLists();
+  if (e.target.id === 'cronFrom' || e.target.id === 'cronTo') { const [f, tt] = cronRange(); UI.cronFrom = e.target.id === 'cronFrom' ? e.target.value || f : f; UI.cronTo = e.target.id === 'cronTo' ? e.target.value || tt : tt; render(); }
   const map = {kMode:'mode', kDate:'date'}; const f = map[e.target.id]; if (f) { UI.kahoot = UI.kahoot || {}; UI.kahoot[f] = e.target.value; }
   const k = e.target.closest('[data-krow]'); if (k && UI.kahoot) { const r = UI.kahoot.rows[+k.dataset.krow]; r.vid = k.value; r.matchBy = 'manual'; }
 });
 document.addEventListener('keydown', e => {
-  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-line-card],.tick')) { e.preventDefault(); e.target.click(); }
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-line-card],.tick,.cal-day')) { e.preventDefault(); e.target.click(); }
 });
 /* drag & drop: portfolio + kahoot file */
 let dragPid = null;

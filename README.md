@@ -3,6 +3,7 @@
 Dashboard autocontenido (`index.html`) para el seguimiento de capacitaciones Kahoot, el portafolio de productos por línea y el fichero médico de la Fuerza de Ventas con la nueva estructura promocional de octubre 2026.
 
 - Abrir `index.html` en el navegador. Funciona sin conexión; para leer archivos Excel (.xlsx) de Kahoot necesita internet (librería SheetJS desde cdnjs).
+- Pestaña "Cronograma": calendario de capacitaciones; se eligen representantes (por línea), productos de su portafolio y fecha, y genera el cronograma listo para copiar (WhatsApp, correo o Excel).
 - Pestaña "Ranking de notas": estudiantes ordenados por promedio acumulado, torta de distribución y notas por evaluación. Filtros por línea, visitador y evaluación.
 - Los cambios hechos en este archivo se guardan solo en el navegador donde se abre (localStorage).
 - La versión compartida con base de datos en vivo está publicada en https://claude.ai/artifact/22pVMwsTEmSbJE51rPGWc7
