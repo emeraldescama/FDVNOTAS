@@ -280,6 +280,17 @@ body.ro [data-act="new-ses"]{display:none!important}
 .cal-day.today .dn{background:var(--brand-2);color:#fff}
 .ses{display:block;width:100%;text-align:left;border:0;border-left:3px solid var(--brand-2);background:var(--brand-soft);color:var(--text);border-radius:4px;padding:3px 5px;font-size:11px;line-height:1.3;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ses:hover{filter:brightness(.96)}
+.ses.examen{border-left-color:var(--bad);background:var(--bad-soft)}
+.ses.cont{border-left-style:dashed}
+.tipo{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.5px;padding:2px 7px;border-radius:999px;text-transform:uppercase;white-space:nowrap}
+.tipo.estudio{background:var(--brand-soft);color:var(--brand)}
+.tipo.examen{background:var(--bad-soft);color:var(--bad-text)}
+.cal-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--text-2);margin-top:10px}
+.cal-legend span{display:inline-flex;align-items:center;gap:6px}
+#modalBody[data-tipo="examen"] .f-est{display:none}
+#modalBody[data-tipo="estudio"] .f-exa{display:none}
+.img-prev{max-height:58vh;overflow:auto;border:1px solid var(--border);border-radius:8px;background:#fff}
+.img-prev img{display:block;width:100%;height:auto}
 .ses b{font-weight:700}
 @media (max-width:640px){.cal-day{min-height:58px;padding:3px}.ses{font-size:0;height:7px;padding:0;border-left-width:0;background:var(--brand-2)}.cal-h{font-size:10px}}
 .checks{max-height:230px;overflow:auto;border:1px solid var(--border);border-radius:8px;padding:6px 10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:2px 12px;background:var(--surface)}
@@ -594,28 +605,37 @@ const views = {};
 
 /* ---------- training schedule ---------- */
 const arr = v => v == null || v === '' ? [] : [].concat(v);
+const sesEnd = s => s.fechaFin && s.fechaFin > s.fecha ? s.fechaFin : s.fecha;
+const sesTipo = s => s.tipo === 'examen' ? 'examen' : 'estudio';
+const overlaps = (s, from, to) => s.fecha <= to && sesEnd(s) >= from;
+const addDays = (str, n) => { const d = parseD(str); d.setDate(d.getDate() + n); return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; };
+const shortDate = s => `${dowName(s)} ${s.slice(8)}/${s.slice(5,7)}`;
+const sesWhen = s => sesEnd(s) === s.fecha ? `${shortDate(s.fecha)}${s.hora ? ' · ' + s.hora : ''}` : `${shortDate(s.fecha)} al ${shortDate(sesEnd(s))}${s.hora ? ' · ' + s.hora : ''}`;
+const tipoLabel = s => sesTipo(s) === 'examen' ? 'Examen' : 'Estudio';
+function scopeFiltered(){ return UI.linea || UI.vis || UI.region; }
 function scopeSessions(){
-  const vm = VM(), ids = new Set(scopeVis().map(v => v.id)), filtered = UI.linea || UI.vis;
+  const vm = VM(), ids = new Set(scopeVis().map(v => v.id)), filtered = scopeFiltered();
   return (S.cronograma || []).filter(s => !filtered || arr(s.reps).some(id => ids.has(id)))
-    .filter(s => matchesQ(s.titulo, s.notas, ...arr(s.productos), ...arr(s.reps).map(id => fullName(vm[id]))))
-    .sort((a,b) => (a.fecha + (a.hora || '')).localeCompare(b.fecha + (b.hora || '')));
+    .filter(s => matchesQ(s.titulo, s.notas, tipoLabel(s), ...arr(s.productos), ...arr(s.reps).map(id => fullName(vm[id]))))
+    .sort((a,b) => (a.fecha + (sesTipo(a) === 'examen' ? '1' : '0') + (a.hora || '')).localeCompare(b.fecha + (sesTipo(b) === 'examen' ? '1' : '0') + (b.hora || '')));
 }
 function cronRange(){ const ym = UI.calMonth || today().slice(0,7); return [UI.cronFrom || ym + '-01', UI.cronTo || monthLast(ym)]; }
-function repsInScope(s){ const vm = VM(), ids = new Set(scopeVis().map(v => v.id)), filtered = UI.linea || UI.vis; return arr(s.reps).filter(id => vm[id] && (!filtered || ids.has(id))).map(id => vm[id]); }
+function repsInScope(s){ const vm = VM(), ids = new Set(scopeVis().map(v => v.id)), filtered = scopeFiltered(); return arr(s.reps).filter(id => vm[id] && (!filtered || ids.has(id))).map(id => vm[id]); }
+function sessionsByRep(list){
+  const by = new Map(); list.forEach(s => repsInScope(s).forEach(v => { if (!by.has(v.id)) by.set(v.id, {v, items:[]}); by.get(v.id).items.push(s); }));
+  return [...by.values()].sort((a,b) => (a.v.linea + fullName(a.v)).localeCompare(b.v.linea + fullName(b.v), 'es'));
+}
 function cronText(mode){
-  const [from, to] = cronRange(), list = scopeSessions().filter(s => s.fecha >= from && s.fecha <= to);
-  const head = `CRONOGRAMA DE CAPACITACIONES\n${fdate(from)} al ${fdate(to)}${UI.linea ? ' · ' + UI.linea : ''}\n`;
-  if (!list.length) return head + '\nSin sesiones programadas en este período.';
-  if (mode === 'rep') {
-    const by = new Map(); list.forEach(s => repsInScope(s).forEach(v => { if (!by.has(v.id)) by.set(v.id, {v, items:[]}); by.get(v.id).items.push(s); }));
-    return head + [...by.values()].sort((a,b) => (a.v.linea + fullName(a.v)).localeCompare(b.v.linea + fullName(b.v), 'es')).map(({v, items}) =>
-      `\n${fullName(v)} (${v.linea})\n` + items.map(s => `  • ${longDate(s.fecha)}${s.hora ? ' ' + s.hora : ''}: ${arr(s.productos).join(', ')}${s.titulo ? ' (' + s.titulo + ')' : ''}`).join('\n')).join('\n');
-  }
-  return head + list.map(s => `\n${longDate(s.fecha)}${s.hora ? ' · ' + s.hora : ''}${s.titulo ? '\nTema: ' + s.titulo : ''}\nProductos: ${arr(s.productos).join(', ')}\nRepresentantes: ${repsInScope(s).map(fullName).join(', ')}${s.notas ? '\nNotas: ' + s.notas : ''}`).join('\n');
+  const [from, to] = cronRange(), list = scopeSessions().filter(s => overlaps(s, from, to));
+  const head = `CRONOGRAMA DE CAPACITACIONES\n${fdate(from)} al ${fdate(to)}${UI.linea ? ' · ' + UI.linea : ''}${UI.region ? ' · ' + UI.region : ''}\n`;
+  if (!list.length) return head + '\nSin actividades programadas en este período.';
+  if (mode === 'rep') return head + sessionsByRep(list).map(({v, items}) =>
+    `\n${fullName(v)} (${v.linea})\n` + items.map(s => `  • ${tipoLabel(s).toUpperCase()} ${arr(s.productos).join(', ')}: ${sesWhen(s)}${s.titulo ? ' (' + s.titulo + ')' : ''}`).join('\n')).join('\n');
+  return head + list.map(s => `\n${tipoLabel(s).toUpperCase()} · ${sesWhen(s)}${s.titulo ? '\nTema: ' + s.titulo : ''}\nProductos: ${arr(s.productos).join(', ')}\nRepresentantes: ${repsInScope(s).map(fullName).join(', ')}${s.notas ? '\nNotas: ' + s.notas : ''}`).join('\n');
 }
 function cronTSV(){
-  const [from, to] = cronRange(), rows = [['Fecha','Día','Hora','Tema','Productos','Representante','Línea','Correo']];
-  scopeSessions().filter(s => s.fecha >= from && s.fecha <= to).forEach(s => repsInScope(s).forEach(v => rows.push([fdate(s.fecha), dowName(s.fecha), s.hora || '', s.titulo || '', arr(s.productos).join(', '), fullName(v), v.linea, v.correo || ''])));
+  const [from, to] = cronRange(), rows = [['Tipo','Desde','Hasta','Hora','Tema','Productos','Representante','Línea','Correo']];
+  scopeSessions().filter(s => overlaps(s, from, to)).forEach(s => repsInScope(s).forEach(v => rows.push([tipoLabel(s), `${dowName(s.fecha)} ${fdate(s.fecha)}`, `${dowName(sesEnd(s))} ${fdate(sesEnd(s))}`, s.hora || '', s.titulo || '', arr(s.productos).join(', '), fullName(v), v.linea, v.correo || ''])));
   return rows.map(r => r.map(c => String(c).replace(/[\t\n]+/g, ' ')).join('\t')).join('\n');
 }
 function copyText(text, label, info){
@@ -624,39 +644,43 @@ function copyText(text, label, info){
 }
 views.crono = () => {
   const ym = UI.calMonth || today().slice(0,7), [y, m] = ym.split('-').map(Number);
-  const sess = scopeSessions(), byDay = groupBy(sess, s => s.fecha), td = today(), vm = VM();
+  const sess = scopeSessions(), td = today(), vm = VM(), mStart = ym + '-01', mEnd = monthLast(ym);
+  const byDay = new Map();
+  sess.filter(s => overlaps(s, mStart, mEnd)).forEach(s => { for (let d = s.fecha < mStart ? mStart : s.fecha, end = sesEnd(s) > mEnd ? mEnd : sesEnd(s); d <= end; d = addDays(d, 1)) { if (!byDay.has(d)) byDay.set(d, []); byDay.get(d).push(s); } });
   const offset = (new Date(y, m-1, 1).getDay() + 6) % 7, days = new Date(y, m, 0).getDate();
   const cells = Array(offset).fill(null).concat(Array.from({length:days}, (_, i) => `${ym}-${pad2(i+1)}`)); while (cells.length % 7) cells.push(null);
+  const chip = (s, d) => { const ps = arr(s.productos), nr = repsInScope(s).length, ex = sesTipo(s) === 'examen', multi = sesEnd(s) !== s.fecha;
+    const tip = `${tipoLabel(s)} · ${sesWhen(s)} · ${ps.join(', ')} · ${nr} representante${nr===1?'':'s'}${s.titulo ? ' · ' + s.titulo : ''}`;
+    return `<button type="button" class="ses ${ex ? 'examen' : ''} ${multi && d !== s.fecha ? 'cont' : ''}" data-act="edit-ses" data-id="${s.id}" data-tip="${esc(tip)}">${ex ? '<b>Examen</b> ' : ''}${ex && s.hora ? esc(s.hora) + ' ' : ''}${esc(ps.slice(0,2).join(', '))}${ps.length > 2 ? ` +${ps.length-2}` : ''}${multi ? ` <span class="muted">${Math.round((parseD(d) - parseD(s.fecha)) / 864e5) + 1}/${Math.round((parseD(sesEnd(s)) - parseD(s.fecha)) / 864e5) + 1}</span>` : ''}</button>`; };
   const cal = `<div class="cal">${DOW.map(d => `<div class="cal-h">${d.slice(0,3)}</div>`).join('')}${cells.map((d, i) => !d ? '<div class="cal-day out" aria-hidden="true"></div>' :
-    `<div class="cal-day ${d===td?'today':''} ${i%7>4?'wkend':''}" role="button" tabindex="0" data-act="add-ses" data-date="${d}" title="Agregar sesión el ${longDate(d)}"><span class="dn">${+d.slice(8)}</span>
-      ${(byDay.get(d) || []).map(s => { const ps = arr(s.productos), nr = repsInScope(s).length;
-        return `<button type="button" class="ses" data-act="edit-ses" data-id="${s.id}" data-tip="${esc(`${longDate(s.fecha)}${s.hora?' '+s.hora:''} · ${ps.join(', ')} · ${nr} representante${nr===1?'':'s'}${s.titulo?' · '+s.titulo:''}`)}">${s.hora ? `<b>${esc(s.hora)}</b> ` : ''}${esc(ps.slice(0,2).join(', '))}${ps.length > 2 ? ` +${ps.length-2}` : ''} · ${nr}👤</button>`; }).join('')}</div>`).join('')}</div>`;
-  const [from, to] = cronRange(), inRange = sess.filter(s => s.fecha >= from && s.fecha <= to), mode = UI.cronMode || 'fecha';
+    `<div class="cal-day ${d===td?'today':''} ${i%7>4?'wkend':''}" role="button" tabindex="0" data-act="add-ses" data-date="${d}" title="Programar desde el ${longDate(d)}"><span class="dn">${+d.slice(8)}</span>${(byDay.get(d) || []).map(s => chip(s, d)).join('')}</div>`).join('')}</div>
+    <div class="cal-legend"><span><i class="sw" style="background:var(--brand-2)"></i>Estudio (los días con 1/3, 2/3… son parte de un mismo período)</span><span><i class="sw" style="background:var(--bad)"></i>Examen</span></div>`;
+  const [from, to] = cronRange(), inRange = sess.filter(s => overlaps(s, from, to)), mode = UI.cronMode || 'fecha';
   let armado;
-  if (!inRange.length) armado = `<div class="empty">No hay sesiones entre el ${fdate(from)} y el ${fdate(to)}. Haz clic en un día del calendario para programar la primera.</div>`;
+  if (!inRange.length) armado = `<div class="empty">No hay actividades entre el ${fdate(from)} y el ${fdate(to)}. Haz clic en un día del calendario para programar la primera.</div>`;
   else if (mode === 'rep') {
-    const by = new Map(); inRange.forEach(s => repsInScope(s).forEach(v => { if (!by.has(v.id)) by.set(v.id, {v, items:[]}); by.get(v.id).items.push(s); }));
-    armado = `<div class="grid g-3">${[...by.values()].sort((a,b) => (a.v.linea + fullName(a.v)).localeCompare(b.v.linea + fullName(b.v), 'es')).map(({v, items}) => `<div class="card card-b repcard">
-      <h3>${esc(fullName(v))}</h3><small class="muted">${esc(v.linea)}${v.zona && v.zona !== '—' ? ' · ' + esc(v.zona) : ''} · ${items.length} sesi${items.length===1?'ón':'ones'}</small>
-      <ul>${items.map(s => `<li><span class="when">${longDate(s.fecha)}${s.hora ? ' · ' + esc(s.hora) : ''}</span><div class="prodtags" style="margin-top:3px">${arr(s.productos).map(p => `<span>${esc(p)}</span>`).join('')}</div>${s.titulo ? `<small class="muted">${esc(s.titulo)}</small>` : ''}</li>`).join('')}</ul></div>`).join('')}</div>`;
+    armado = `<div class="grid g-3">${sessionsByRep(inRange).map(({v, items}) => `<div class="card card-b repcard">
+      <h3>${esc(fullName(v))}</h3><small class="muted">${esc(v.linea)}${v.zona && v.zona !== '—' ? ' · ' + esc(v.zona) : ''}</small>
+      <ul>${items.map(s => `<li style="border-left-color:${sesTipo(s)==='examen'?'var(--bad)':'var(--brand-2)'}"><span class="tipo ${sesTipo(s)}">${tipoLabel(s)}</span> <span class="when">${sesWhen(s)}</span><div class="prodtags" style="margin-top:3px">${arr(s.productos).map(p => `<span>${esc(p)}</span>`).join('')}</div>${s.titulo ? `<small class="muted">${esc(s.titulo)}</small>` : ''}</li>`).join('')}</ul></div>`).join('')}</div>`;
   } else {
-    armado = `<div class="tbl-wrap"><table class="sched"><thead><tr><th>Fecha</th><th>Productos a estudiar</th><th>Representantes</th><th>Tema / notas</th><th></th></tr></thead><tbody>
-      ${inRange.map(s => { const reps = repsInScope(s); return `<tr><td class="dt">${fdate(s.fecha)}<small>${dowName(s.fecha)}${s.hora ? ' · ' + esc(s.hora) : ''}</small></td>
+    armado = `<div class="tbl-wrap"><table class="sched"><thead><tr><th>Actividad</th><th>Fechas</th><th>Productos</th><th>Representantes</th><th>Tema / notas</th><th></th></tr></thead><tbody>
+      ${inRange.map(s => { const reps = repsInScope(s); return `<tr><td><span class="tipo ${sesTipo(s)}">${tipoLabel(s)}</span></td><td class="dt">${sesEnd(s) === s.fecha ? fdate(s.fecha) : `${fdate(s.fecha)} → ${fdate(sesEnd(s))}`}<small>${sesEnd(s) === s.fecha ? dowName(s.fecha) : `${dowName(s.fecha)} a ${dowName(sesEnd(s))}`}${s.hora ? ' · ' + esc(s.hora) : ''}</small></td>
         <td><div class="prodtags">${arr(s.productos).map(p => `<span>${esc(p)}</span>`).join('')}</div></td>
         <td>${reps.map(v => esc(fullName(v))).join(', ')}<br><small class="muted">${[...new Set(reps.map(v => v.linea))].join(' · ')}</small></td>
         <td>${esc(s.titulo || '')}${s.notas ? `<br><small class="muted">${esc(s.notas)}</small>` : ''}</td>
-        <td><button class="iconbtn" data-act="edit-ses" data-id="${s.id}" aria-label="Editar sesión">✎</button></td></tr>`; }).join('')}</tbody></table></div>`;
+        <td><button class="iconbtn" data-act="edit-ses" data-id="${s.id}" aria-label="Editar">✎</button></td></tr>`; }).join('')}</tbody></table></div>`;
   }
-  const nReps = new Set(inRange.flatMap(s => repsInScope(s).map(v => v.id))).size, nProds = new Set(inRange.flatMap(s => arr(s.productos))).size;
+  const nReps = new Set(inRange.flatMap(s => repsInScope(s).map(v => v.id))).size, nEx = inRange.filter(s => sesTipo(s) === 'examen').length;
+  const monthCount = sess.filter(s => overlaps(s, mStart, mEnd)).length;
   return `<div class="card"><div class="card-h">
       <div class="cal-nav"><button class="btn sm" data-act="cal-prev" aria-label="Mes anterior">‹</button><h2>${MONTHS[m-1]} ${y}</h2><button class="btn sm" data-act="cal-next" aria-label="Mes siguiente">›</button><button class="btn sm ghost" data-act="cal-today">Hoy</button></div>
-      <div class="toolbar"><span class="muted" style="font-size:12.5px">${(byDay.size ? [...byDay.keys()].filter(d => d.startsWith(ym)).reduce((a,d) => a + byDay.get(d).length, 0) : 0)} sesiones este mes · clic en un día para agregar</span><button class="btn primary" data-act="new-ses">＋ Nueva sesión</button></div></div>
+      <div class="toolbar"><span class="muted" style="font-size:12.5px">${monthCount} actividad${monthCount===1?'':'es'} este mes · clic en un día para programar</span><button class="btn primary" data-act="new-ses">＋ Programar</button></div></div>
     <div class="card-b">${cal}</div></div>
-  <div class="card" style="margin-top:16px"><div class="card-h"><div><h2>Cronograma armado para compartir</h2><p class="sub">${inRange.length} sesiones · ${nReps} representantes · ${nProds} productos${UI.linea ? ' · ' + esc(UI.linea) : ''}${UI.vis && vm[UI.vis] ? ' · ' + esc(fullName(vm[UI.vis])) : ''}</p></div>
+  <div class="card" style="margin-top:16px"><div class="card-h"><div><h2>Cronograma armado para compartir</h2><p class="sub">${inRange.length - nEx} períodos de estudio · ${nEx} exámenes · ${nReps} representantes${UI.linea ? ' · ' + esc(UI.linea) : ''}${UI.region ? ' · ' + esc(UI.region) : ''}${UI.vis && vm[UI.vis] ? ' · ' + esc(fullName(vm[UI.vis])) : ''}</p></div>
     <div class="toolbar">
       <label class="fld">Desde <input type="date" id="cronFrom" value="${from}"></label><label class="fld">Hasta <input type="date" id="cronTo" value="${to}"></label>
       <div class="seg" role="group" aria-label="Agrupar"><button type="button" class="${mode==='fecha'?'on':''}" data-act="cron-mode" data-v="fecha">Por fecha</button><button type="button" class="${mode==='rep'?'on':''}" data-act="cron-mode" data-v="rep">Por representante</button></div>
-      <button class="btn" data-act="cron-copy-text">📋 Copiar texto</button><button class="btn" data-act="cron-copy-xls">📋 Copiar para Excel</button></div></div>
+      <button class="btn primary" data-act="cron-img">🖼 Exportar imagen</button><button class="btn" data-act="cron-copy-text">📋 Copiar texto</button><button class="btn" data-act="cron-copy-xls">📋 Copiar para Excel</button></div></div>
     <div class="card-b">${armado}</div></div>`;
 };
 function sesListsHtml(line, checkedReps, checkedProds){
@@ -681,23 +705,99 @@ function refreshSesLists(){
 }
 function sesForm(s, date){
   const isNew = !s;
-  s = s || {fecha: date || today(), hora:'', linea: UI.linea || '', reps: UI.vis ? [UI.vis] : [], productos: []};
+  if (isNew) { const d0 = date || today(); s = {tipo:'ambos', fecha:d0, fechaFin:d0, fechaExamen:d0, hora:'', linea: UI.linea || '', reps: UI.vis ? [UI.vis] : [], productos: []}; }
+  else s = Object.assign({}, s, {tipo: sesTipo(s), fechaFin: sesEnd(s), fechaExamen: s.fecha});
   const h = sesListsHtml(s.linea || '', arr(s.reps), arr(s.productos));
-  openForm(isNew ? 'Nueva sesión de capacitación' : 'Editar sesión', [
-    {k:'fecha', label:'Fecha *', type:'date', req:1}, {k:'hora', label:'Hora', type:'time'},
-    {k:'titulo', label:'Tema u objetivo', full:1, attrs:'placeholder="Ej. Repaso SNC para Línea 1"'},
+  const tipos = isNew ? [['ambos','Estudio y examen al final'], ['estudio','Solo período de estudio'], ['examen','Solo examen']] : [['estudio','Período de estudio'], ['examen','Examen']];
+  openForm(isNew ? 'Programar capacitación' : `Editar ${tipoLabel(s).toLowerCase()}`, [
+    {k:'tipo', label:'¿Qué vas a programar?', type:'select', full:1, options:tipos},
+    {k:'fecha', label:'Estudiar desde *', type:'date', cls:'f-est'}, {k:'fechaFin', label:'Estudiar hasta *', type:'date', cls:'f-est'},
+    {k:'fechaExamen', label:'Fecha del examen *', type:'date', cls:'f-exa'}, {k:'hora', label:'Hora del examen', type:'time', cls:'f-exa'},
+    {k:'titulo', label:'Tema u objetivo', full:1, attrs:'placeholder="Ej. Ficha técnica de DESLER"'},
     {k:'linea', label:'Línea', type:'select', full:1, options:[['', 'Todas las líneas']].concat(LINES.concat([GD]).map(l => [l, l]))},
     {k:'_r', type:'raw', html:`<div class="checks-h"><span>Representantes · <span id="sesCount">${arr(s.reps).length} seleccionados</span></span><span class="toolbar"><button type="button" class="btn sm" data-act="ses-all">Todos los visibles</button><button type="button" class="btn sm" data-act="ses-none">Ninguno</button></span></div><div class="checks" id="sesReps">${h.repHtml}</div>`},
-    {k:'_p', type:'raw', html:`<div class="checks-h"><span>Productos a estudiar · <span id="sesPCount">${arr(s.productos).length} seleccionados</span></span><small class="muted" id="sesProdHint">${esc(h.hint)}</small></div><div class="checks" id="sesProds">${h.prodHtml}</div>`},
-    {k:'notas', label:'Notas para los representantes', full:1, attrs:'placeholder="Ej. Estudiar ficha técnica y presentar Kahoot el viernes"'}
-  ].concat(isNew ? [] : [{k:'_d', type:'raw', html:`<button type="button" class="btn danger sm" data-act="del-ses" data-id="${s.id}">🗑 Eliminar sesión</button>`}]), s, d => {
-    const reps = arr(d.reps), productos = arr(d.productos);
+    {k:'_p', type:'raw', html:`<div class="checks-h"><span>Productos · <span id="sesPCount">${arr(s.productos).length} seleccionados</span></span><small class="muted" id="sesProdHint">${esc(h.hint)}</small></div><div class="checks" id="sesProds">${h.prodHtml}</div>`},
+    {k:'notas', label:'Notas para los representantes', full:1, attrs:'placeholder="Ej. El examen es por Kahoot a las 10:00"'}
+  ].concat(isNew ? [] : [{k:'_d', type:'raw', html:`<button type="button" class="btn danger sm" data-act="del-ses" data-id="${s.id}">🗑 Eliminar ${tipoLabel(s).toLowerCase()}</button>`}]), s, d => {
+    const reps = arr(d.reps), productos = arr(d.productos), tipo = d.tipo;
     if (!reps.length) { toast('Selecciona al menos un representante.'); return false; }
-    if (!productos.length) { toast('Selecciona al menos un producto a estudiar.'); return false; }
-    const rec = {id: isNew ? uid('s') : s.id, fecha:d.fecha, hora:d.hora || '', titulo:(d.titulo || '').trim(), linea:d.linea || '', reps, productos, notas:(d.notas || '').trim()};
-    put('cronograma', rec).then(ok => ok && toast(isNew ? `Sesión programada para el ${longDate(rec.fecha)}.` : 'Sesión actualizada.'));
-    UI.calMonth = rec.fecha.slice(0,7);
+    if (!productos.length) { toast('Selecciona al menos un producto.'); return false; }
+    if (tipo !== 'examen') { if (!d.fecha || !d.fechaFin) { toast('Indica desde y hasta qué día deben estudiar.'); return false; } if (d.fechaFin < d.fecha) { toast('La fecha “hasta” no puede ser anterior a “desde”.'); return false; } }
+    const fEx = d.fechaExamen || d.fechaFin;
+    if (tipo !== 'estudio' && !fEx) { toast('Indica la fecha del examen.'); return false; }
+    if (tipo === 'ambos' && fEx < d.fecha) { toast('El examen no puede ser antes del inicio del estudio.'); return false; }
+    const base = {titulo:(d.titulo || '').trim(), linea:d.linea || '', reps, productos, notas:(d.notas || '').trim()};
+    const grupo = isNew ? (tipo === 'ambos' ? uid('g') : '') : (s.grupo || '');
+    const est = Object.assign({}, base, {id: isNew ? uid('s') : s.id, tipo:'estudio', fecha:d.fecha, fechaFin:d.fechaFin, hora:'', grupo});
+    const exa = Object.assign({}, base, {id: isNew ? uid('s') : s.id, tipo:'examen', fecha:fEx, fechaFin:fEx, hora:d.hora || '', grupo});
+    const recs = tipo === 'ambos' ? [est, exa] : tipo === 'estudio' ? [est] : [exa];
+    runOps(recs.map(rec => ({col:'cronograma', rec}))).then(ok => ok === recs.length && toast(tipo === 'ambos' ? `Programado: estudio ${sesWhen(est)} y examen ${sesWhen(exa)}.` : `${tipoLabel(recs[0])} ${isNew ? 'programado' : 'actualizado'}: ${sesWhen(recs[0])}.`));
+    UI.calMonth = recs[0].fecha.slice(0,7);
   }, isNew ? 'Programar' : 'Guardar');
+  const mb = $('#modalBody'); mb.dataset.tipo = s.tipo;
+}
+
+/* ---------- schedule as image ---------- */
+function loadScript(src){ return new Promise((res, rej) => { if ([...document.scripts].some(x => x.src === src)) return res(); const el = document.createElement('script'); el.src = src; el.onload = res; el.onerror = rej; document.head.appendChild(el); }); }
+function posterHtml(){
+  const [from, to] = cronRange(), list = scopeSessions().filter(s => overlaps(s, from, to)), mode = UI.cronMode || 'fecha';
+  const C = {ink:'#14213d', sub:'#4a5672', mute:'#7a849b', line:'#e1e5ee', est:'#1d5fb4', estBg:'#e7effb', exa:'#c0392b', exaBg:'#fdeaea'};
+  const pill = s => `<span style="display:inline-block;font-size:11px;font-weight:800;letter-spacing:.6px;padding:3px 9px;border-radius:999px;background:${sesTipo(s)==='examen'?C.exaBg:C.estBg};color:${sesTipo(s)==='examen'?C.exa:C.est}">${tipoLabel(s).toUpperCase()}</span>`;
+  const tags = s => arr(s.productos).map(p => `<span style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border:1px solid ${C.line};border-radius:6px;font-size:12px;font-weight:700;color:${C.ink};background:#f7f8fb">${esc(p)}</span>`).join('');
+  const scopeTxt = [UI.linea, UI.region, UI.vis && fullName(VM()[UI.vis])].filter(Boolean).join(' · ');
+  let body = '';
+  if (!list.length) body = `<div style="padding:40px;text-align:center;color:${C.mute};font-size:16px">Sin actividades programadas en este período.</div>`;
+  else if (mode === 'rep') {
+    body = `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">${sessionsByRep(list).map(({v, items}) => `<div style="border:1px solid ${C.line};border-radius:12px;padding:14px 16px;background:#fff">
+      <div style="font-size:15px;font-weight:800;color:${C.ink}">${esc(fullName(v))}</div><div style="font-size:12px;color:${C.mute};margin-bottom:8px">${esc(v.linea)}${v.zona && v.zona !== '—' ? ' · ' + esc(v.zona) : ''}</div>
+      ${items.map(s => `<div style="border-left:3px solid ${sesTipo(s)==='examen'?C.exa:C.est};padding:3px 0 3px 10px;margin-top:8px">${pill(s)} <span style="font-size:12.5px;font-weight:700;color:${C.ink}">${sesWhen(s)}</span><div style="margin-top:3px">${tags(s)}</div></div>`).join('')}</div>`).join('')}</div>`;
+  } else {
+    let start = from; while ((parseD(start).getDay() + 6) % 7) start = addDays(start, -1);
+    let end = to; while ((parseD(end).getDay() + 6) % 7 !== 6) end = addDays(end, 1);
+    const days = []; for (let d = start; d <= end; d = addDays(d, 1)) days.push(d);
+    const wkendUsed = days.some(d => (parseD(d).getDay() % 6 === 0) && d >= from && d <= to && list.some(s => overlaps(s, d, d)));
+    const cols = wkendUsed ? [0,1,2,3,4,5,6] : [0,1,2,3,4];
+    const weeks = []; for (let i = 0; i < days.length; i += 7) weeks.push(days.slice(i, i + 7));
+    const activeWeeks = weeks.filter(w => w.some(d => d >= from && d <= to));
+    body = `<div style="display:grid;grid-template-columns:repeat(${cols.length},1fr);gap:6px">${cols.map(c => `<div style="text-align:center;font-size:12px;font-weight:800;letter-spacing:1px;color:${C.sub};padding:4px 0">${DOW[c].toUpperCase()}</div>`).join('')}
+      ${activeWeeks.map(w => cols.map(c => { const d = w[c], inR = d >= from && d <= to, items = inR ? list.filter(s => overlaps(s, d, d)) : [];
+        return `<div style="min-height:92px;border:1px solid ${C.line};border-radius:10px;padding:6px 7px;background:${inR ? '#fff' : '#f3f5f9'};opacity:${inR ? 1 : .55}">
+          <div style="font-size:13px;font-weight:800;color:${d === today() ? C.est : C.ink}">${+d.slice(8)} <span style="font-weight:600;color:${C.mute};font-size:11px">${MONTHS[+d.slice(5,7)-1].slice(0,3).toLowerCase()}</span></div>
+          ${items.map(s => `<div style="margin-top:4px;padding:3px 6px;border-radius:5px;border-left:3px solid ${sesTipo(s)==='examen'?C.exa:C.est};background:${sesTipo(s)==='examen'?C.exaBg:C.estBg};font-size:11px;line-height:1.3;color:${C.ink}"><b style="color:${sesTipo(s)==='examen'?C.exa:C.est}">${sesTipo(s)==='examen' ? 'EXAMEN' + (s.hora ? ' ' + esc(s.hora) : '') : 'ESTUDIO'}</b><br>${esc(arr(s.productos).join(', '))}</div>`).join('')}</div>`; }).join('')).join('')}</div>
+      <div style="margin-top:22px;font-size:13px;font-weight:800;letter-spacing:1px;color:${C.sub}">DETALLE</div>
+      ${list.map(s => `<div style="display:grid;grid-template-columns:110px 210px 1fr;gap:12px;align-items:start;padding:10px 0;border-bottom:1px solid ${C.line}">
+        <div>${pill(s)}</div><div style="font-size:13px;font-weight:700;color:${C.ink}">${sesWhen(s)}${s.titulo ? `<div style="font-weight:500;color:${C.mute};font-size:12px">${esc(s.titulo)}</div>` : ''}</div>
+        <div><div>${tags(s)}</div><div style="font-size:12px;color:${C.sub};margin-top:3px">${repsInScope(s).map(v => esc(fullName(v))).join(', ')}</div>${s.notas ? `<div style="font-size:12px;color:${C.mute};margin-top:2px">${esc(s.notas)}</div>` : ''}</div></div>`).join('')}`;
+  }
+  return `<div style="width:1120px;background:#fff;font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:${C.ink}">
+    <div style="background:linear-gradient(135deg,#123a73,#1d5fb4);color:#fff;padding:28px 34px">
+      <div style="font-size:12px;letter-spacing:2.5px;opacity:.85;font-weight:700">TERAPIAS DE MARCA · FUERZA DE VENTAS</div>
+      <div style="font-size:32px;font-weight:800;margin-top:4px">Cronograma de capacitaciones</div>
+      <div style="font-size:16px;opacity:.92;margin-top:4px">Del ${longDate(from)} al ${longDate(to)}${scopeTxt ? ' · ' + esc(scopeTxt) : ''}</div></div>
+    <div style="padding:22px 34px 30px">
+      <div style="display:flex;gap:18px;margin-bottom:16px;font-size:12.5px;color:${C.sub}"><span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${C.est};vertical-align:-1px;margin-right:6px"></span>Estudio</span><span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${C.exa};vertical-align:-1px;margin-right:6px"></span>Examen</span></div>
+      ${body}</div></div>`;
+}
+async function exportCronImage(){
+  const btn = $('[data-act="cron-img"]'); if (btn) { btn.disabled = true; btn.textContent = 'Generando…'; }
+  try {
+    if (!window.html2canvas) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+    const host = document.createElement('div'); host.style.cssText = 'position:fixed;left:-20000px;top:0;z-index:-1'; host.innerHTML = posterHtml(); document.body.appendChild(host);
+    const canvas = await window.html2canvas(host.firstElementChild, {scale:2, backgroundColor:'#ffffff', logging:false}); host.remove();
+    const blob = await new Promise(r => canvas.toBlob(r, 'image/png')); const [from, to] = cronRange();
+    UI.img = {blob, url: URL.createObjectURL(blob), name: `cronograma_${from}_al_${to}.png`};
+    openForm('Cronograma en imagen', [{k:'_i', type:'raw', html:`<div class="img-prev"><img src="${UI.img.url}" alt="Vista previa del cronograma"></div><p class="muted" style="font-size:12.5px;margin:8px 0 0">Descárgala o cópiala para enviarla por WhatsApp o correo. También puedes mantener presionada la imagen (o clic derecho) para guardarla.</p>
+      <div class="toolbar" style="margin-top:8px"><button type="button" class="btn" data-act="img-copy">📋 Copiar imagen</button></div>`}], {}, () => { saveFile(UI.img.name, UI.img.blob); return false; }, '⬇ Descargar PNG');
+  } catch(e) { toast('No se pudo generar la imagen. Revisa tu conexión a internet e inténtalo de nuevo.'); }
+  finally { const b = $('[data-act="cron-img"]'); if (b) { b.disabled = false; b.textContent = '🖼 Exportar imagen'; } }
+}
+async function saveFile(filename, data){
+  if (window.claude && typeof window.claude.use === 'function') {
+    let dl = null; try { dl = await window.claude.use('downloads'); } catch(e) {}
+    if (dl) { try { await dl.save({filename, data}); toast('Archivo guardado.'); return true; } catch(e) { if (e && e.code === 'declined') return false; if (e && e.code === 'rate_limited') { toast('Ya hay una descarga pendiente de confirmar.'); return false; } } }
+    return null;
+  }
+  const blob = data instanceof Blob ? data : new Blob([data]); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 800); return true;
 }
 
 views.ranking = () => {
@@ -1229,7 +1329,7 @@ function openForm(title, fields, values, onSubmit, okLabel='Guardar'){
     else if (f.type === 'info') input = `<div class="note">${f.html}</div>`;
     else if (f.type === 'textarea') input = `<textarea name="${f.k}" id="fld_${f.k}" class="paste" ${f.attrs||''}>${esc(v)}</textarea>`;
     else input = `<input name="${f.k}" type="${f.type||'text'}" value="${esc(v)}" ${f.req?'required':''} ${f.list?`list="${f.list}"`:''} ${f.attrs||''}>`;
-    return `<label class="${f.full?'full':''}">${esc(f.label||'')}${input}</label>`;
+    return `<label class="${f.full?'full':''} ${f.cls||''}">${esc(f.label||'')}${input}</label>`;
   }).join('') + (fields.some(f=>f.list) ? fields.filter(f=>f.listOpts).map(f => `<datalist id="${f.list}">${f.listOpts.map(o=>`<option value="${esc(o)}">`).join('')}</datalist>`).join('') : '');
   modalSubmit = onSubmit; $('#modalBg').classList.add('on');
   setTimeout(() => { const i = $('#modalBody input, #modalBody select'); if (i) i.focus(); }, 30);
@@ -1348,7 +1448,7 @@ async function importBackup(j){
   toast(ok === ops.length ? 'Respaldo importado en la base compartida.' : `Importación incompleta: ${ok} de ${ops.length} cambios guardados.`);
 }
 /* ---------- exports ---------- */
-function download(name, content, type){ showExport('Exportar · ' + name, String(content).replace(/^\ufeff/,'')); }
+async function download(name, content, type){ const r = await saveFile(name, String(content)); if (r === null) showExport('Exportar · ' + name, String(content).replace(/^\ufeff/,'')); }
 const csv = rows => '﻿' + rows.map(r => r.map(c => { const s = String(c ?? ''); return /[";\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s; }).join(';')).join('\n');
 function exportEvals(){ const vm = VM(); download('evaluaciones_fdv.csv', csv([['Nombre','Apellidos','Correo','Línea','Zona','Examen','Fecha','Nota /20','Puntos Kahoot','Estado','Resultado']].concat(
   S.evaluaciones.map(e => { const v = vm[e.vid] || {}; return [v.nombre, v.apellidos, v.correo, v.linea, v.zona, e.examen, fdate(e.fecha), e.estado==='No presentó'?'':String(e.nota).replace('.',','), e.kahoot ?? '', e.estado, e.estado==='No presentó'?'No presentó':passes(e)?'Aprobado':'Reprobado']; }))), 'text/csv;charset=utf-8'); }
@@ -1486,6 +1586,8 @@ document.addEventListener('click', e => {
     case 'cal-today': UI.calMonth = today().slice(0,7); UI.cronFrom = UI.cronTo = ''; render(); break;
     case 'cron-mode': UI.cronMode = a.dataset.v; render(); break;
     case 'cron-copy-text': copyText(cronText(UI.cronMode || 'fecha'), 'Cronograma'); break;
+    case 'cron-img': exportCronImage(); break;
+    case 'img-copy': (async () => { try { await navigator.clipboard.write([new ClipboardItem({'image/png': UI.img.blob})]); toast('Imagen copiada. Pégala en WhatsApp o en el correo.'); } catch(err) { toast('Este navegador no permite copiar la imagen aquí. Usa “Descargar PNG”.'); } })(); break;
     case 'cron-copy-xls': copyText(cronTSV(), 'Cronograma para Excel', 'Selecciona el texto, cópialo y pégalo en una hoja de Excel o Google Sheets: cada columna quedará en su celda.'); break;
   }
 });
@@ -1495,6 +1597,10 @@ document.addEventListener('input', e => {
   if (f) { UI.kahoot = UI.kahoot || {}; UI.kahoot[f] = e.target.value; }
 });
 document.addEventListener('change', e => {
+  if (e.target.name === 'tipo' && e.target.closest('#modalBody')) { $('#modalBody').dataset.tipo = e.target.value; return; }
+  if (e.target.name === 'fechaFin' && e.target.closest('#modalBody')) { const fx = $('#modalBody [name="fechaExamen"]'); if (fx && (!fx.value || fx.value < e.target.value || fx.dataset.auto !== '0')) fx.value = e.target.value; }
+  if (e.target.name === 'fecha' && e.target.closest('#modalBody')) { const ff = $('#modalBody [name="fechaFin"]'); if (ff && ff.value < e.target.value) { ff.value = e.target.value; const fx = $('#modalBody [name="fechaExamen"]'); if (fx && fx.value < e.target.value) fx.value = e.target.value; } }
+  if (e.target.name === 'fechaExamen' && e.target.closest('#modalBody')) e.target.dataset.auto = '0';
   const ds = e.target.dataset || {};
   if (UI.kahoot && UI.kahoot.cols && (ds.kcolOn != null || ds.kcolMax != null || ds.kcolName != null)) {
     if (ds.kcolOn != null) UI.kahoot.cols[+ds.kcolOn].on = e.target.checked;
