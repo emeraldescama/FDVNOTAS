@@ -199,6 +199,22 @@ tr.open .chev{transform:rotate(90deg)}
 .podium .pn{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .podium .pn small{display:block;color:var(--muted);font-size:11px;overflow:hidden;text-overflow:ellipsis}
 .podium b{font-variant-numeric:tabular-nums}
+.att-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.att-card{border:1px solid var(--border);border-radius:10px;padding:12px;background:var(--surface);min-width:0}
+.att-card.has-abs{border-left:4px solid var(--bad)}
+.att-card.ok{border-left:4px solid var(--good)}
+.att-card h3{margin:0;font-size:14px;display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.att-card h3 small{font-weight:600;color:var(--text-2);font-size:12px;white-space:nowrap}
+.attbar{display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--track);margin:8px 0;gap:2px}
+.attbar i{display:block;height:100%}
+.attbar .p{background:var(--good)} .attbar .a{background:var(--bad)}
+.att-card ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;font-size:12.5px}
+.att-card li{display:flex;flex-direction:column;gap:0;padding:3px 0;border-bottom:1px dashed var(--border)}
+.att-card li:last-child{border-bottom:0}
+.att-card li span{font-weight:600}
+.att-card li small{color:var(--muted)}
+.lpills{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.att-row{cursor:pointer}
 .pos.low{background:var(--bad-soft);border-color:color-mix(in srgb,var(--bad) 35%,var(--border));color:var(--bad-text)}
 @media (max-width:520px){.podium{grid-template-columns:1fr}}
 .pie-mini{border:1px solid var(--border);border-radius:10px;background:var(--surface);padding:10px 8px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;text-align:center;min-width:0}
@@ -407,16 +423,16 @@ const clone = o => JSON.parse(JSON.stringify(o));
 function fresh(){
   return { version:1, visitadores:clone(SEED.visitadores||[]), evaluaciones:clone(SEED.evaluaciones||[]),
     portafolio:clone(SEED.portafolio||[]), fichero:clone(SEED.fichero), contactos:clone(SEED.contactos),
-    medicos:[], cronograma:[], config:{min:15, ausCero:false} };
+    medicos:[], cronograma:[], examenes:[], config:{min:15, ausCero:false} };
 }
 let S = null;
 try { S = JSON.parse(localStorage.getItem(LS_KEY)); } catch(e) { S = null; }
 if (!S || !Array.isArray(S.visitadores)) S = fresh();
-S.medicos = S.medicos || []; S.cronograma = S.cronograma || []; S.config = Object.assign({min:15, ausCero:false}, S.config || {});
+S.medicos = S.medicos || []; S.cronograma = S.cronograma || []; S.examenes = S.examenes || []; S.config = Object.assign({min:15, ausCero:false}, S.config || {});
 function save(){ if (DBS.mode === 'db') return; try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch(e) {} }
 
 /* ---------- data layer: shared db when published, browser storage when opened as a local file ---------- */
-const COLS = ['visitadores','evaluaciones','portafolio','medicos','cronograma'];
+const COLS = ['visitadores','evaluaciones','portafolio','medicos','cronograma','examenes'];
 const DBS = { db:null, mode: SEED.visitadores ? 'local' : 'connecting', canWrite:true, loaded:new Set() };
 const plain = o => JSON.parse(JSON.stringify(o));
 function dbErr(e){
@@ -530,6 +546,71 @@ function pieChart(vs){
     <div class="pie-legend">${BAND_ORDER.filter(k => k !== 'sin' || counts.sin).map(k => `<button type="button" class="${UI.band===k?'on':''}" data-act="band" data-band="${k}" title="Clic para ver solo este grupo en el ranking">
       <i class="dot" style="background:${BAND_META[k].color};width:12px;height:12px"></i><span class="nm">${BAND_META[k].label}<small>${bandRange(k)}</small></span><span class="c">${counts[k]}</span><span class="p">${pct(counts[k]/total)}</span></button>`).join('')}</div></div>`;
 }
+/* ---------- attendance: who had to take each evaluation and did not ---------- */
+const examKey = ex => 'x-' + (nrm(ex).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 120) || 'sin-nombre');
+function examLines(ex){
+  const cfg = (S.examenes || []).find(c => c.examen === ex);
+  if (cfg) return {lines: arr(cfg.lineas), how: 'definido por ti', cfg: true};
+  const n = ' ' + nrm(ex).replace(/[^a-z0-9]+/g, ' ') + ' ';
+  const prods = [...new Set(S.portafolio.map(p => p.producto))].filter(p => { const pn = nrm(p).replace(/[^a-z0-9]+/g, ' ').trim(); return pn.length >= 4 && n.includes(' ' + pn + ' '); });
+  if (prods.length) return {lines: LINES.filter(l => S.portafolio.some(p => p.linea === l && prods.includes(p.producto))).concat([GD]), how: `líneas que llevan ${prods.join(', ')}`};
+  const took = new Set(S.evaluaciones.filter(e => e.examen === ex && e.estado !== 'No presentó').map(e => e.vid));
+  const lines = LINES.concat([GD]).filter(l => { const act = S.visitadores.filter(v => v.linea === l && v.estado === 'Activo'); return act.length && act.filter(v => took.has(v.id)).length / act.length >= .5; });
+  return {lines, how: lines.length ? 'según quiénes la presentaron (líneas donde la presentó al menos la mitad)' : 'sin definir'};
+}
+function attendance(ex){
+  const {lines, how, cfg} = examLines(ex), ids = new Set(scopeVis().map(v => v.id));
+  const req = S.visitadores.filter(v => v.estado === 'Activo' && lines.includes(v.linea) && ids.has(v.id));
+  const pres = new Set(S.evaluaciones.filter(e => e.examen === ex && e.estado !== 'No presentó').map(e => e.vid));
+  return {ex, lines, how, cfg, req, present: req.filter(v => pres.has(v.id)), absent: req.filter(v => !pres.has(v.id))};
+}
+const regionOf = v => v.region && v.region !== '—' ? v.region : 'Sin región';
+function attendanceCard(){
+  const exams = examOrder(S.evaluaciones), sel = UI.attExam !== undefined ? UI.attExam : (UI.exam || ''), by = UI.attBy || 'region';
+  if (!exams.length) return '';
+  const pctBar = (p, a) => { const tot = p + a; return tot ? `<div class="attbar" data-tip="${p} presentaron · ${a} inasistente${a===1?'':'s'}"><i class="p" style="width:${p/tot*100}%"></i><i class="a" style="width:${a/tot*100}%"></i></div>` : '<div class="attbar"></div>'; };
+  const linePills = at => at.lines.length ? at.lines.map(l => `<span class="pill" title="${esc(l)}">${esc(l === GD ? 'Gerentes' : shortLine(l))}</span>`).join('') : '<span class="status warn">Sin definir</span>';
+  let body;
+  if (!sel) {
+    const rows = exams.map(attendance);
+    body = `<div class="tbl-wrap"><table><thead><tr><th>Evaluación</th><th>Deben presentar</th><th class="r">Convocados</th><th class="r">Presentaron</th><th class="r">Inasistentes</th><th style="min-width:140px">Asistencia</th><th></th></tr></thead><tbody>
+      ${rows.map(at => `<tr class="att-row" data-act="att-pick" data-ex="${esc(at.ex)}" title="Ver inasistentes de ${esc(at.ex)}"><td><b>${esc(at.ex)}</b></td><td><div class="lpills">${linePills(at)}</div><small class="muted">${esc(at.how)}</small></td>
+        <td class="r num">${at.req.length}</td><td class="r num">${at.present.length}</td><td class="r num"><b class="${at.absent.length ? 't-bad' : 't-good'}">${at.absent.length}</b></td>
+        <td>${pctBar(at.present.length, at.absent.length)}<small class="muted">${at.req.length ? pct(at.present.length / at.req.length) + ' asistencia' : '—'}</small></td>
+        <td><button class="iconbtn" data-act="att-cfg" data-ex="${esc(at.ex)}" title="Definir qué líneas deben presentar" aria-label="Definir líneas">✎</button></td></tr>`).join('')}</tbody></table></div>`;
+  } else {
+    const at = attendance(sel), key = by === 'region' ? regionOf : v => v.linea;
+    const groups = [...groupBy(at.req, key)].map(([g, list]) => ({g, list, abs: list.filter(v => at.absent.includes(v))})).sort((a,b) => b.abs.length - a.abs.length || a.g.localeCompare(b.g, 'es'));
+    body = `<div class="kv" style="margin:0 0 12px"><span>Deben presentar: <span class="lpills" style="display:inline-flex">${linePills(at)}</span> <small class="muted">(${esc(at.how)})</small> <button class="btn sm" data-act="att-cfg" data-ex="${esc(sel)}">✎ Cambiar líneas</button></span></div>
+      <div class="stats-mini" style="margin-bottom:12px"><div><span>Convocados</span><b>${at.req.length}</b></div><div><span>Presentaron</span><b class="t-good">${at.present.length}</b></div><div><span>Inasistentes</span><b class="${at.absent.length ? 't-bad' : ''}">${at.absent.length}</b></div><div><span>Asistencia</span><b>${at.req.length ? pct(at.present.length / at.req.length) : '—'}</b></div></div>
+      ${!at.lines.length ? '<div class="note">Esta evaluación aún no tiene líneas asignadas. Usa “Cambiar líneas” para indicar quiénes deben presentarla.</div>' : !groups.length ? '<div class="empty">No hay representantes activos de esas líneas con los filtros actuales.</div>' :
+      `<div class="att-grid">${groups.map(({g, list, abs}) => `<div class="att-card ${abs.length ? 'has-abs' : 'ok'}"><h3>${esc(g)} <small>${list.length - abs.length} de ${list.length} presentaron</small></h3>${pctBar(list.length - abs.length, abs.length)}
+        ${abs.length ? `<ul>${abs.sort((a,b) => fullName(a).localeCompare(fullName(b), 'es')).map(v => `<li><span>✕ ${esc(fullName(v))}</span><small>${esc(by === 'region' ? shortLine(v.linea) : regionOf(v))}${v.zona && v.zona !== '—' ? ' · ' + esc(v.zona) : ''}</small></li>`).join('')}</ul>` : '<span class="status good">✓ Todos presentaron</span>'}</div>`).join('')}</div>`}`;
+  }
+  return `<div class="card" style="margin-top:16px"><div class="card-h"><div><h2>Inasistencias por evaluación</h2><p class="sub">Representantes activos de las líneas que deben presentar cada evaluación y que no tienen nota registrada${UI.region ? ' · ' + esc(UI.region === '—' ? 'Sin región' : UI.region) : ''}${UI.linea ? ' · ' + esc(UI.linea) : ''}</p></div>
+    <div class="toolbar"><select id="attExam" aria-label="Evaluación"><option value="">Resumen de todas las evaluaciones</option>${exams.map(x => `<option ${sel === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select>
+      ${sel ? `<div class="seg" role="group" aria-label="Agrupar"><button type="button" class="${by==='region'?'on':''}" data-act="att-by" data-v="region">Por región</button><button type="button" class="${by==='linea'?'on':''}" data-act="att-by" data-v="linea">Por línea</button></div>` : ''}
+      <button class="btn" data-act="att-copy">📋 Copiar inasistentes</button></div></div>
+    <div class="card-b">${body}</div></div>`;
+}
+function attendanceText(){
+  const sel = UI.attExam !== undefined ? UI.attExam : (UI.exam || ''), by = UI.attBy || 'region';
+  const list = sel ? [attendance(sel)] : examOrder(S.evaluaciones).map(attendance);
+  return list.map(at => { const key = by === 'region' ? regionOf : v => v.linea;
+    const g = [...groupBy(at.absent, key)].sort((a,b) => a[0].localeCompare(b[0], 'es'));
+    return `INASISTENTES · ${at.ex}\nDeben presentar: ${at.lines.join(', ') || 'sin definir'}\nPresentaron ${at.present.length} de ${at.req.length}${at.absent.length ? '' : ' · ¡Todos presentaron!'}` +
+      g.map(([k, vs]) => `\n\n${k} (${vs.length}):\n` + vs.map(v => `  • ${fullName(v)} — ${by === 'region' ? v.linea : regionOf(v)}`).join('\n')).join(''); }).join('\n\n────────\n\n');
+}
+function examCfgForm(ex){
+  const cur = examLines(ex), set = new Set(cur.lines);
+  openForm(`¿Quiénes deben presentar “${ex}”?`, [
+    {k:'_i', type:'info', full:1, html:`Marca las líneas cuyos representantes activos deben presentar esta evaluación. Los que no tengan nota aparecerán como inasistentes.<br><small>Ahora: ${esc(cur.how)}.</small>`},
+    {k:'_l', type:'raw', html:`<div class="checks">${LINES.concat([GD]).map(l => `<label><input type="checkbox" name="lineas" value="${esc(l)}" ${set.has(l) ? 'checked' : ''}> ${esc(l)}</label>`).join('')}</div>`}
+  ].concat(cur.cfg ? [{k:'_r', type:'raw', html:`<button type="button" class="btn sm" data-act="att-auto" data-ex="${esc(ex)}">↺ Volver a la detección automática</button>`}] : []), {}, d => {
+    put('examenes', {id: examKey(ex), examen: ex, lineas: arr(d.lineas)}).then(ok => ok && toast('Líneas de la evaluación guardadas.'));
+  });
+}
+
 function podium(vs){
   const r = vs.filter(s => s.avg != null).sort((a,b) => b.avg - a.avg || b.n - a.n);
   const top = r.slice(0, 3), bottom = r.slice(top.length).slice(-3).reverse();
@@ -853,6 +934,7 @@ views.ranking = () => {
       ${podiumHtml(vs, false)}
       <div style="margin-top:14px">${bars(exams.map(ex => { const st = stats(evs.filter(e => e.examen === ex)); return {label:esc(ex), value:st.avg, tip:`${ex}: promedio ${fmt(st.avg,2)} · aprobación ${pct(st.rate)} · n=${st.n}`}; }))}</div></div></div>
   </div>
+  ${attendanceCard()}
   <div class="card" style="margin-top:16px"><div class="card-h"><div><h2>Ranking por promedio general</h2><p class="sub">Promedio acumulado de todas las notas de cada estudiante${UI.exam ? ' (solo ' + esc(UI.exam) + ')' : ''} · clic en una cabecera para reordenar</p></div>
     <div class="toolbar">${UI.band ? `<span class="chipf">${BAND_META[UI.band].label}<button type="button" data-act="band" data-band="${UI.band}" aria-label="Quitar filtro">✕</button></span>` : ''}<button class="btn" data-act="exp-rank">⬇ CSV</button></div></div>
     <div class="card-b" style="padding:10px 0 0">${table('ranking', [
@@ -1536,10 +1618,10 @@ let qT; $('#q').addEventListener('input', e => { clearTimeout(qT); qT = setTimeo
 $('#fLinea').addEventListener('change', e => { UI.linea = e.target.value; render(); });
 $('#fReg').addEventListener('change', e => { UI.region = e.target.value; render(); });
 $('#fVis').addEventListener('change', e => { UI.vis = e.target.value; render(); });
-$('#fExam').addEventListener('change', e => { UI.exam = e.target.value; render(); });
+$('#fExam').addEventListener('change', e => { UI.exam = e.target.value; UI.attExam = undefined; render(); });
 $('#fMin').addEventListener('change', e => { const v = parseFloat(e.target.value); if (!isNaN(v) && v >= 0 && v <= 20) { S.config.min = v; putConfig(); } });
 $('#fAus').addEventListener('change', e => { S.config.ausCero = e.target.checked; putConfig(); });
-$('#btnClear').addEventListener('click', () => { UI.q = ''; UI.linea = ''; UI.region = ''; UI.vis = ''; UI.exam = ''; UI.band = ''; UI.ficheroLinea = ''; $('#q').value = ''; render(); });
+$('#btnClear').addEventListener('click', () => { UI.q = ''; UI.linea = ''; UI.region = ''; UI.attExam = undefined; UI.vis = ''; UI.exam = ''; UI.band = ''; UI.ficheroLinea = ''; $('#q').value = ''; render(); });
 $('#btnTheme').addEventListener('click', () => {
   const r = document.documentElement, cur = r.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
   r.dataset.theme = cur === 'dark' ? 'light' : 'dark'; try { localStorage.setItem(LS_KEY+'-theme', r.dataset.theme); } catch(e) {}
@@ -1614,6 +1696,11 @@ document.addEventListener('click', e => {
     case 'cal-today': UI.calMonth = today().slice(0,7); UI.cronFrom = UI.cronTo = ''; render(); break;
     case 'cron-mode': UI.cronMode = a.dataset.v; render(); break;
     case 'cron-copy-text': copyText(cronText(UI.cronMode || 'fecha'), 'Cronograma'); break;
+    case 'att-pick': UI.attExam = a.dataset.ex; render(); break;
+    case 'att-by': UI.attBy = a.dataset.v; render(); break;
+    case 'att-cfg': e.stopPropagation(); if (document.body.classList.contains('ro')) { toast('Solo lectura: no puedes cambiar las líneas.'); break; } examCfgForm(a.dataset.ex); break;
+    case 'att-auto': closeModal(); del('examenes', examKey(a.dataset.ex)).then(ok => ok && toast('Se usará la detección automática.')); break;
+    case 'att-copy': copyText(attendanceText(), 'Inasistentes'); break;
     case 'del-all-ses': { const all = S.cronograma || []; if (!all.length) { toast('El calendario ya está vacío.'); break; }
       const nEx = all.filter(s => sesTipo(s) === 'examen').length;
       askConfirm(`¿Borrar todo el cronograma? Se eliminarán ${all.length} actividades (${all.length - nEx} períodos de estudio y ${nEx} exámenes) de todos los meses, para todas las personas que usan el panel. No se puede deshacer.`, async () => {
@@ -1642,6 +1729,7 @@ document.addEventListener('change', e => {
     render(); return;
   }
   if (e.target.closest && e.target.closest('#modalBody') && $('#sesReps') && (e.target.name === 'linea' || e.target.name === 'reps' || e.target.name === 'productos')) refreshSesLists();
+  if (e.target.id === 'attExam') { UI.attExam = e.target.value; render(); return; }
   if (e.target.id === 'cronFrom' || e.target.id === 'cronTo') { const [f, tt] = cronRange(); UI.cronFrom = e.target.id === 'cronFrom' ? e.target.value || f : f; UI.cronTo = e.target.id === 'cronTo' ? e.target.value || tt : tt; render(); }
   const map = {kMode:'mode', kDate:'date'}; const f = map[e.target.id]; if (f) { UI.kahoot = UI.kahoot || {}; UI.kahoot[f] = e.target.value; }
   const k = e.target.closest('[data-krow]'); if (k && UI.kahoot) { const r = UI.kahoot.rows[+k.dataset.krow]; r.vid = k.value; r.matchBy = 'manual'; }
