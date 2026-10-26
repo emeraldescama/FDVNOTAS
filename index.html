@@ -375,7 +375,7 @@ body.ro .chip{cursor:default}
       <div><h1>Fuerza de Ventas · Terapias de Marca</h1><p>Nueva estructura promocional · vigente desde Octubre 2026</p></div>
     </div>
     <div class="toolbar">
-      <span class="status neutral" id="syncStatus" aria-live="polite">Conectando…</span>
+      <span class="status neutral" id="syncStatus" aria-live="polite" role="button" tabindex="0" style="cursor:pointer" title="">Conectando…</span>
       <button class="btn ghost" id="btnTheme" title="Cambiar tema" aria-label="Cambiar tema">◐ Tema</button>
       <div class="menu">
         <button class="btn" id="btnData" aria-haspopup="true">Datos ▾</button>
@@ -482,9 +482,18 @@ function save(){ if (DBS.mode === 'db') return; try { localStorage.setItem(LS_KE
 const COLS = ['visitadores','evaluaciones','portafolio','medicos','cronograma','examenes','productos'];
 const DBS = { db:null, mode: SEED.visitadores ? 'local' : 'connecting', canWrite:true, loaded:new Set() };
 const plain = o => JSON.parse(JSON.stringify(o));
+let permShown = false;
+function permHelp(){
+  if (permShown) return; permShown = true;
+  openForm('Esta cuenta no puede guardar cambios', [{k:'_i', type:'info', full:1, html:`<p style="margin:0 0 8px">Estás viendo el panel con una cuenta de Claude que <b>no es la dueña</b> del panel y no tiene permiso de edición. Por eso lo que cargues aquí no se guarda.</p>
+    <p style="margin:0 0 6px"><b>Para poder cargar notas desde esta computadora:</b></p>
+    <ol style="margin:0;padding-left:18px;line-height:1.6"><li>Cierra sesión en claude.ai y entra con la <b>misma cuenta con la que creaste el panel</b> (la que usas en la otra computadora).</li>
+    <li>O, desde la cuenta dueña, usa <b>Compartir</b> en la página del panel para dar acceso de <b>Editor</b> a esta otra cuenta. Si el panel también está compartido con “cualquiera con el enlace”, los editores invitados por correo solo pueden leer: en ese caso usa la opción 1.</li></ol>`}], {}, () => {}, 'Entendido');
+}
 function dbErr(e){
   const c = e && e.code;
-  toast(c === 'invalid_argument' ? 'No tienes permiso para modificar los datos compartidos. Pide acceso de Colaborador al propietario.'
+  if (c === 'invalid_argument' && !DBS.isOwner && DBS.canWriteFlag !== true) { permHelp(); return; }
+  toast(c === 'invalid_argument' ? `No se pudo guardar: ${(e && e.message) || 'dato no válido'}. Si el problema sigue, avísame con este mensaje.`
     : c === 'quota_exceeded' ? 'La base de datos alcanzó su límite de capacidad. Elimina registros antiguos e inténtalo de nuevo.'
     : 'No se pudo guardar el cambio. Revisa tu conexión e inténtalo de nuevo.');
 }
@@ -516,7 +525,7 @@ async function connect(){
   if (!db) { if (DBS.mode === 'connecting') DBS.mode = 'offline'; schedule(); return; }
   DBS.db = db; DBS.mode = 'db';
   COLS.forEach(c => { S[c] = []; }); S.config = {min:15, ausCero:false};
-  try { const user = await window.claude.use('user'); if (user && typeof user.can === 'function') { const w = await user.can('data.write'); if (w === false) DBS.canWrite = false; } } catch(e) {}
+  try { const user = await window.claude.use('user'); if (user) { const me = typeof user.me === 'function' ? await user.me() : null; DBS.isOwner = !!(me && me.isOwner); const w = typeof user.can === 'function' ? await user.can('data.write') : null; DBS.canWriteFlag = w; if (w === false && !DBS.isOwner) DBS.canWrite = false; } } catch(e) {}
   COLS.forEach(c => db.collection(c).onSnapshot(snap => {
     S[c] = snap.docs.map(d => Object.assign({}, d.data(), {id:d.id})); DBS.loaded.add(c); schedule();
   }, () => { DBS.mode = 'offline'; toast('Se perdió la conexión con la base compartida. Recarga la página.'); schedule(); }));
@@ -1854,7 +1863,7 @@ function syncFilters(){
 function render(){
   const ss = $('#syncStatus');
   if (ss) {
-    const st = DBS.mode === 'db' ? (DBS.canWrite ? ['good','● En vivo · datos compartidos','Los cambios se guardan en la base compartida y se ven al instante en todos los navegadores.'] : ['warn','Solo lectura','Puedes consultar el panel; para editar pide acceso de Colaborador al propietario.'])
+    const st = DBS.mode === 'db' ? (DBS.canWrite ? ['good', DBS.isOwner ? '● En vivo · eres el propietario' : DBS.canWriteFlag === true ? '● En vivo · puedes editar' : '● En vivo · datos compartidos','Los cambios se guardan en la base compartida y se ven al instante en todos los navegadores.'] : ['warn','Solo lectura · esta cuenta no puede editar','Puedes consultar el panel. Para cargar notas entra con la cuenta dueña del panel o pide acceso de Editor.'])
       : DBS.mode === 'local' ? ['neutral','Modo local','Archivo local: los cambios se guardan solo en este navegador.']
       : DBS.mode === 'connecting' ? ['neutral','Conectando…',''] : ['bad','Sin conexión','No se pudo conectar con la base compartida. Recarga la página.'];
     ss.className = 'status ' + st[0]; ss.textContent = st[1]; ss.title = st[2];
@@ -1890,6 +1899,7 @@ $('#fExam').addEventListener('change', e => { UI.exam = e.target.value; UI.attEx
 $('#fMin').addEventListener('change', e => { const v = parseFloat(e.target.value); if (!isNaN(v) && v >= 0 && v <= 20) { S.config.min = v; putConfig(); } });
 $('#fAus').addEventListener('change', e => { S.config.ausCero = e.target.checked; putConfig(); });
 $('#btnClear').addEventListener('click', () => { UI.q = ''; UI.fdv = ''; UI.linea = ''; UI.region = ''; UI.attExam = undefined; UI.vis = ''; UI.exam = ''; UI.band = ''; UI.ficheroLinea = ''; $('#q').value = ''; render(); });
+$('#syncStatus').addEventListener('click', () => { if (DBS.mode === 'db' && !DBS.canWrite) { permShown = false; permHelp(); } else toast($('#syncStatus').title || $('#syncStatus').textContent); });
 $('#btnTheme').addEventListener('click', () => {
   const r = document.documentElement, cur = r.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
   r.dataset.theme = cur === 'dark' ? 'light' : 'dark'; try { localStorage.setItem(LS_KEY+'-theme', r.dataset.theme); } catch(e) {}
