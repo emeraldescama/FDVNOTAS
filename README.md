@@ -2,7 +2,9 @@
 
 Dashboard autocontenido (`index.html`) para el seguimiento de capacitaciones Kahoot, el portafolio de productos por línea y el fichero médico de la Fuerza de Ventas con la nueva estructura promocional de octubre 2026.
 
-- Abrir `index.html` en el navegador. Funciona sin conexión; para leer archivos Excel (.xlsx) de Kahoot necesita internet (librería SheetJS desde cdnjs).
+- `index.html` es la portada: lleva al panel compartido (guarda en la nube) y explica cómo dar acceso de editor.
+- `copia-local.html` es la copia sin conexión: guarda solo en el navegador donde se abre.
+- Abrir `copia-local.html` en el navegador. Funciona sin conexión; para leer archivos Excel (.xlsx) de Kahoot necesita internet (librería SheetJS desde cdnjs).
 - Inasistencias por evaluación (en "Ranking de notas"): cada evaluación tiene las líneas que deben presentarla (detectadas por producto o por quiénes la presentaron, o definidas a mano); muestra por región o por línea quién no la presentó.
 - Fuerzas de ventas: Visita Médica Pharmetique, FDV OTC y FDV La Santé Genéricos (se pueden agregar más). Filtro global por FDV y carga de representantes desde Excel/CSV (lista o estructura por regiones).
 - Portafolio: búsqueda de productos por nombre, principio activo u otros nombres, con las líneas que los llevan; edición y cambio de nombre de productos; líneas nuevas por FDV.
