@@ -230,6 +230,12 @@ tr.open .chev{transform:rotate(90deg)}
 .sres .nm small{display:block;font-weight:400;color:var(--muted);font-size:12px}
 @media (max-width:640px){.sres{grid-template-columns:1fr}}
 .imp-card{border:2px dashed var(--brand-2)}
+.warnbox{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;background:var(--warn-soft);border:1px solid color-mix(in srgb,var(--warn) 55%,var(--border));border-left:5px solid var(--warn);border-radius:10px;padding:12px 14px;font-size:13.5px;color:var(--text)}
+.warnbox b{color:var(--warn-text)}
+.badbox{background:var(--bad-soft);border-color:color-mix(in srgb,var(--bad) 45%,var(--border));border-left-color:var(--bad)}
+#localBanner{max-width:1400px;margin:12px auto 0;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+tr.unm td{background:var(--bad-soft)}
+tr.unm td:first-child{box-shadow:inset 4px 0 0 var(--bad)}
 .pos.low{background:var(--bad-soft);border-color:color-mix(in srgb,var(--bad) 35%,var(--border));color:var(--bad-text)}
 @media (max-width:520px){.podium{grid-template-columns:1fr}}
 .pie-mini{border:1px solid var(--border);border-radius:10px;background:var(--surface);padding:10px 8px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;text-align:center;min-width:0}
@@ -412,6 +418,7 @@ body.ro .chip{cursor:default}
   <button class="btn ghost sm" id="btnClear">Limpiar filtros</button>
 </section>
 
+<div id="localBanner" hidden></div>
 <main id="view"></main>
 
 <div class="modal-bg" id="modalBg" role="dialog" aria-modal="true">
@@ -1326,6 +1333,11 @@ views.fichero = () => {
   return h;
 };
 
+function unmatchedBox(unm, total){
+  if (!unm) return `<div class="card-b" style="padding-bottom:0"><div class="warnbox" style="background:var(--good-soft);border-left-color:var(--good);border-color:var(--border)"><span aria-hidden="true">✓</span><div>Las ${total} filas del archivo están asociadas a un representante.</div></div></div>`;
+  return `<div class="card-b" style="padding-bottom:0"><div class="warnbox badbox"><span style="font-size:18px" aria-hidden="true">⚠</span><div style="flex:1;min-width:240px"><b>${unm} de ${total} fila${unm===1?'':'s'} no se reconoce${unm===1?'':'n'}</b> (en rojo) y no se registrará${unm===1?'':'n'} hasta que elijas a quién corresponde${unm===1?'':'n'} en “Asociar a visitador”. Si son personas nuevas, créalas de una vez.</div>
+    <button class="btn" data-act="k-new-all">＋ Crear ${unm} como representante${unm===1?'':'s'} nuevo${unm===1?'':'s'}</button></div></div>`;
+}
 views.carga = () => {
   const k = UI.kahoot;
   const exams = [...new Set(S.evaluaciones.map(e => e.examen))];
@@ -1369,6 +1381,7 @@ views.carga = () => {
       [...S.visitadores].filter(x => x.estado !== 'Vacante').sort((a,b) => fullName(a).localeCompare(fullName(b),'es')).map(x => `<option value="${x.id}" ${x.id===v?'selected':''}>${esc(fullName(x))} · ${esc(shortLine(x.linea))}</option>`).join('');
     const on = k.cols.filter(c => c.on);
     const ok = k.rows.filter(r => r.vid).reduce((a, r) => a + on.filter(c => sheetRowNota(r, c) != null).length, 0);
+    const totN = k.rows.reduce((a, r) => a + on.filter(c => sheetRowNota(r, c) != null).length, 0), unm = k.rows.filter(r => !r.vid && on.some(c => sheetRowNota(r, c) != null)).length;
     h += `<div class="card" style="margin-top:16px"><div class="card-h"><div><h2>Evaluaciones encontradas en el archivo</h2><p class="sub">Marca las que quieres importar, ajusta el nombre y la escala. La nota se convierte a /20.</p></div></div>
       <div class="card-b" style="padding:10px 0 0"><div class="tbl-wrap"><table class="colcfg"><thead><tr><th>Importar</th><th>Columna del archivo</th><th>Nombre de la evaluación</th><th>Escala (nota máxima)</th><th class="r">Con nota</th><th class="r">Promedio /20</th></tr></thead><tbody>
       ${k.cols.map((c, j) => { const ns = k.rows.map(r => sheetRowNota(r, c)).filter(x => x != null); return `<tr><td><input type="checkbox" data-kcol-on="${j}" ${c.on?'checked':''} aria-label="Importar ${esc(c.header)}"></td><td class="mono">${esc(c.header)}</td>
@@ -1376,20 +1389,22 @@ views.carga = () => {
         <td>${c.rowMax ? '<span class="muted">Según columna de puntuación máxima</span>' : `<input type="number" min="0.01" step="any" data-kcol-max="${j}" value="${c.max}">`}</td>
         <td class="r num">${ns.length}</td><td class="r num">${avgBadge(ns.length ? ns.reduce((a,b) => a+b, 0) / ns.length : null)}</td></tr>`; }).join('')}</tbody></table></div></div></div>
     <div class="card" style="margin-top:16px"><div class="card-h"><div><h2>Previsualización</h2><p class="sub">${k.rows.length} personas · ${on.length} evaluaci${on.length===1?'ón':'ones'} marcada${on.length===1?'':'s'}</p></div>
-      <div class="toolbar"><label class="chk"><input type="checkbox" id="kReplace" checked> Reemplazar si ya existe nota de la misma evaluación</label><button class="btn primary" data-act="k-commit">✓ Registrar ${ok} notas</button></div></div>
+      <div class="toolbar"><label class="chk"><input type="checkbox" id="kReplace" checked> Reemplazar si ya existe nota de la misma evaluación</label><button class="btn primary" data-act="k-commit">✓ Registrar ${ok} de ${totN} notas</button></div></div>
+      ${unmatchedBox(unm, k.rows.length)}
       <div class="card-b" style="padding:10px 0 0"><div class="tbl-wrap"><table><thead><tr><th>#</th><th>Nombre (archivo)</th><th>Correo</th>${on.map(c => `<th class="r" title="${esc(c.header)}">${esc(c.name.length > 18 ? c.name.slice(0,17) + '…' : c.name)}</th>`).join('')}<th>Asociar a visitador</th></tr></thead><tbody>
-      ${k.rows.map((r, i) => `<tr><td class="muted">${i+1}</td><td>${esc(r.name)}</td><td class="mono">${esc(r.email || '')}</td>${on.map(c => { const n = sheetRowNota(r, c); return `<td class="r num">${n == null ? '<span class="muted">—</span>' : `<b class="${n < S.config.min ? 't-bad' : ''}">${fmt(n)}</b>`}</td>`; }).join('')}
+      ${k.rows.map((r, i) => `<tr class="${r.vid ? '' : 'unm'}"><td class="muted">${i+1}</td><td>${esc(r.name)}</td><td class="mono">${esc(r.email || '')}</td>${on.map(c => { const n = sheetRowNota(r, c); return `<td class="r num">${n == null ? '<span class="muted">—</span>' : `<b class="${n < S.config.min ? 't-bad' : ''}">${fmt(n)}</b>`}</td>`; }).join('')}
         <td><select data-krow="${i}" style="max-width:260px">${opts(r.vid)}</select> ${r.matchBy ? `<small class="muted">${esc(r.matchBy)}</small>` : ''}</td></tr>`).join('')}
       </tbody></table></div></div></div>`;
   } else if (k && k.rows) {
     const vm = VM();
     const opts = v => `<option value="">— Omitir fila —</option><option value="__new" ${v==='__new'?'selected':''}>＋ Crear visitador nuevo</option>` +
       [...S.visitadores].filter(x => x.estado !== 'Vacante').sort((a,b) => fullName(a).localeCompare(fullName(b),'es')).map(x => `<option value="${x.id}" ${x.id===v?'selected':''}>${esc(fullName(x))} · ${esc(shortLine(x.linea))}</option>`).join('');
-    const ok = k.rows.filter(r => r.vid && r.nota != null).length;
+    const ok = k.rows.filter(r => r.vid && r.nota != null).length, totN = k.rows.filter(r => r.nota != null).length, unm = k.rows.filter(r => !r.vid && r.nota != null).length, sinNota = k.rows.filter(r => r.nota == null).length;
     h += `<div class="card" style="margin-top:16px"><div class="card-h"><div><h2>Previsualización</h2><p class="sub">${k.rows.length} filas · método: <b>${esc(k.modeLabel)}</b>${k.info?` · ${esc(k.info)}`:''}</p></div>
-      <div class="toolbar"><label class="chk"><input type="checkbox" id="kReplace" checked> Reemplazar si ya existe nota del mismo examen</label><button class="btn primary" data-act="k-commit">✓ Registrar ${ok} notas</button></div></div>
+      <div class="toolbar"><label class="chk"><input type="checkbox" id="kReplace" checked> Reemplazar si ya existe nota del mismo examen</label><button class="btn primary" data-act="k-commit">✓ Registrar ${ok} de ${totN} notas</button></div></div>
+      ${unmatchedBox(unm, k.rows.length)}${sinNota ? `<div class="card-b" style="padding-bottom:0"><div class="warnbox"><span aria-hidden="true">⚠</span><div><b>${sinNota} fila${sinNota===1?'':'s'} sin nota calculada.</b> Revisa el método de conversión o indica el N° de preguntas arriba y pulsa “Procesar” otra vez.</div></div></div>` : ''}
       <div class="card-b" style="padding:10px 0 0"><div class="tbl-wrap"><table><thead><tr><th>#</th><th>Jugador (reporte)</th><th>Correo</th><th>Examen</th><th class="r">Pts Kahoot</th><th class="r">Correctas</th><th class="r">Nota /20</th><th>Resultado</th><th>Asociar a visitador</th></tr></thead><tbody>
-      ${k.rows.map((r,i) => `<tr><td class="muted">${i+1}</td><td>${esc(r.name)}</td><td class="mono">${esc(r.email||'')}</td><td>${esc(r.exam||k.exam||'')}</td><td class="r num">${r.points!=null?r.points.toLocaleString('es-VE'):'—'}</td><td class="r num">${r.correct!=null?r.correct+(r.total?'/'+r.total:''):'—'}</td>
+      ${k.rows.map((r,i) => `<tr class="${r.vid || r.nota == null ? '' : 'unm'}"><td class="muted">${i+1}</td><td>${esc(r.name)}</td><td class="mono">${esc(r.email||'')}</td><td>${esc(r.exam||k.exam||'')}</td><td class="r num">${r.points!=null?r.points.toLocaleString('es-VE'):'—'}</td><td class="r num">${r.correct!=null?r.correct+(r.total?'/'+r.total:''):'—'}</td>
         <td class="r num"><b class="${r.nota!=null&&r.nota<S.config.min?'t-bad':''}">${fmt(r.nota)}</b></td><td>${r.nota==null?'<span class="status neutral">Sin nota</span>':r.nota>=S.config.min?'<span class="status good">✓ Aprobado</span>':'<span class="status bad">✕ Reprobado</span>'}</td>
         <td><select data-krow="${i}" style="max-width:260px">${opts(r.vid)}</select> ${r.matchBy?`<small class="muted">${esc(r.matchBy)}</small>`:''}</td></tr>`).join('')}
       </tbody></table></div></div></div>`;
@@ -1424,7 +1439,11 @@ function matchVis(name, email){
     if (sc > bestScore) { best = v; bestScore = sc; tie = false; } else if (sc === bestScore && sc > 0) tie = true; });
   if (best && bestScore >= 2 && !tie) return {vid:best.id, by:'por nombre'};
   if (best && bestScore === 1 && !tie && toks.length === 1) return {vid:best.id, by:'coincidencia parcial — verificar'};
-  return {vid:'', by:tie ? 'nombre ambiguo' : 'sin coincidencia'};
+  const all = nrm(name).replace(/[^a-z0-9 ]/g,' ').split(' ').filter(Boolean);
+  if (all.length >= 2) { const cands = vs.filter(v => { const vt = nrm(fullName(v)).split(' '); return all.every(t => vt.some(w => w === t || w.startsWith(t))); });
+    if (cands.length === 1) return {vid:cands[0].id, by:'coincidencia aproximada — verificar'}; }
+  if (best && bestScore >= 1 && !tie) return {vid:best.id, by:'coincidencia parcial — verificar'};
+  return {vid:'', by:tie ? 'nombre ambiguo: elige a quién corresponde' : 'sin coincidencia: elige o crea'};
 }
 /* generic grade sheets (Moodle, Genially, Excel) */
 const SHEET_EXCL = /rank|clasificacion|posicion|^#$|^n[°º.]?$|^id\b|numero de id|identific|cedula|telefono|fecha|date|^hora|tiempo|time|duracion|estado|state|status|institucion|departamento|grupo|group|ciudad|pais|country|correo|e-?mail|mail|usuario|user|nombre|apellido|name|player|jugador|participante|correct|acierto|incorrect|error|respuesta|answer|^p\.? ?\d|pregunta|question|^q ?\d|ultimo|descargado|comenzado|finalizado|started|completed|maxim|posible|out of|intento|attempt/;
@@ -1562,7 +1581,8 @@ async function kahootCommit(){
   const ok = await runOps(ops);
   if (ok < ops.length) { if (okLabel) { okLabel.disabled = false; okLabel.textContent = 'Reintentar registro'; } return; }
   UI.kahoot = null;
-  toast(`Registradas ${added} notas nuevas${replaced?`, ${replaced} reemplazadas`:''}${created?`, ${created} visitadores creados`:''}. Métricas recalculadas.`);
+  const skipped = k.sheet ? k.rows.filter(r => !r.vid).length : k.rows.filter(r => !r.vid && r.nota != null).length;
+  toast(`Registradas ${added} notas nuevas${replaced?`, ${replaced} reemplazadas`:''}${created?`, ${created} representantes creados`:''}${skipped ? `. ${skipped} fila${skipped===1?'':'s'} sin asociar no se registr${skipped===1?'ó':'aron'}` : ''}.${DBS.mode === 'local' ? ' Ojo: copia local, se guardó solo en este navegador.' : ' Ya se ve en todas las computadoras.'}`);
   UI.tab = 'ranking'; render(); window.scrollTo(0,0);
 }
 const MOODLE_SAMPLE = `Nombre\tApellido(s)\tNúmero de ID\tDirección de correo\tCuestionario: Repaso SNC (ejemplo) (Real)\tTarea: Caso clínico Olanzatique (ejemplo) (Real)\tTotal del curso (Real)\tÚltimo descargado de este curso
@@ -1767,8 +1787,29 @@ function medForm(m, line){
   });
 }
 
-async function importBackup(j){
+function mergePlan(j){
+  const ops = [], have = c => new Set((S[c] || []).map(r => String(r.id)));
+  const vh = have('visitadores'), newVis = (j.visitadores || []).filter(v => v && v.id && !vh.has(String(v.id)));
+  const visIds = new Set([...vh, ...newVis.map(v => String(v.id))]);
+  newVis.forEach(v => ops.push({col:'visitadores', rec:Object.assign({}, v, {id:String(v.id)})}));
+  const eh = have('evaluaciones'), sig = e => `${e.vid}|${nrm(e.examen)}|${e.nota}|${e.fecha || ''}`, esig = new Set((S.evaluaciones || []).map(sig));
+  const newEv = (j.evaluaciones || []).filter(e => e && e.id && !eh.has(String(e.id)) && visIds.has(String(e.vid)) && !esig.has(sig(e)));
+  newEv.forEach(e => ops.push({col:'evaluaciones', rec:Object.assign({}, e, {id:String(e.id)})}));
+  ['portafolio','medicos','cronograma','examenes','productos'].forEach(c => { const h = have(c); (j[c] || []).filter(r => r && r.id && !h.has(String(r.id))).forEach(r => ops.push({col:c, rec:Object.assign({}, r, {id:String(r.id)})})); });
+  return {ops, nVis:newVis.length, nEv:newEv.length};
+}
+function importAsk(j){
+  const p = mergePlan(j);
+  openForm('Importar respaldo', [
+    {k:'_i', type:'info', full:1, html:`El respaldo trae <b>${(j.evaluaciones || []).length} notas</b> y <b>${(j.visitadores || []).length} representantes</b>. De eso, <b>${p.nEv} notas</b> y <b>${p.nVis} representantes</b> no están todavía en este panel.`},
+    {k:'modo', label:'¿Qué hacer?', type:'select', full:1, options:[['merge', `Combinar: agregar solo lo nuevo (${p.ops.length} registros) sin borrar ni cambiar nada (recomendado)`], ['replace', 'Reemplazar todo: dejar el panel exactamente como el respaldo']]}
+  ], {modo:'merge'}, d => { importBackup(j, d.modo); }, 'Importar');
+}
+async function importBackup(j, mode){
   if (!Array.isArray(j.visitadores) || !Array.isArray(j.evaluaciones)) throw new Error('bad');
+  if (mode === 'merge') { const p = mergePlan(j); if (!p.ops.length) { toast('No hay nada nuevo en ese respaldo: todo ya estaba en el panel.'); return; }
+    if (DBS.mode !== 'db') { p.ops.forEach(o => { S[o.col] = (S[o.col] || []).concat([o.rec]); }); save(); schedule(); toast(`Se agregaron ${p.nEv} notas y ${p.nVis} representantes.`); return; }
+    toast('Importando…'); const ok = await runOps(p.ops); toast(ok === p.ops.length ? `Listo: ${p.nEv} notas y ${p.nVis} representantes agregados al panel compartido. Ya se ven en todas las computadoras.` : `Importación incompleta: ${ok} de ${p.ops.length} registros guardados. Inténtalo de nuevo.`); return; }
   if (DBS.mode !== 'db') { S = Object.assign(fresh(), j); save(); schedule(); toast('Respaldo importado.'); return; }
   const ops = [];
   COLS.forEach(c => { if (!Array.isArray(j[c])) return; const incoming = j[c].filter(r => r && r.id); const ids = new Set(incoming.map(r => String(r.id)));
@@ -1819,6 +1860,10 @@ function render(){
     ss.className = 'status ' + st[0]; ss.textContent = st[1]; ss.title = st[2];
   }
   document.body.classList.toggle('ro', DBS.mode === 'db' && !DBS.canWrite);
+  const lb = $('#localBanner');
+  if (lb) { const isLocal = DBS.mode === 'local'; lb.hidden = !isLocal;
+    if (isLocal) lb.innerHTML = `<div class="warnbox"><span style="font-size:20px" aria-hidden="true">⚠</span><div style="flex:1;min-width:240px"><b>Esta es la copia local del panel.</b> Lo que cargues aquí se guarda <b>solo en este navegador</b> y no aparece en otras computadoras. Para que tus notas se vean en todas partes, cárgalas en el <b>panel compartido</b>.</div>
+      <span class="toolbar"><a class="btn primary" href="https://claude.ai/artifact/22pVMwsTEmSbJE51rPGWc7" target="_blank" rel="noopener">Abrir panel compartido</a><button class="btn" data-act="local-move">Pasar mis cargas al panel compartido</button></span></div>`; }
   syncFilters();
   const risk = riskList(scopeEvals()).length;
   $$('.tab').forEach(t => { t.setAttribute('aria-selected', t.dataset.tab === UI.tab); t.setAttribute('role','tab');
@@ -1827,7 +1872,7 @@ function render(){
   const waiting = DBS.mode === 'connecting' || (DBS.mode === 'db' && DBS.loaded.size < COLS.length);
   if (DBS.mode === 'db' && !waiting && !S.visitadores.length && !S.portafolio.length && UI.tab !== 'fichero') $('#view').innerHTML = '<div class="card loading">La base compartida está vacía. Agrega visitadores en “Fuerza de Ventas” o productos en “Portafolio” para empezar.</div>' + views[UI.tab]();
   else if (waiting) $('#view').innerHTML = '<div class="card loading">Cargando datos compartidos…</div>';
-  else if (DBS.mode === 'offline') $('#view').innerHTML = '<div class="card loading">No se pudo conectar con la base de datos compartida. Recarga la página o verifica que tienes acceso a este panel.</div>';
+  else if (DBS.mode === 'offline') $('#view').innerHTML = '<div class="card loading"><b>No se pudo conectar con la base de datos compartida.</b><br>Inicia sesión en Claude con tu cuenta y recarga la página. Si sigues viendo este aviso, revisa tu conexión a internet: sin conexión no se pueden ver ni cargar notas, para que nada quede guardado solo en esta computadora.</div>';
   else $('#view').innerHTML = views[UI.tab]();
   if (UI.tab === 'carga' && UI.kahoot) { const s = $('#kMode'); if (s) s.value = UI.kahoot.mode || 'auto'; }
   window.scrollTo(0, y);
@@ -1855,7 +1900,7 @@ document.addEventListener('click', e => { if (!e.target.closest('.menu')) $('#da
 $('#fileJson').addEventListener('change', e => {
   const f = e.target.files[0]; if (!f) return; const r = new FileReader();
   r.onload = () => { try { const d = JSON.parse(r.result); if (!Array.isArray(d.visitadores) || !Array.isArray(d.evaluaciones)) throw 0;
-    importBackup(d).catch(() => toast('Archivo JSON no válido.')); } catch(err) { toast('Archivo JSON no válido.'); } };
+    importAsk(d); } catch(err) { toast('Archivo JSON no válido.'); } };
   r.readAsText(f); e.target.value = '';
 });
 
@@ -1870,8 +1915,8 @@ document.addEventListener('click', e => {
   const menuClose = () => $('#dataMenu').classList.remove('on');
   switch (act) {
     case 'exp-json': menuClose(); download('respaldo_fdv_oct2026.json', JSON.stringify(S, null, 1), 'application/json'); break;
-    case 'imp-json': menuClose(); openForm('Importar respaldo (JSON)', [{k:'_i', type:'info', full:1, html:'Pega el contenido de un respaldo exportado desde este panel. Reemplazará los datos actuales en este navegador.'}, {k:'json', type:'textarea', full:1, attrs:'style="min-height:220px"'}], {}, d => {
-      let j; try { j = JSON.parse(d.json); if (!Array.isArray(j.visitadores) || !Array.isArray(j.evaluaciones)) throw 0; } catch(err) { toast('El texto no es un respaldo JSON válido.'); return false; } importBackup(j);
+    case 'imp-json': menuClose(); openForm('Importar respaldo (JSON)', [{k:'_i', type:'info', full:1, html:'Pega el contenido de un respaldo exportado desde este panel (o desde la copia local). En el siguiente paso eliges si combinarlo (agregar solo lo nuevo) o reemplazar todo.'}, {k:'json', type:'textarea', full:1, attrs:'style="min-height:220px"'}], {}, d => {
+      let j; try { j = JSON.parse(d.json); if (!Array.isArray(j.visitadores) || !Array.isArray(j.evaluaciones)) throw 0; } catch(err) { toast('El texto no es un respaldo JSON válido.'); return false; } setTimeout(() => importAsk(j), 0);
     }, 'Importar'); break;
     case 'exp-evals': menuClose(); exportEvals(); break;
     case 'exp-fdv': menuClose(); exportFdv(); break;
@@ -1896,6 +1941,10 @@ document.addEventListener('click', e => {
         S.config.areas = arr(S.config.areas).concat([n]); putConfig(); toast(`Área ${titleCase(n)} agregada. Ya puedes elegirla al crear o editar productos.`); }, 'Agregar'); break;
     case 'area-del': { const ar = a.dataset.a; S.config.areas = arr(S.config.areas).filter(x => x !== ar); putConfig(); toast(`Área ${titleCase(ar)} eliminada.`); break; }
     case 'exam-merge': examMergeForm(); break;
+    case 'k-new-all': if (UI.kahoot && UI.kahoot.rows) { UI.kahoot.rows.forEach(r => { if (!r.vid && (UI.kahoot.sheet || r.nota != null)) { r.vid = '__new'; r.matchBy = 'se creará como nuevo'; } }); render(); } break;
+    case 'local-move': openForm('Pasar tus cargas al panel compartido', [{k:'_i', type:'info', full:1, html:`<ol style="margin:0;padding-left:18px;line-height:1.6"><li>Pulsa <b>Copiar respaldo</b> (abajo).</li><li>Abre el <a href="https://claude.ai/artifact/22pVMwsTEmSbJE51rPGWc7" target="_blank" rel="noopener">panel compartido</a> (inicia sesión en Claude si te lo pide).</li><li>Allí ve a <b>Datos → Importar respaldo (JSON)</b>, pega el texto y elige <b>Combinar</b>.</li></ol><p style="margin:8px 0 0">Solo se agregan las notas y representantes que falten; no se borra nada del panel compartido. Repite esto en cada computadora donde hayas cargado notas con la copia local.</p>`}, {k:'out', type:'textarea', full:1, attrs:'readonly style="min-height:120px"'}], {out: JSON.stringify(S)}, () => {
+        const text = JSON.stringify(S), ta = $('#fld_out'); const fb = () => { ta.focus(); ta.select(); try { document.execCommand('copy'); toast('Respaldo copiado.'); } catch(e) { toast('Selecciona el texto y cópialo con Ctrl/⌘+C.'); } };
+        try { navigator.clipboard.writeText(text).then(() => toast('Respaldo copiado. Ahora pégalo en el panel compartido.'), fb); } catch(e) { fb(); } return false; }, 'Copiar respaldo'); break;
     case 'line-add': lineForm(a.dataset.f); break;
     case 'line-ren': lineRename(a.dataset.line); break;
     case 'line-del': { const l = a.dataset.line, nv = S.visitadores.filter(v => v.linea === l).length, np = S.portafolio.filter(p => p.linea === l).length;
