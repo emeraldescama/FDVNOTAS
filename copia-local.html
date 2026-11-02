@@ -455,6 +455,8 @@ body::before{background:var(--g1)}
           <button data-act="exp-evals">⬇ Exportar evaluaciones (CSV)</button>
           <button data-act="exp-fdv">⬇ Exportar FDV (CSV)</button>
           <button data-act="exp-port">⬇ Exportar portafolio (CSV)</button>
+          <hr>
+          <button data-act="sum-img">🖼 Descargar imagen resumen</button>
         </div>
         <input type="file" id="fileJson" accept=".json,application/json" hidden>
       </div>
@@ -1169,6 +1171,84 @@ async function exportCronImage(){
   } catch(e) { toast('No se pudo generar la imagen. Revisa tu conexión a internet e inténtalo de nuevo.'); }
   finally { const b = $('[data-act="cron-img"]'); if (b) { b.disabled = false; b.textContent = '🖼 Exportar imagen'; } }
 }
+/* ---------- summary image ---------- */
+function summaryData(){
+  const evs = scopeEvals(), all = stats(evs), vs = visStats(evs).filter(s => s.avg != null), min = S.config.min;
+  vs.forEach(s => { s.kpts = s.list.reduce((a, e) => a + (e.estado !== 'No presentó' && e.kahoot != null && Number.isFinite(+e.kahoot) ? +e.kahoot : 0), 0); });
+  const byAvg = [...vs].sort((a, b) => b.avg - a.avg || b.kpts - a.kpts || fullName(a.v).localeCompare(fullName(b.v), 'es'));
+  const top = byAvg.slice(0, 3), bottom = byAvg.length > 3 ? byAvg.slice(-3).reverse() : [];
+  const grp = key => [...groupBy(evs, e => key(VM()[e.vid] || {}))].filter(([k]) => k && k !== '—' && k !== 'SIN ASIGNAR').map(([k, list]) => Object.assign({k, people: new Set(list.map(e => e.vid)).size}, stats(list))).filter(x => x.avg != null).sort((a, b) => b.avg - a.avg || b.rate - a.rate);
+  const regions = grp(v => v.region), lines = grp(v => v.linea);
+  const exams = examStats(evs).filter(x => x.avg != null).sort((a, b) => b.avg - a.avg);
+  const bands = {}; BAND_ORDER.forEach(b => bands[b] = 0); visStats(evs).forEach(s => bands[bandOf(s.avg)]++);
+  return {evs, all, vs, top, bottom, regions, lines, exams, bands, min};
+}
+function summaryPosterHtml(){
+  const D = summaryData(), C = {ink:'#1a1440', sub:'#4b4470', mute:'#7c7699', line:'#e9e4f7', soft:'#f6f3fd', g1:'#2347e0', g2:'#6a2fd6', g3:'#c22fb8', good:'#11a36a', bad:'#d63b5b', warn:'#e7a10b'};
+  const BC = {exc:'#11a36a', apr:'#6a2fd6', rie:'#e7a10b', cri:'#d63b5b', sin:'#a7a1c2'};
+  const grad = `linear-gradient(110deg,${C.g1} 0%,${C.g2} 50%,${C.g3} 100%)`;
+  const scope = [UI.fdv, UI.linea, UI.region && (UI.region === '—' ? 'Sin región' : UI.region), UI.exam].filter(Boolean).join(' · ') || 'Todo el equipo';
+  const f1 = n => fmt(n, 1), card = (inner, extra = '') => `<div style="background:#fff;border:1px solid ${C.line};border-radius:18px;padding:20px 22px;box-shadow:0 6px 22px rgba(70,40,170,.08);${extra}">${inner}</div>`;
+  const h3 = (txt, sub) => `<div style="font:600 17px Poppins,Arial,sans-serif;color:${C.ink};margin:0 0 ${sub ? 2 : 14}px">${txt}</div>${sub ? `<div style="font-size:12.5px;color:${C.mute};margin-bottom:14px">${sub}</div>` : ''}`;
+  // ring gauge for team average
+  const ring = (val, size, stroke) => { const r = (size - stroke) / 2, c = 2 * Math.PI * r, p = Math.max(0, Math.min(1, (val || 0) / 20));
+    return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><defs><linearGradient id="rg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7fb2ff"/><stop offset="1" stop-color="#ffb3f2"/></linearGradient></defs><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="${stroke}"/><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="#fff" stroke-width="${stroke}" stroke-linecap="round" stroke-dasharray="${c*p} ${c}" transform="rotate(-90 ${size/2} ${size/2})"/></svg>`; };
+  // donut distribution
+  const tot = BAND_ORDER.reduce((a, b) => a + D.bands[b], 0); let acc = 0; const R = 70, CIR = 2 * Math.PI * R;
+  const donut = `<svg width="190" height="190" viewBox="0 0 190 190"><circle cx="95" cy="95" r="${R}" fill="none" stroke="${C.soft}" stroke-width="26"/>${BAND_ORDER.filter(b => D.bands[b]).map(b => { const len = CIR * D.bands[b] / (tot || 1), s = `<circle cx="95" cy="95" r="${R}" fill="none" stroke="${BC[b]}" stroke-width="26" stroke-dasharray="${Math.max(0, len - 2)} ${CIR}" stroke-dashoffset="${-acc}" transform="rotate(-90 95 95)"/>`; acc += len; return s; }).join('')}
+    <text x="95" y="92" text-anchor="middle" font-family="Poppins,Arial" font-weight="700" font-size="30" fill="${C.ink}">${tot}</text><text x="95" y="114" text-anchor="middle" font-family="Arial" font-size="12" fill="${C.mute}">estudiantes</text></svg>`;
+  const legend = BAND_ORDER.filter(b => D.bands[b]).map(b => `<div style="display:flex;align-items:center;gap:10px;margin:7px 0;font-size:13.5px;color:${C.sub}"><span style="width:12px;height:12px;border-radius:4px;background:${BC[b]};display:inline-block"></span><span style="flex:1">${BAND_META[b].label} <span style="color:${C.mute};font-size:11.5px">(${bandRange(b)})</span></span><b style="color:${C.ink}">${D.bands[b]}</b><span style="color:${C.mute};width:38px;text-align:right">${tot ? Math.round(D.bands[b] / tot * 100) : 0}%</span></div>`).join('');
+  // horizontal bars
+  const hbars = (rows, max = 8) => rows.slice(0, max).map((r, i) => { const w = Math.max(2, (r.avg || 0) / 20 * 100), low = r.avg < D.min;
+    return `<div style="display:flex;align-items:center;gap:12px;margin:9px 0"><div style="width:170px;font-size:13px;color:${C.sub};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.k || r.examen)}</div>
+      <div style="flex:1;height:14px;border-radius:7px;background:${C.soft};position:relative;overflow:hidden"><div style="height:14px;width:${w}%;border-radius:7px;background:${low ? `linear-gradient(90deg,#f08aa0,${C.bad})` : grad}"></div><div style="position:absolute;top:-2px;bottom:-2px;left:${D.min / 20 * 100}%;width:2px;background:${C.ink};opacity:.35"></div></div>
+      <div style="width:44px;text-align:right;font:600 14px Poppins,Arial;color:${low ? C.bad : C.ink}">${f1(r.avg)}</div></div>`; }).join('');
+  const person = (s, i, good) => `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;${i ? `border-top:1px solid ${C.line}` : ''}">
+    <div style="width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:700 15px Poppins,Arial;color:#fff;background:${good ? ['#f2b705', '#9aa6b8', '#c98a4b'][i] : C.bad};flex:none">${good ? i + 1 : '!'}</div>
+    <div style="flex:1;min-width:0"><div style="font:600 14.5px Poppins,Arial;color:${C.ink};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(fullName(s.v))}</div><div style="font-size:12px;color:${C.mute}">${esc(s.v.linea)}${s.v.region && s.v.region !== '—' ? ' · ' + esc(s.v.region) : ''} · ${s.n} nota${s.n === 1 ? '' : 's'}</div></div>
+    <div style="text-align:right"><div style="font:700 20px Poppins,Arial;color:${good ? C.good : C.bad}">${f1(s.avg)}</div><div style="font-size:11px;color:${C.mute}">/20</div></div></div>`;
+  const hiLo = (title, x, good, unit) => `<div style="flex:1;border-radius:16px;padding:16px 18px;background:${good ? 'linear-gradient(135deg,#e9f9f1,#f3fbf7)' : 'linear-gradient(135deg,#fdeef2,#fdf5f7)'};border:1px solid ${good ? '#c9eedb' : '#f6d2dc'}">
+    <div style="font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;color:${good ? C.good : C.bad}">${good ? '▲' : '▼'} ${title}</div>
+    <div style="font:600 19px Poppins,Arial;color:${C.ink};margin:6px 0 2px">${x ? esc(x.k) : '—'}</div>
+    <div style="font-size:12.5px;color:${C.sub}">${x ? `Promedio <b style="color:${good ? C.good : C.bad};font-size:15px">${f1(x.avg)}</b> · aprobación ${pct(x.rate)} · ${x.people} ${unit}` : 'Sin datos'}</div></div>`;
+  const best = a => a[0], worst = a => a.length > 1 ? a[a.length - 1] : null;
+  const kpi = (lbl, val, sub) => `<div style="flex:1;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.28);border-radius:16px;padding:14px 16px"><div style="font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;opacity:.85">${lbl}</div><div style="font:700 28px Poppins,Arial;margin-top:4px">${val}</div><div style="font-size:12px;opacity:.8">${sub}</div></div>`;
+  const dots = `<svg width="520" height="200" viewBox="0 0 520 200" style="position:absolute;right:-20px;top:-10px;opacity:.5"><g stroke="#fff" stroke-opacity=".25" fill="none"><path d="M10 60L90 30L170 90L250 40L330 110L410 50L510 100M90 30L120 140L170 90L230 180L250 40M330 110L360 190L410 50L470 160L510 100"/></g><g fill="#fff"><circle cx="90" cy="30" r="3"/><circle cx="250" cy="40" r="3.5"/><circle cx="410" cy="50" r="3"/><circle cx="170" cy="90" r="2.5"/><circle cx="330" cy="110" r="2.5"/><circle cx="510" cy="100" r="2"/><circle cx="470" cy="160" r="2.5"/><circle cx="120" cy="140" r="2"/></g></svg>`;
+  return `<div style="width:1200px;background:#f6f4fc;font-family:Arial,Helvetica,sans-serif;color:${C.ink}">
+    <div style="background:${grad};color:#fff;padding:34px 40px 30px;position:relative;overflow:hidden">${dots}
+      <div style="display:flex;align-items:center;gap:30px;position:relative">
+        <div style="position:relative;width:150px;height:150px;flex:none">${ring(D.all.avg, 150, 14)}<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center"><div style="font:700 40px Poppins,Arial;line-height:1">${f1(D.all.avg)}</div><div style="font-size:12px;opacity:.85;margin-top:4px">promedio /20</div></div></div>
+        <div style="flex:1"><div style="font-size:13px;letter-spacing:.14em;text-transform:uppercase;opacity:.85">Resumen académico</div>
+          <div style="font:700 34px Poppins,Arial;margin:4px 0 6px;line-height:1.15">Fuerza de Ventas · Terapias de Marca</div>
+          <div style="font-size:14.5px;opacity:.9">${esc(scope)} · ${D.exams.length} evaluaci${D.exams.length === 1 ? 'ón' : 'ones'} · corte al ${fdate(today())}</div></div></div>
+      <div style="display:flex;gap:14px;margin-top:24px;position:relative">
+        ${kpi('Promedio general', f1(D.all.avg), `${D.all.n} notas registradas`)}${kpi('Aprobación', pct(D.all.rate), `${D.all.pass} de ${D.all.n} notas ≥ ${f1(D.min)}`)}${kpi('Estudiantes', D.vs.length, 'con al menos una nota')}${kpi('Destacados', D.bands.exc, `promedio ≥ ${f1(Math.max(18, D.min))}`)}</div></div>
+    <div style="padding:26px 40px 34px;display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      ${card(h3('¿Cómo va el equipo?', 'Estudiantes según su promedio acumulado') + `<div style="display:flex;align-items:center;gap:22px">${donut}<div style="flex:1">${legend}</div></div>`)}
+      ${card(h3('Promedio por evaluación', `Escala 0–20 · la marca vertical es el mínimo aprobatorio (${f1(D.min)})`) + (hbars(D.exams.map(x => Object.assign({}, x, {k: x.examen})), 7) || `<div style="color:${C.mute}">Sin evaluaciones</div>`))}
+      ${card(h3('🏆 Mejores estudiantes', 'Top 3 por promedio') + (D.top.map((s, i) => person(s, i, true)).join('') || `<div style="color:${C.mute}">Sin datos</div>`))}
+      ${card(h3('🎯 Áreas de oportunidad', 'Los 3 promedios más bajos: reforzar acompañamiento') + (D.bottom.map((s, i) => person(s, i, false)).join('') || `<div style="color:${C.mute}">No hay suficientes estudiantes</div>`))}
+      ${card(h3('Regiones') + `<div style="display:flex;gap:12px;margin-bottom:12px">${hiLo('Región más destacada', best(D.regions), true, 'estudiantes')}${hiLo('Región menos destacada', worst(D.regions), false, 'estudiantes')}</div>` + hbars(D.regions, 8))}
+      ${card(h3('Líneas') + `<div style="display:flex;gap:12px;margin-bottom:12px">${hiLo('Línea más destacada', best(D.lines), true, 'estudiantes')}${hiLo('Línea con oportunidades', worst(D.lines), false, 'estudiantes')}</div>` + hbars(D.lines, 8))}
+    </div>
+    <div style="padding:0 40px 26px;display:flex;justify-content:space-between;font-size:12px;color:${C.mute}"><span>Mínimo aprobatorio ${f1(D.min)}/20 · promedios calculados con las notas registradas${S.config.ausCero ? ' (ausencias = 0)' : ''}</span><span>Generado el ${longDate(today()).toLowerCase()}</span></div>
+  </div>`;
+}
+async function exportSummaryImage(){
+  const btns = $$('[data-act="sum-img"]'); btns.forEach(b => { b.disabled = true; b.dataset.t = b.textContent; b.textContent = 'Generando…'; });
+  try {
+    if (!scopeEvals().length) { toast('No hay notas para los filtros actuales.'); return; }
+    if (!window.html2canvas) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+    try { await document.fonts.load('600 16px Poppins'); await document.fonts.load('700 16px Poppins'); } catch(_) {}
+    const host = document.createElement('div'); host.style.cssText = 'position:fixed;left:-20000px;top:0;z-index:-1'; host.innerHTML = summaryPosterHtml(); document.body.appendChild(host);
+    const canvas = await window.html2canvas(host.firstElementChild, {scale:2, backgroundColor:'#f6f4fc', logging:false}); host.remove();
+    const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+    UI.img = {blob, url: URL.createObjectURL(blob), name: `resumen_academico_${today()}.png`};
+    openForm('Imagen resumen', [{k:'_i', type:'raw', html:`<div class="img-prev"><img src="${UI.img.url}" alt="Vista previa del resumen"></div><p class="muted" style="font-size:12.5px;margin:8px 0 0">Usa los filtros de arriba (fuerza de ventas, línea, región o evaluación) para generar el resumen de un grupo en particular.</p>
+      <div class="toolbar" style="margin-top:8px"><button type="button" class="btn" data-act="img-copy">📋 Copiar imagen</button></div>`}], {}, () => { saveFile(UI.img.name, UI.img.blob); return false; }, '⬇ Descargar PNG');
+  } catch(e) { console.error(e); toast('No se pudo generar la imagen. Revisa tu conexión a internet e inténtalo de nuevo.'); }
+  finally { $$('[data-act="sum-img"]').forEach(b => { b.disabled = false; if (b.dataset.t) b.textContent = b.dataset.t; }); }
+}
 async function saveFile(filename, data){
   if (window.claude && typeof window.claude.use === 'function') {
     let dl = null; try { dl = await window.claude.use('downloads'); } catch(e) {}
@@ -1192,7 +1272,7 @@ views.ranking = () => {
   const scope = [UI.linea, UI.region && (UI.region === '—' ? 'Sin región' : UI.region), UI.vis && fullName(VM()[UI.vis]), UI.exam].filter(Boolean).join(' · ');
   return `<div class="grid g-2">
     ${pieCard(vs, '¿Cómo van mis estudiantes?', `Cada estudiante según su promedio acumulado${scope ? ' · ' + esc(scope) : ''}. ${UI.pieBy && UI.pieBy !== 'general' ? 'Clic en una torta para filtrar por ese grupo.' : 'Se actualiza al cargar nuevas notas.'}`)}
-    <div class="card"><div class="card-h"><div><h2>Resumen del grupo</h2><p class="sub">${exams.length} evaluaci${exams.length===1?'ón':'ones'} · ${evs.length} notas registradas</p></div></div>
+    <div class="card"><div class="card-h"><div><h2>Resumen del grupo</h2><p class="sub">${exams.length} evaluaci${exams.length===1?'ón':'ones'} · ${evs.length} notas registradas</p></div><button class="btn primary sm" data-act="sum-img">🖼 Descargar imagen resumen</button></div>
       <div class="card-b"><div class="stats-mini">
         <div><span>Promedio del grupo</span><b class="${median!=null&&withAvg.reduce((a,b)=>a+b,0)/withAvg.length<min?'t-bad':''}">${fmt(withAvg.length ? withAvg.reduce((a,b)=>a+b,0)/withAvg.length : null, 2)}</b></div>
         <div><span>Mediana</span><b>${fmt(median, 2)}</b></div>
@@ -1237,7 +1317,7 @@ views.resumen = () => {
   const easy = withAvg.length ? withAvg.reduce((a,b) => (b.avg > a.avg || (b.avg === a.avg && b.rate > a.rate)) ? b : a) : null;
   const noShow = evs.filter(e => e.estado === 'No presentó').length;
 
-  let h = '';
+  let h = `<div class="toolbar" style="justify-content:flex-end;margin-bottom:12px"><button class="btn primary" data-act="sum-img">🖼 Descargar imagen resumen</button></div>`;
   if (risk.length) {
     h += `<section class="risk" aria-label="Visitadores en riesgo académico">
       <div class="risk-h"><span style="font-size:22px" aria-hidden="true">⚠</span><div><h2>${risk.length} visitador${risk.length>1?'es':''} en riesgo académico</h2>
@@ -2417,6 +2497,7 @@ document.addEventListener('click', e => {
         toast(ok === all.length ? 'Cronograma borrado.' : `Se borraron ${ok} de ${all.length} actividades. Inténtalo de nuevo para borrar el resto.`);
       }, 'Borrar todo'); break; }
     case 'cron-img': exportCronImage(); break;
+    case 'sum-img': exportSummaryImage(); break;
     case 'img-copy': (async () => { try { await navigator.clipboard.write([new ClipboardItem({'image/png': UI.img.blob})]); toast('Imagen copiada. Pégala en WhatsApp o en el correo.'); } catch(err) { toast('Este navegador no permite copiar la imagen aquí. Usa “Descargar PNG”.'); } })(); break;
     case 'cron-copy-xls': copyText(cronTSV(), 'Cronograma para Excel', 'Selecciona el texto, cópialo y pégalo en una hoja de Excel o Google Sheets: cada columna quedará en su celda.'); break;
   }
