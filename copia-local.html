@@ -647,7 +647,7 @@ function attendanceCard(){
   return `<div class="card" style="margin-top:16px"><div class="card-h"><div><h2>Inasistencias por evaluación</h2><p class="sub">Representantes activos de las líneas que deben presentar cada evaluación y que no tienen nota registrada${UI.region ? ' · ' + esc(UI.region === '—' ? 'Sin región' : UI.region) : ''}${UI.linea ? ' · ' + esc(UI.linea) : ''}</p></div>
     <div class="toolbar"><select id="attExam" aria-label="Evaluación"><option value="">Resumen de todas las evaluaciones</option>${exams.map(x => `<option ${sel === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select>
       ${sel ? `<div class="seg" role="group" aria-label="Agrupar"><button type="button" class="${by==='region'?'on':''}" data-act="att-by" data-v="region">Por región</button><button type="button" class="${by==='linea'?'on':''}" data-act="att-by" data-v="linea">Por línea</button><button type="button" class="${by==='fdv'?'on':''}" data-act="att-by" data-v="fdv">Por FDV</button></div>` : ''}
-      <button class="btn" data-act="att-copy">📋 Copiar inasistentes</button></div></div>
+      <button class="btn" data-act="att-copy">📋 Copiar inasistentes</button>${sel ? '<button class="btn" data-act="mail-att">✉ Correos de inasistentes</button>' : ''}</div></div>
     <div class="card-b">${body}</div></div>`;
 }
 function attendanceText(){
@@ -850,7 +850,7 @@ views.crono = () => {
     <div class="toolbar">
       <label class="fld">Desde <input type="date" id="cronFrom" value="${from}"></label><label class="fld">Hasta <input type="date" id="cronTo" value="${to}"></label>
       <div class="seg" role="group" aria-label="Agrupar"><button type="button" class="${mode==='fecha'?'on':''}" data-act="cron-mode" data-v="fecha">Por fecha</button><button type="button" class="${mode==='rep'?'on':''}" data-act="cron-mode" data-v="rep">Por representante</button></div>
-      <button class="btn primary" data-act="cron-img">🖼 Exportar imagen</button><button class="btn" data-act="cron-copy-text">📋 Copiar texto</button><button class="btn" data-act="cron-copy-xls">📋 Copiar para Excel</button></div></div>
+      <button class="btn primary" data-act="cron-img">🖼 Exportar imagen</button><button class="btn" data-act="mail-cron" title="Correos de los representantes del cronograma en este período">✉ Correos</button><button class="btn" data-act="cron-copy-text">📋 Copiar texto</button><button class="btn" data-act="cron-copy-xls">📋 Copiar para Excel</button></div></div>
     <div class="card-b">${armado}</div></div>`;
 };
 function sesListsHtml(line, checkedReps, checkedProds){
@@ -1087,10 +1087,24 @@ views.resumen = () => {
   return h;
 };
 
+function fdvVisibleList(){
+  const evAll = S.evaluaciones;
+  return S.visitadores.filter(v => (UI.showInactive || v.estado !== 'Inactivo') && (!UI.fdv || fdvOf(v) === UI.fdv) && (!UI.linea || v.linea === UI.linea) && (!UI.region || (v.region || '—') === UI.region) && (!UI.vis || v.id === UI.vis)
+    && matchesQ(fullName(v), v.correo, v.linea, v.zona, v.region, v.estado, fdvOf(v), ...evAll.filter(e => e.vid === v.id).map(e => e.examen)));
+}
+function copyEmails(people, what){
+  const ok = people.filter(v => v && v.correo && /@/.test(v.correo)), mails = [...new Set(ok.map(v => v.correo.trim().toLowerCase()))];
+  const sinCorreo = people.filter(v => v && v.estado !== 'Vacante' && !(v.correo && /@/.test(v.correo)));
+  if (!mails.length) { toast(`No hay correos registrados para ${what}.`); return; }
+  const text = mails.join('; ');
+  const extra = sinCorreo.length ? ` Faltan ${sinCorreo.length} sin correo: ${sinCorreo.slice(0, 6).map(fullName).join(', ')}${sinCorreo.length > 6 ? '…' : ''}.` : '';
+  const fb = () => showExport(`${mails.length} correos · ${what}`, text, `Selecciona y copia los correos, luego pégalos en el campo “Para” de Outlook o Gmail.${esc(extra)}`);
+  try { navigator.clipboard.writeText(text).then(() => toast(`${mails.length} correos copiados (${what}). Pégalos en el campo “Para” de tu correo.${extra}`), fb); } catch(e) { fb(); }
+}
+function scopeLabel(){ return [UI.fdv, UI.linea, UI.region && (UI.region === '—' ? 'sin región' : UI.region), UI.vis && fullName(VM()[UI.vis])].filter(Boolean).join(' · ') || 'todos los representantes'; }
 views.fdv = () => {
   const evAll = S.evaluaciones;
-  const list = S.visitadores.filter(v => (UI.showInactive || v.estado !== 'Inactivo') && (!UI.fdv || fdvOf(v) === UI.fdv) && (!UI.linea || v.linea === UI.linea) && (!UI.region || (v.region || '—') === UI.region) && (!UI.vis || v.id === UI.vis)
-    && matchesQ(fullName(v), v.correo, v.linea, v.zona, v.region, v.estado, fdvOf(v), ...evAll.filter(e => e.vid === v.id).map(e => e.examen)));
+  const list = fdvVisibleList();
   const rows = list.map(v => { const evs = evAll.filter(e => e.vid === v.id); return Object.assign({}, v, {full:fullName(v), fdvN:fdvOf(v), evs, st:stats(evs)}); });
   const fdvCards = fdvList().map(f => { const vs = S.visitadores.filter(v => fdvOf(v) === f && v.estado !== 'Inactivo'); const act = vs.filter(v => v.estado === 'Activo').length; const nl = linesOfFdv(f).length;
     return `<div class="card fdvcard ${UI.fdv===f?'on':''}" data-act="fdv-pick" data-f="${esc(f)}" role="button" tabindex="0"><div class="t"><span>${esc(f)}</span><span style="white-space:nowrap"><button class="iconbtn" data-act="fdv-ren" data-f="${esc(f)}" title="Cambiar nombre" aria-label="Cambiar nombre">✎</button>${vs.length || S.portafolio.some(p => pfdv(p) === f) || f === FDV_DEFAULT ? '' : `<button class="iconbtn del" data-act="fdv-del" data-f="${esc(f)}" title="Eliminar" aria-label="Eliminar">🗑</button>`}</span></div>
@@ -1107,7 +1121,7 @@ views.fdv = () => {
   return `${UI.fdvImp ? fdvImportCard() : ''}<div class="fdvbar">${fdvCards}</div><div class="linesum">${lineCards}</div>
   <div class="card"><div class="card-h"><div><h2>Representantes${UI.fdv ? ' · ' + esc(UI.fdv) : ' por fuerza de ventas y línea'}</h2><p class="sub">${rows.length} registros · ordenados por fuerza de ventas y línea · clic en una fila para ver su historial</p></div>
     <div class="toolbar"><label class="chk"><input type="checkbox" data-act="show-inactive" ${UI.showInactive?'checked':''}> Mostrar inactivos</label>
-    <button class="btn" data-act="fdv-imp">⬆ Cargar desde Excel</button><button class="btn" data-act="exp-fdv">⬇ CSV</button><button class="btn primary" data-act="add-vis">＋ Nuevo representante</button></div></div>
+    <button class="btn primary" data-act="mail-fdv" title="Copia los correos de la lista que estás viendo (usa los filtros o las tarjetas de línea para elegir a quiénes)">📋 Copiar ${list.filter(v => v.correo).length} correos</button><button class="btn" data-act="fdv-imp">⬆ Cargar desde Excel</button><button class="btn" data-act="exp-fdv">⬇ CSV</button><button class="btn primary" data-act="add-vis">＋ Nuevo representante</button></div></div>
     <div class="card-b" style="padding:10px 0 0">
     ${table('fdv', [
       {k:'nombre', label:'Nombre', f:r => `<span class="chev">▸</span>${r.nombre?esc(r.nombre):'<span class="muted">—</span>'}`},
@@ -2096,6 +2110,9 @@ document.addEventListener('click', e => {
     case 'att-cfg': e.stopPropagation(); if (document.body.classList.contains('ro')) { toast('Solo lectura: no puedes cambiar las líneas.'); break; } examCfgForm(a.dataset.ex); break;
     case 'att-auto': closeModal(); del('examenes', examKey(a.dataset.ex)).then(ok => ok && toast('Se usará la detección automática.')); break;
     case 'att-copy': copyText(attendanceText(), 'Inasistentes'); break;
+    case 'mail-fdv': copyEmails(fdvVisibleList().filter(v => v.estado !== 'Inactivo' || UI.showInactive), scopeLabel()); break;
+    case 'mail-att': { const sel = UI.attExam !== undefined ? UI.attExam : (UI.exam || ''); if (sel) copyEmails(attendance(sel).absent, `inasistentes de ${sel}`); break; }
+    case 'mail-cron': { const [f0, t0] = cronRange(); const ids = new Set(); scopeSessions().filter(s => overlaps(s, f0, t0)).forEach(s => repsInScope(s).forEach(v => ids.add(v.id))); const vm = VM(); copyEmails([...ids].map(id => vm[id]), `cronograma del ${fdate(f0)} al ${fdate(t0)}`); break; }
     case 'del-all-ses': { const all = S.cronograma || []; if (!all.length) { toast('El calendario ya está vacío.'); break; }
       const nEx = all.filter(s => sesTipo(s) === 'examen').length;
       askConfirm(`¿Borrar todo el cronograma? Se eliminarán ${all.length} actividades (${all.length - nEx} períodos de estudio y ${nEx} exámenes) de todos los meses, para todas las personas que usan el panel. No se puede deshacer.`, async () => {
