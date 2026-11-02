@@ -341,6 +341,9 @@ body.ro [data-act="exam-merge"],body.ro [data-act="exam-who"],body.ro [data-act=
 .ses:hover{filter:brightness(.96)}
 .ses.examen{border-left-color:var(--bad);background:var(--bad-soft)}
 .ses.cont{border-left-style:dashed}
+.ses[draggable="true"]{cursor:grab}
+.ses.dragging{opacity:.4}
+.cal-day.drag-over{outline:2px dashed var(--brand-2);outline-offset:-2px;background:var(--brand-soft)}
 .tipo{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.5px;padding:2px 7px;border-radius:999px;text-transform:uppercase;white-space:nowrap}
 .tipo.estudio{background:var(--brand-soft);color:var(--brand)}
 .tipo.examen{background:var(--bad-soft);color:var(--bad-text)}
@@ -853,10 +856,10 @@ views.crono = () => {
   const cells = Array(offset).fill(null).concat(Array.from({length:days}, (_, i) => `${ym}-${pad2(i+1)}`)); while (cells.length % 7) cells.push(null);
   const chip = (s, d) => { const ps = arr(s.productos), nr = repsInScope(s).length, ex = sesTipo(s) === 'examen', multi = sesEnd(s) !== s.fecha;
     const tip = `${tipoLabel(s)} · ${sesWhen(s)} · ${ps.join(', ')} · ${nr} representante${nr===1?'':'s'}${s.titulo ? ' · ' + s.titulo : ''}`;
-    return `<button type="button" class="ses ${ex ? 'examen' : ''} ${multi && d !== s.fecha ? 'cont' : ''}" data-act="edit-ses" data-id="${s.id}" data-tip="${esc(tip)}">${ex ? '<b>Examen</b> ' : ''}${ex && s.hora ? esc(s.hora) + ' ' : ''}${esc(ps.slice(0,2).join(', '))}${ps.length > 2 ? ` +${ps.length-2}` : ''}${multi ? ` <span class="muted">${Math.round((parseD(d) - parseD(s.fecha)) / 864e5) + 1}/${Math.round((parseD(sesEnd(s)) - parseD(s.fecha)) / 864e5) + 1}</span>` : ''}</button>`; };
+    return `<div role="button" tabindex="0" draggable="${document.body.classList.contains('ro') ? 'false' : 'true'}" class="ses ${ex ? 'examen' : ''} ${multi && d !== s.fecha ? 'cont' : ''}" data-act="edit-ses" data-id="${s.id}" data-sesdrag="${s.id}" data-tip="${esc(tip + ' · arrastra para cambiar de fecha')}">${ex ? '<b>Examen</b> ' : ''}${ex && s.hora ? esc(s.hora) + ' ' : ''}${esc(ps.slice(0,2).join(', '))}${ps.length > 2 ? ` +${ps.length-2}` : ''}${multi ? ` <span class="muted">${Math.round((parseD(d) - parseD(s.fecha)) / 864e5) + 1}/${Math.round((parseD(sesEnd(s)) - parseD(s.fecha)) / 864e5) + 1}</span>` : ''}</div>`; };
   const cal = `<div class="cal">${DOW.map(d => `<div class="cal-h">${d.slice(0,3)}</div>`).join('')}${cells.map((d, i) => !d ? '<div class="cal-day out" aria-hidden="true"></div>' :
     `<div class="cal-day ${d===td?'today':''} ${i%7>4?'wkend':''}" role="button" tabindex="0" data-act="add-ses" data-date="${d}" title="Programar desde el ${longDate(d)}"><span class="dn">${+d.slice(8)}</span>${(byDay.get(d) || []).map(s => chip(s, d)).join('')}</div>`).join('')}</div>
-    <div class="cal-legend"><span><i class="sw" style="background:var(--brand-2)"></i>Estudio (los días con 1/3, 2/3… son parte de un mismo período)</span><span><i class="sw" style="background:var(--bad)"></i>Examen</span></div>`;
+    <div class="cal-legend"><span><i class="sw" style="background:var(--brand-2)"></i>Estudio (los días con 1/3, 2/3… son parte de un mismo período)</span><span><i class="sw" style="background:var(--bad)"></i>Examen</span><span class="muted">✋ Arrastra una actividad a otro día para moverla · con <b>Shift</b> se corren también las siguientes del mismo plan (en días hábiles) · con <b>Ctrl</b> se copia</span></div>`;
   const [from, to] = cronRange(), inRange = sess.filter(s => overlaps(s, from, to)), mode = UI.cronMode || 'fecha';
   let armado;
   if (!inRange.length) armado = `<div class="empty">No hay actividades entre el ${fdate(from)} y el ${fdate(to)}. Haz clic en un día del calendario para programar la primera.</div>`;
@@ -2403,7 +2406,33 @@ document.addEventListener('keydown', e => {
   if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-line-card],.tick,.cal-day,.pie-mini,.fdvcard')) { e.preventDefault(); e.target.click(); }
 });
 /* drag & drop: portfolio + kahoot file */
-let dragPid = null, dragSug = null;
+let dragPid = null, dragSug = null, dragSes = null;
+document.addEventListener('dragstart', e => { const c = e.target.closest && e.target.closest('[data-sesdrag]'); if (!c) return; const day = c.closest('.cal-day');
+  dragSes = {id: c.dataset.sesdrag, from: day ? day.dataset.date : null}; c.classList.add('dragging'); e.dataTransfer.effectAllowed = 'copyMove'; try { e.dataTransfer.setData('text/plain', dragSes.id); } catch(_) {} e.stopPropagation(); }, true);
+document.addEventListener('dragover', e => { if (!dragSes) return; const z = e.target.closest && e.target.closest('.cal-day[data-date]'); if (!z) return; e.preventDefault(); e.dataTransfer.dropEffect = (e.ctrlKey || e.metaKey || e.altKey) ? 'copy' : 'move'; $$('.drag-over').forEach(x => x !== z && x.classList.remove('drag-over')); z.classList.add('drag-over'); }, true);
+document.addEventListener('drop', e => { if (!dragSes) return; const z = e.target.closest && e.target.closest('.cal-day[data-date]'); const d = dragSes; dragSes = null; $$('.drag-over,.dragging').forEach(x => x.classList.remove('drag-over','dragging')); if (!z) return; e.preventDefault(); e.stopPropagation();
+  moveSession(d.id, d.from, z.dataset.date, {follow: e.shiftKey, copy: e.ctrlKey || e.metaKey || e.altKey}); }, true);
+document.addEventListener('dragend', () => { dragSes = null; }, true);
+async function moveSession(id, from, to, o){
+  if (document.body.classList.contains('ro') || (DBS.mode === 'db' && !DBS.canWrite)) { toast('Solo lectura: no puedes mover actividades.'); return; }
+  const s = (S.cronograma || []).find(x => x.id === id); if (!s || !from || from === to) return;
+  const delta = Math.round((parseD(to) - parseD(from)) / 864e5);
+  const hol = new Map(); [+from.slice(0,4) - 1, +from.slice(0,4), +from.slice(0,4) + 1, +to.slice(0,4) + 1].forEach(y => holidaysVE(y).forEach((n, d) => hol.set(d, n)));
+  const isW = d => ![0, 6].includes(parseD(d).getDay()) && !hol.has(d);
+  const wdiff = (a, b) => { let n = 0, d = a; const st = b > a ? 1 : -1; while (d !== b) { d = addDays(d, st); if (isW(d)) n += st; } return n; };
+  const addW = (d, n) => { if (!n) return d; const st = n > 0 ? 1 : -1; let c = 0; while (c !== n) { d = addDays(d, st); if (isW(d)) c += st; } return d; };
+  const wd = wdiff(from, to);
+  const shift = x => { if (x.id === id || !o.follow) return Object.assign({}, x, {fecha: addDays(x.fecha, delta), fechaFin: addDays(sesEnd(x), delta)});
+    const nf = addW(x.fecha, wd); return Object.assign({}, x, {fecha: nf, fechaFin: addDays(nf, Math.round((parseD(sesEnd(x)) - parseD(x.fecha)) / 864e5))}); };
+  let list = [s];
+  if (o.follow && s.grupo) list = (S.cronograma || []).filter(x => x.grupo === s.grupo && (x.fecha > s.fecha || (x.fecha === s.fecha && (x.id === s.id || sesTipo(x) !== 'examen' || sesTipo(s) === 'examen'))));
+  const ops = list.map(x => ({col:'cronograma', rec: o.copy ? Object.assign(shift(x), {id: uid('s'), grupo: x.grupo ? x.grupo + '-c' : ''}) : shift(x)}));
+  const wk = ops.filter(op => [0, 6].includes(parseD(op.rec.fecha).getDay())).length;
+  const ok = await runOps(ops);
+  if (ok === ops.length) toast(`${o.copy ? 'Copiad' : 'Movid'}${ops.length > 1 ? `as ${ops.length} actividades` : `o ${tipoLabel(s).toLowerCase()} de ${arr(s.productos).slice(0, 3).join(', ')}${arr(s.productos).length > 3 ? '…' : ''}`} al ${longDate(addDays(s.fecha, delta))}.${wk ? ' Ojo: quedó en fin de semana.' : ''}`);
+  if (UI.cronTo && sesEnd(ops[ops.length - 1].rec) > UI.cronTo) UI.cronTo = ops.reduce((m, op) => sesEnd(op.rec) > m ? sesEnd(op.rec) : m, UI.cronTo);
+  if (UI.cronFrom && ops[0].rec.fecha < UI.cronFrom) UI.cronFrom = ops[0].rec.fecha;
+}
 document.addEventListener('dragstart', e => { const c = e.target.closest && e.target.closest('[data-sugdrag]'); if (!c || !UI.sug) return; dragSug = {name: c.dataset.sugdrag, fam: e.shiftKey}; c.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', dragSug.name); } catch(_) {} e.stopPropagation(); }, true);
 document.addEventListener('dragover', e => { if (!dragSug) return; const r = e.target.closest && e.target.closest('tr[data-suggrp]'); if (!r) return; e.preventDefault(); e.dataTransfer.dropEffect = 'move'; $$('.drag-over').forEach(x => x !== r && x.classList.remove('drag-over')); r.classList.add('drag-over'); }, true);
 document.addEventListener('drop', e => { if (!dragSug) return; const r = e.target.closest && e.target.closest('tr[data-suggrp]'); const d = dragSug; dragSug = null; if (!r || !UI.sug) return; e.preventDefault(); e.stopPropagation();
