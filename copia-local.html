@@ -536,6 +536,7 @@ async function connect(){
 const UI = { rankOpen:new Set(), tab:'ranking', q:'', fdv:'', linea:'', region:'', pieBy:'general', vis:'', exam:'', band:'', sort:{}, open:new Set(), showInactive:false, portView:'cards', rankDir:'asc', kahoot:null, ficheroLinea:'' };
 try { const t = localStorage.getItem(LS_KEY+'-tab'); if (t) UI.tab = t; } catch(e) {}
 if (/^#cronograma$/i.test(location.hash)) UI.tab = 'crono';
+try { const rb = localStorage.getItem(LS_KEY+'-rankBy'); if (rb) UI.rankBy = rb; } catch(e) {}
 
 /* ---------- helpers ---------- */
 const $ = (s, el=document) => el.querySelector(s);
@@ -667,20 +668,25 @@ function examCfgForm(ex){
   });
 }
 
+const kptsOf = s => s.list.reduce((a, e) => a + (e.estado !== 'No presentó' && e.kahoot != null && Number.isFinite(+e.kahoot) ? +e.kahoot : 0), 0);
+const rankByPts = () => (UI.rankBy || 'pts') === 'pts';
+const rankCmp = (a, b) => rankByPts() ? (b.kpts - a.kpts) || ((b.avg ?? -1) - (a.avg ?? -1)) : ((b.avg ?? -1) - (a.avg ?? -1)) || (b.kpts - a.kpts) || (b.n - a.n);
+const rankVal = s => rankByPts() ? s.kpts : s.avg;
 function podium(vs){
-  const r = vs.filter(s => s.avg != null).sort((a,b) => b.avg - a.avg || b.n - a.n);
+  vs.forEach(s => { if (s.kpts == null) s.kpts = kptsOf(s); });
+  const r = vs.filter(s => s.avg != null).sort(rankCmp);
   const top = r.slice(0, 3), bottom = r.slice(top.length).slice(-3).reverse();
-  const tieTop = top.length === 3 ? r.slice(3).filter(s => s.avg === top[2].avg).length : 0;
-  const tieLow = bottom.length === 3 ? r.slice(0, r.length - 3).filter(s => s.avg === bottom[2].avg && !top.includes(s)).length : 0;
+  const tieTop = top.length === 3 ? r.slice(3).filter(s => rankVal(s) === rankVal(top[2])).length : 0;
+  const tieLow = bottom.length === 3 ? r.slice(0, r.length - 3).filter(s => rankVal(s) === rankVal(bottom[2]) && !top.includes(s)).length : 0;
   return {top, bottom, tieTop, tieLow};
 }
 function podiumHtml(vs, compact){
   const {top, bottom, tieTop, tieLow} = podium(vs), min = S.config.min;
-  const tie = (n, v) => n ? `<li class="muted" style="display:block;font-size:11.5px">+${n} más empatado${n===1?'':'s'} con ${fmt(v)} (ver ranking)</li>` : '';
-  const li = (s, i, kind) => `<li title="${esc(fullName(s.v))} · ${esc(s.v.linea)} · promedio ${fmt(s.avg, 2)} en ${s.n} nota${s.n===1?'':'s'}"><span class="pos ${kind === 'top' ? 'p' + (i+1) : 'low'}">${i+1}</span><span class="pn">${esc(fullName(s.v))}${compact ? '' : `<small>${esc(s.v.linea)}${s.v.region && s.v.region !== '—' ? ' · ' + esc(s.v.region) : ''} · ${s.n} nota${s.n===1?'':'s'}</small>`}</span><b class="${s.avg < min ? 't-bad' : 't-good'}">${fmt(s.avg)}</b></li>`;
+  const tie = (n, v) => n ? `<li class="muted" style="display:block;font-size:11.5px">+${n} más empatado${n===1?'':'s'} con ${rankByPts() ? (+v).toLocaleString('es-VE') + ' pts' : fmt(v)} (ver ranking)</li>` : '';
+  const li = (s, i, kind) => `<li title="${esc(fullName(s.v))} · ${esc(s.v.linea)} · promedio ${fmt(s.avg, 2)} en ${s.n} nota${s.n===1?'':'s'}"><span class="pos ${kind === 'top' ? 'p' + (i+1) : 'low'}">${i+1}</span><span class="pn">${esc(fullName(s.v))}${compact ? '' : `<small>${esc(s.v.linea)}${s.v.region && s.v.region !== '—' ? ' · ' + esc(s.v.region) : ''} · ${s.n} nota${s.n===1?'':'s'}</small>`}</span>${rankByPts() ? `<b class="num" title="Puntos Kahoot acumulados · promedio ${fmt(s.avg)}">${s.kpts.toLocaleString('es-VE')} <small class="muted" style="font-weight:500">pts</small></b>` : `<b class="${s.avg < min ? 't-bad' : 't-good'}">${fmt(s.avg)}</b>`}</li>`;
   return `<div class="podium ${compact ? 'compact' : ''}">
-    <div><h4>▲ Top 3 · mejores promedios</h4><ol>${top.map((s,i) => li(s, i, 'top')).join('') || '<li class="muted">Sin notas</li>'}${top.length ? tie(tieTop, top[top.length-1].avg) : ''}</ol></div>
-    <div><h4>▼ Top 3 · promedios más bajos</h4><ol>${bottom.length ? bottom.map((s,i) => li(s, i, 'low')).join('') + tie(tieLow, bottom[bottom.length-1].avg) : `<li class="muted" style="display:block">${top.length ? 'Hay 3 estudiantes o menos con nota' : 'Sin notas'}</li>`}</ol></div></div>`;
+    <div><h4>▲ Top 3 · ${rankByPts() ? 'más puntos Kahoot' : 'mejores promedios'}</h4><ol>${top.map((s,i) => li(s, i, 'top')).join('') || '<li class="muted">Sin notas</li>'}${top.length ? tie(tieTop, rankVal(top[top.length-1])) : ''}</ol></div>
+    <div><h4>▼ Top 3 · ${rankByPts() ? 'menos puntos Kahoot' : 'promedios más bajos'}</h4><ol>${bottom.length ? bottom.map((s,i) => li(s, i, 'low')).join('') + tie(tieLow, rankVal(bottom[bottom.length-1])) : `<li class="muted" style="display:block">${top.length ? 'Hay 3 estudiantes o menos con nota' : 'Sin notas'}</li>`}</ol></div></div>`;
 }
 function pieGroups(vs, by){
   if (!vs.length) return pieChart(vs);
@@ -968,8 +974,8 @@ views.ranking = () => {
   const evs = scopeEvals(), vs = visStats(evs), exams = examOrder(evs), min = S.config.min;
   const rows = vs.map(s => { const byEx = {}; s.list.forEach(e => { byEx[e.examen] = e; }); s.kpts = s.list.reduce((a, e) => a + (e.estado !== 'No presentó' && Number.isFinite(+e.kahoot) && e.kahoot != null ? +e.kahoot : 0), 0);
     return Object.assign({}, s, {full:fullName(s.v), linea:s.v.linea, band:bandOf(s.avg), byEx}); });
-  const ranked = rows.filter(r => r.avg != null).sort((a,b) => b.avg - a.avg || b.n - a.n); let prev = null, pos = 0;
-  ranked.forEach((r,i) => { if (r.avg !== prev) { pos = i + 1; prev = r.avg; } r.pos = pos; });
+  const ranked = rows.filter(r => r.avg != null).sort(rankCmp); let prev = null, pos = 0;
+  ranked.forEach((r,i) => { const v = rankByPts() ? r.kpts + '|' + r.avg : r.avg; if (v !== prev) { pos = i + 1; prev = v; } r.pos = pos; });
   const shown = rows.filter(r => (!UI.band || r.band === UI.band) && matchesQ(r.full, r.linea, r.v.correo, ...r.list.map(e => e.examen)));
   const withAvg = ranked.map(r => r.avg), sorted = [...withAvg].sort((a,b) => a - b);
   const median = sorted.length ? (sorted.length % 2 ? sorted[(sorted.length-1)/2] : (sorted[sorted.length/2-1] + sorted[sorted.length/2]) / 2) : null;
@@ -991,8 +997,8 @@ views.ranking = () => {
       <div style="margin-top:14px">${bars(exams.map(ex => { const st = stats(evs.filter(e => e.examen === ex)); return {label:esc(ex), value:st.avg, tip:`${ex}: promedio ${fmt(st.avg,2)} · aprobación ${pct(st.rate)} · n=${st.n}`}; }))}</div></div></div>
   </div>
   ${attendanceCard()}
-  <div class="card" style="margin-top:16px"><div class="card-h"><div><h2>Ranking por promedio general</h2><p class="sub">Promedio acumulado de todas las notas de cada estudiante${UI.exam ? ' (solo ' + esc(UI.exam) + ')' : ''} · clic en un estudiante para ver el detalle · clic en una cabecera para reordenar</p></div>
-    <div class="toolbar">${UI.band ? `<span class="chipf">${BAND_META[UI.band].label}<button type="button" data-act="band" data-band="${UI.band}" aria-label="Quitar filtro">✕</button></span>` : ''}<button class="btn sm" data-act="rank-expand">${UI.rankOpen.size ? 'Contraer todo' : 'Desplegar todo'}</button><button class="btn" data-act="exp-rank">⬇ CSV</button></div></div>
+  <div class="card" style="margin-top:16px"><div class="card-h"><div><h2>${rankByPts() ? 'Ranking por puntos Kahoot acumulados' : 'Ranking por promedio general'}</h2><p class="sub">${rankByPts() ? 'El puesto lo da la suma de puntos Kahoot de todas sus evaluaciones (quien presenta más y mejor, suma más); si empatan, decide el promedio' : 'El puesto lo da el promedio de sus notas'}${UI.exam ? ' · solo ' + esc(UI.exam) : ''} · clic en un estudiante para ver el detalle</p></div>
+    <div class="toolbar">${UI.band ? `<span class="chipf">${BAND_META[UI.band].label}<button type="button" data-act="band" data-band="${UI.band}" aria-label="Quitar filtro">✕</button></span>` : ''}<div class="seg" role="group" aria-label="Criterio del ranking"><button type="button" class="${rankByPts()?'on':''}" data-act="rank-by" data-v="pts">Por puntos Kahoot</button><button type="button" class="${rankByPts()?'':'on'}" data-act="rank-by" data-v="avg">Por promedio</button></div><button class="btn sm" data-act="rank-expand">${UI.rankOpen.size ? 'Contraer todo' : 'Desplegar todo'}</button><button class="btn" data-act="exp-rank">⬇ CSV</button></div></div>
     <div class="card-b" style="padding:10px 0 0">${table('ranking', [
       {k:'pos', label:'#', r:1, sv:r => r.pos ?? 9999, f:r => `<span class="chev">▸</span>${r.pos ? `<span class="pos ${r.pos<=3?'p'+r.pos:''}">${r.pos}</span>` : '<span class="muted">—</span>'}`},
       {k:'full', label:'Estudiante', f:r => `<b>${esc(r.full)}</b><br><small class="muted">${fdvOf(r.v) !== FDV_DEFAULT ? esc(fdvOf(r.v)) + ' · ' : ''}${esc(r.linea)}${r.v.region && r.v.region !== '—' ? ' · ' + esc(r.v.region) : ''}</small>`},
@@ -1916,7 +1922,7 @@ function exportFdv(){ download('fuerza_de_ventas.csv', csv([['Nombre','Apellidos
   S.visitadores.map(v => { const st = stats(S.evaluaciones.filter(e => e.vid === v.id)); return [v.nombre, v.apellidos, v.correo, fdvOf(v), v.linea, v.region, v.zona, v.estado, st.total, st.avg!=null?st.avg.toFixed(2).replace('.',','):'']; }))), 'text/csv;charset=utf-8'); }
 function exportRanking(){
   const evs = scopeEvals(), exams = examOrder(evs);
-  const rows = visStats(evs).filter(s => s.avg != null).sort((a,b) => b.avg - a.avg);
+  const rows = visStats(evs).filter(s => s.avg != null); rows.forEach(s => { s.kpts = kptsOf(s); }); rows.sort(rankCmp);
   const n2 = x => x == null ? '' : String(Math.round(x*100)/100).replace('.', ',');
   download('ranking_notas.csv', csv([['Posición','Nombre','Apellidos','Correo','Línea','Región','Promedio','Notas','Aprobadas','Pts Kahoot total','Estado'].concat(exams)].concat(rows.map((s,i) => {
     const by = {}; s.list.forEach(e => { by[e.examen] = e; }); const kp = s.list.reduce((a, e) => a + (e.estado !== 'No presentó' && e.kahoot != null && Number.isFinite(+e.kahoot) ? +e.kahoot : 0), 0);
@@ -2072,6 +2078,7 @@ document.addEventListener('click', e => {
     case 'pie-group': if (a.dataset.by === 'region') UI.region = a.dataset.g === 'Sin región' ? '—' : a.dataset.g; else if (a.dataset.by === 'fdv') UI.fdv = a.dataset.g; else UI.linea = a.dataset.g; UI.pieBy = 'general'; render(); toast(`Mostrando solo ${a.dataset.g}. Usa “Limpiar filtros” para volver a ver todo.`); break;
     case 'band': UI.band = UI.band === a.dataset.band ? '' : a.dataset.band; if (UI.tab !== 'ranking') { UI.tab = 'ranking'; window.scrollTo(0,0); } render(); break;
     case 'exp-rank': exportRanking(); break;
+    case 'rank-by': UI.rankBy = a.dataset.v; try { localStorage.setItem(LS_KEY+'-rankBy', UI.rankBy); } catch(err) {} render(); break;
     case 'rank-expand': if (UI.rankOpen.size) UI.rankOpen.clear(); else visStats(scopeEvals()).forEach(s => UI.rankOpen.add(s.vid)); render(); break;
     case 'add-ses': if (document.body.classList.contains('ro')) break; sesForm(null, a.dataset.date); break;
     case 'new-ses': sesForm(null, (UI.calMonth && UI.calMonth !== today().slice(0,7)) ? UI.calMonth + '-01' : today()); break;
