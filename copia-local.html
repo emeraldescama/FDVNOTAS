@@ -369,6 +369,11 @@ body.ro [data-act="exam-merge"],body.ro [data-act="exam-who"],body.ro [data-act=
 .sched .dt{white-space:nowrap;font-weight:600}
 .sched .dt small{display:block;font-weight:400;color:var(--muted)}
 .prodtags{display:flex;flex-wrap:wrap;gap:4px}
+.prodtags span.pdrag{cursor:grab}
+.prodtags span.pdrag:hover{border-color:var(--brand-2)}
+.prodtags span.dragging{opacity:.4}
+[data-sesrow].drag-over td,li[data-sesrow].drag-over{background:var(--brand-soft)}
+[data-sesrow].drag-over td:first-child{box-shadow:inset 3px 0 0 var(--brand-2)}
 .prodtags span{background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:1px 6px;font-size:12px;font-weight:600}
 .repcard h3{margin:0;font-size:14px}
 .repcard ul{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
@@ -847,6 +852,7 @@ function copyText(text, label, info){
   const fb = () => showExport(label, text, info || 'Selecciona el texto, cópialo y pégalo donde lo vayas a compartir (WhatsApp, correo o Excel).');
   try { navigator.clipboard.writeText(text).then(() => toast(`${label}: copiado al portapapeles.`), fb); } catch(e) { fb(); }
 }
+const ptag = (s, p) => document.body.classList.contains('ro') ? `<span>${esc(p)}</span>` : `<span class="pdrag" draggable="true" data-pdrag-s="${s.id}" data-pdrag-p="${esc(p)}" title="Arrastra ${esc(p)} a otra fila o a un día del calendario">${esc(p)}</span>`;
 views.crono = () => {
   const ym = UI.calMonth || today().slice(0,7), [y, m] = ym.split('-').map(Number);
   const sess = scopeSessions(), td = today(), vm = VM(), mStart = ym + '-01', mEnd = monthLast(ym);
@@ -859,18 +865,18 @@ views.crono = () => {
     return `<div role="button" tabindex="0" draggable="${document.body.classList.contains('ro') ? 'false' : 'true'}" class="ses ${ex ? 'examen' : ''} ${multi && d !== s.fecha ? 'cont' : ''}" data-act="edit-ses" data-id="${s.id}" data-sesdrag="${s.id}" data-tip="${esc(tip + ' · arrastra para cambiar de fecha')}">${ex ? '<b>Examen</b> ' : ''}${ex && s.hora ? esc(s.hora) + ' ' : ''}${esc(ps.slice(0,2).join(', '))}${ps.length > 2 ? ` +${ps.length-2}` : ''}${multi ? ` <span class="muted">${Math.round((parseD(d) - parseD(s.fecha)) / 864e5) + 1}/${Math.round((parseD(sesEnd(s)) - parseD(s.fecha)) / 864e5) + 1}</span>` : ''}</div>`; };
   const cal = `<div class="cal">${DOW.map(d => `<div class="cal-h">${d.slice(0,3)}</div>`).join('')}${cells.map((d, i) => !d ? '<div class="cal-day out" aria-hidden="true"></div>' :
     `<div class="cal-day ${d===td?'today':''} ${i%7>4?'wkend':''}" role="button" tabindex="0" data-act="add-ses" data-date="${d}" title="Programar desde el ${longDate(d)}"><span class="dn">${+d.slice(8)}</span>${(byDay.get(d) || []).map(s => chip(s, d)).join('')}</div>`).join('')}</div>
-    <div class="cal-legend"><span><i class="sw" style="background:var(--brand-2)"></i>Estudio (los días con 1/3, 2/3… son parte de un mismo período)</span><span><i class="sw" style="background:var(--bad)"></i>Examen</span><span class="muted">✋ Arrastra una actividad a otro día para moverla · con <b>Shift</b> se corren también las siguientes del mismo plan (en días hábiles) · con <b>Ctrl</b> se copia</span></div>`;
+    <div class="cal-legend"><span><i class="sw" style="background:var(--brand-2)"></i>Estudio (los días con 1/3, 2/3… son parte de un mismo período)</span><span><i class="sw" style="background:var(--bad)"></i>Examen</span><span class="muted">✋ Arrastra una actividad a otro día para moverla · con <b>Shift</b> se corren también las siguientes del mismo plan (en días hábiles) · con <b>Ctrl</b> se copia · para mover <b>un solo producto</b>, arrástralo desde la tabla de abajo</span></div>`;
   const [from, to] = cronRange(), inRange = sess.filter(s => overlaps(s, from, to)), mode = UI.cronMode || 'fecha';
   let armado;
   if (!inRange.length) armado = `<div class="empty">No hay actividades entre el ${fdate(from)} y el ${fdate(to)}. Haz clic en un día del calendario para programar la primera.</div>`;
   else if (mode === 'rep') {
     armado = `<div class="grid g-3">${sessionsByRep(inRange).map(({v, items}) => `<div class="card card-b repcard">
       <h3>${esc(fullName(v))}</h3><small class="muted">${esc(v.linea)}${v.zona && v.zona !== '—' ? ' · ' + esc(v.zona) : ''}</small>
-      <ul>${items.map(s => `<li style="border-left-color:${sesTipo(s)==='examen'?'var(--bad)':'var(--brand-2)'}"><span class="tipo ${sesTipo(s)}">${tipoLabel(s)}</span> <span class="when">${sesWhen(s)}</span><div class="prodtags" style="margin-top:3px">${arr(s.productos).map(p => `<span>${esc(p)}</span>`).join('')}</div>${s.titulo ? `<small class="muted">${esc(s.titulo)}</small>` : ''}</li>`).join('')}</ul></div>`).join('')}</div>`;
+      <ul>${items.map(s => `<li data-sesrow="${s.id}" style="border-left-color:${sesTipo(s)==='examen'?'var(--bad)':'var(--brand-2)'}"><span class="tipo ${sesTipo(s)}">${tipoLabel(s)}</span> <span class="when">${sesWhen(s)}</span><div class="prodtags" style="margin-top:3px">${arr(s.productos).map(p => ptag(s, p)).join('')}</div>${s.titulo ? `<small class="muted">${esc(s.titulo)}</small>` : ''}</li>`).join('')}</ul></div>`).join('')}</div>`;
   } else {
     armado = `<div class="tbl-wrap"><table class="sched"><thead><tr><th>Actividad</th><th>Fechas</th><th>Productos</th><th>Representantes</th><th>Tema / notas</th><th></th></tr></thead><tbody>
-      ${inRange.map(s => { const reps = repsInScope(s); return `<tr><td><span class="tipo ${sesTipo(s)}">${tipoLabel(s)}</span></td><td class="dt">${sesEnd(s) === s.fecha ? fdate(s.fecha) : `${fdate(s.fecha)} → ${fdate(sesEnd(s))}`}<small>${sesEnd(s) === s.fecha ? dowName(s.fecha) : `${dowName(s.fecha)} a ${dowName(sesEnd(s))}`}${s.hora ? ' · ' + esc(s.hora) : ''}</small></td>
-        <td><div class="prodtags">${arr(s.productos).map(p => `<span>${esc(p)}</span>`).join('')}</div></td>
+      ${inRange.map(s => { const reps = repsInScope(s); return `<tr data-sesrow="${s.id}"><td><span class="tipo ${sesTipo(s)}">${tipoLabel(s)}</span></td><td class="dt">${sesEnd(s) === s.fecha ? fdate(s.fecha) : `${fdate(s.fecha)} → ${fdate(sesEnd(s))}`}<small>${sesEnd(s) === s.fecha ? dowName(s.fecha) : `${dowName(s.fecha)} a ${dowName(sesEnd(s))}`}${s.hora ? ' · ' + esc(s.hora) : ''}</small></td>
+        <td><div class="prodtags">${arr(s.productos).map(p => ptag(s, p)).join('')}</div></td>
         <td>${reps.map(v => esc(fullName(v))).join(', ')}<br><small class="muted">${[...new Set(reps.map(v => v.linea))].join(' · ')}</small></td>
         <td>${esc(s.titulo || '')}${s.notas ? `<br><small class="muted">${esc(s.notas)}</small>` : ''}</td>
         <td><button class="iconbtn" data-act="edit-ses" data-id="${s.id}" aria-label="Editar">✎</button></td></tr>`; }).join('')}</tbody></table></div>`;
@@ -2406,7 +2412,44 @@ document.addEventListener('keydown', e => {
   if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-line-card],.tick,.cal-day,.pie-mini,.fdvcard')) { e.preventDefault(); e.target.click(); }
 });
 /* drag & drop: portfolio + kahoot file */
-let dragPid = null, dragSug = null, dragSes = null;
+let dragPid = null, dragSug = null, dragSes = null, dragProd = null;
+document.addEventListener('dragstart', e => { const c = e.target.closest && e.target.closest('[data-pdrag-s]'); if (!c) return; dragProd = {s: c.dataset.pdragS, p: c.dataset.pdragP}; c.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', dragProd.p); } catch(_) {} e.stopPropagation(); }, true);
+document.addEventListener('dragover', e => { if (!dragProd) return; const z = e.target.closest && e.target.closest('[data-sesrow],.cal-day[data-date]'); if (!z) return; e.preventDefault(); e.dataTransfer.dropEffect = 'move'; $$('.drag-over').forEach(x => x !== z && x.classList.remove('drag-over')); z.classList.add('drag-over'); }, true);
+document.addEventListener('drop', e => { if (!dragProd) return; const z = e.target.closest && e.target.closest('[data-sesrow],.cal-day[data-date]'); const d = dragProd; dragProd = null; $$('.drag-over,.dragging').forEach(x => x.classList.remove('drag-over','dragging')); if (!z) return; e.preventDefault(); e.stopPropagation();
+  moveProduct(d.s, d.p, z.dataset.sesrow ? {id: z.dataset.sesrow} : {date: z.dataset.date}, {noFollow: e.altKey}); }, true);
+document.addEventListener('dragend', () => { dragProd = null; }, true);
+const sameReps = (a, b) => arr(a.reps).slice().sort().join() === arr(b.reps).slice().sort().join();
+function nextWork(d){ const hol = holidaysVE(+d.slice(0,4)); do { d = addDays(d, 1); } while ([0, 6].includes(parseD(d).getDay()) || hol.has(d)); return d; }
+async function moveProduct(srcId, prod, target, o){
+  if (document.body.classList.contains('ro') || (DBS.mode === 'db' && !DBS.canWrite)) { toast('Solo lectura: no puedes mover productos.'); return; }
+  const all = S.cronograma || [], W = new Map(), get = id => W.get(id) || all.find(x => x.id === id);
+  const src = get(srcId); if (!src) return;
+  const findDest = (ref, tgt) => { if (tgt.id) return get(tgt.id);
+    return all.find(x => x.fecha === tgt.date && sesTipo(x) === sesTipo(ref) && sameReps(x, ref) && (x.grupo || '') === (ref.grupo || '')) || all.find(x => x.fecha === tgt.date && sesTipo(x) === sesTipo(ref) && sameReps(x, ref)) || null; };
+  const move1 = (from, dest, tgtDate) => {
+    if (!dest) dest = Object.assign({}, from, {id: uid('s'), fecha: tgtDate, fechaFin: tgtDate, productos: []});
+    if (dest.id === from.id) return null;
+    const destOrig = arr(dest.productos).slice();
+    W.set(dest.id, Object.assign({}, dest, {productos: destOrig.includes(prod) ? destOrig : destOrig.concat([prod])}));
+    W.set(from.id, Object.assign({}, get(from.id), {productos: arr(get(from.id).productos).filter(p => p !== prod)}));
+    return {dest: W.get(dest.id), destOrig};
+  };
+  const r = move1(src, findDest(src, target), target.date); if (!r) return;
+  let follow = '';
+  if (!o.noFollow && sesTipo(src) === 'estudio' && sesTipo(r.dest) === 'estudio' && src.grupo) {
+    const exSrc = all.filter(x => x.grupo === src.grupo && sesTipo(x) === 'examen' && arr(x.productos).includes(prod) && x.fecha >= src.fecha).sort((a, b) => a.fecha.localeCompare(b.fecha))[0];
+    if (exSrc) {
+      const exDest = r.destOrig.length ? all.filter(x => x.grupo === src.grupo && sesTipo(x) === 'examen' && x.fecha >= r.dest.fecha && arr(x.productos).some(p => r.destOrig.includes(p))).sort((a, b) => a.fecha.localeCompare(b.fecha))[0] : null;
+      const exDate = exDest ? exDest.fecha : nextWork(r.dest.fecha);
+      const r2 = move1(exSrc, exDest || findDest(exSrc, {date: exDate}), exDate);
+      if (r2) follow = ` Su examen pasó al ${longDate(r2.dest.fecha)}.`;
+    }
+  }
+  const ops = [...W.values()].map(x => arr(x.productos).length ? {col:'cronograma', rec:x} : {col:'cronograma', del:x.id}).filter(op => op.rec || all.some(x => x.id === op.del));
+  const ok = await runOps(ops);
+  if (ok === ops.length) toast(`${prod} pasó a ${tipoLabel(r.dest).toLowerCase()} del ${longDate(r.dest.fecha)}.${follow}`);
+  if (UI.cronTo && r.dest.fecha > UI.cronTo) UI.cronTo = r.dest.fecha; if (UI.cronFrom && r.dest.fecha < UI.cronFrom) UI.cronFrom = r.dest.fecha;
+}
 document.addEventListener('dragstart', e => { const c = e.target.closest && e.target.closest('[data-sesdrag]'); if (!c) return; const day = c.closest('.cal-day');
   dragSes = {id: c.dataset.sesdrag, from: day ? day.dataset.date : null}; c.classList.add('dragging'); e.dataTransfer.effectAllowed = 'copyMove'; try { e.dataTransfer.setData('text/plain', dragSes.id); } catch(_) {} e.stopPropagation(); }, true);
 document.addEventListener('dragover', e => { if (!dragSes) return; const z = e.target.closest && e.target.closest('.cal-day[data-date]'); if (!z) return; e.preventDefault(); e.dataTransfer.dropEffect = (e.ctrlKey || e.metaKey || e.altKey) ? 'copy' : 'move'; $$('.drag-over').forEach(x => x !== z && x.classList.remove('drag-over')); z.classList.add('drag-over'); }, true);
