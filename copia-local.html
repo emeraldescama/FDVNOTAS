@@ -314,7 +314,7 @@ textarea.paste{width:100%;min-height:170px;font-family:ui-monospace,SFMono-Regul
 body.ro [data-act="add-vis"],body.ro [data-act="edit-vis"],body.ro [data-act="toggle-vis"],body.ro [data-act="del-vis"],body.ro [data-act="add-eval"],body.ro [data-act="edit-eval"],body.ro [data-act="del-eval"],body.ro [data-act="add-prod"],body.ro [data-act="del-prod"],body.ro [data-act="move-prod"],body.ro [data-act="add-med"],body.ro [data-act="edit-med"],body.ro [data-act="del-med"],body.ro [data-act="k-commit"],body.ro [data-act="imp-json"]{display:none!important}
 body.ro .tick{pointer-events:none}
 body.ro [data-act="add-ses"],body.ro [data-act="edit-ses"]{pointer-events:none}
-body.ro [data-act="exam-merge"],body.ro [data-act="area-add"],body.ro [data-act="area-del"],body.ro [data-act="line-add"],body.ro [data-act="line-ren"],body.ro [data-act="line-del"],body.ro [data-act="fdv-add"],body.ro [data-act="fdv-ren"],body.ro [data-act="fdv-del"],body.ro [data-act="fdv-imp"],body.ro [data-act="new-ses"],body.ro [data-act="del-all-ses"]{display:none!important}
+body.ro [data-act="exam-merge"],body.ro [data-act="exam-who"],body.ro [data-act="area-add"],body.ro [data-act="area-del"],body.ro [data-act="line-add"],body.ro [data-act="line-ren"],body.ro [data-act="line-del"],body.ro [data-act="fdv-add"],body.ro [data-act="fdv-ren"],body.ro [data-act="fdv-del"],body.ro [data-act="fdv-imp"],body.ro [data-act="new-ses"],body.ro [data-act="del-all-ses"]{display:none!important}
 /* calendar / schedule */
 .cal-nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .cal-nav h2{min-width:170px;text-align:center}
@@ -337,6 +337,8 @@ body.ro [data-act="exam-merge"],body.ro [data-act="area-add"],body.ro [data-act=
 .cal-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--text-2);margin-top:10px}
 .cal-legend span{display:inline-flex;align-items:center;gap:6px}
 #modalBody[data-tipo="examen"] .f-est{display:none}
+#modalBody[data-modo="lineas"] .cfg-personas{display:none}
+#modalBody[data-modo="personas"] .cfg-lineas{display:none}
 #modalBody[data-tipo="estudio"] .f-exa{display:none}
 .img-prev{max-height:58vh;overflow:auto;border:1px solid var(--border);border-radius:8px;background:#fff}
 .img-prev img{display:block;width:100%;height:auto}
@@ -608,7 +610,8 @@ function pieChart(vs){
 const examKey = ex => 'x-' + (nrm(ex).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 120) || 'sin-nombre');
 function examLines(ex){
   const cfg = (S.examenes || []).find(c => c.examen === ex);
-  if (cfg) return {lines: arr(cfg.lineas), how: 'definido por ti', cfg: true};
+  if (cfg && cfg.modo === 'personas') return {lines: arr(cfg.lineas), personas: arr(cfg.personas), how: `${arr(cfg.personas).length} personas elegidas por ti`, cfg: true};
+  if (cfg) return {lines: arr(cfg.lineas), how: 'líneas elegidas por ti', cfg: true};
   const n = ' ' + nrm(ex).replace(/[^a-z0-9]+/g, ' ') + ' ';
   const prods = [...new Set(S.portafolio.map(p => p.producto))].filter(p => prodTerms(p).some(term => { const pn = nrm(term).replace(/[^a-z0-9]+/g, ' ').trim(); return pn.length >= 4 && n.includes(' ' + pn + ' '); }));
   if (prods.length) return {lines: allLines().filter(l => S.portafolio.some(p => p.linea === l && prods.includes(p.producto))).concat([GD]), how: `líneas que llevan ${prods.join(', ')}`};
@@ -617,17 +620,17 @@ function examLines(ex){
   return {lines, how: lines.length ? 'según quiénes la presentaron (líneas donde la presentó al menos la mitad)' : 'sin definir'};
 }
 function attendance(ex){
-  const {lines, how, cfg} = examLines(ex), ids = new Set(scopeVis().map(v => v.id));
-  const req = S.visitadores.filter(v => v.estado === 'Activo' && lines.includes(v.linea) && ids.has(v.id));
+  const {lines, how, cfg, personas} = examLines(ex), ids = new Set(scopeVis().map(v => v.id)), ps = personas ? new Set(personas) : null;
+  const req = S.visitadores.filter(v => v.estado !== 'Inactivo' && v.estado !== 'Vacante' && ids.has(v.id) && (ps ? ps.has(v.id) : (v.estado === 'Activo' && lines.includes(v.linea))));
   const pres = new Set(S.evaluaciones.filter(e => e.examen === ex && e.estado !== 'No presentó').map(e => e.vid));
-  return {ex, lines, how, cfg, req, present: req.filter(v => pres.has(v.id)), absent: req.filter(v => !pres.has(v.id))};
+  return {ex, lines, how, cfg, personas, req, present: req.filter(v => pres.has(v.id)), absent: req.filter(v => !pres.has(v.id))};
 }
 const regionOf = v => v.region && v.region !== '—' ? v.region : 'Sin región';
 function attendanceCard(){
   const exams = examOrder(S.evaluaciones), sel = UI.attExam !== undefined ? UI.attExam : (UI.exam || ''), by = UI.attBy || 'region';
   if (!exams.length) return '';
   const pctBar = (p, a) => { const tot = p + a; return tot ? `<div class="attbar" data-tip="${p} presentaron · ${a} inasistente${a===1?'':'s'}"><i class="p" style="width:${p/tot*100}%"></i><i class="a" style="width:${a/tot*100}%"></i></div>` : '<div class="attbar"></div>'; };
-  const linePills = at => at.lines.length ? at.lines.map(l => `<span class="pill" title="${esc(l)}">${esc(l === GD ? 'Gerentes' : shortLine(l))}</span>`).join('') : '<span class="status warn">Sin definir</span>';
+  const linePills = at => at.personas ? `<span class="pill" title="Personas elegidas una por una">👥 ${at.personas.length} personas</span>` : at.lines.length ? at.lines.map(l => `<span class="pill" title="${esc(l)}">${esc(l === GD ? 'Gerentes' : shortLine(l))}</span>`).join('') : '<span class="status warn">Sin definir</span>';
   let body;
   if (!sel) {
     const rows = exams.map(attendance);
@@ -659,14 +662,32 @@ function attendanceText(){
     return `INASISTENTES · ${at.ex}\nDeben presentar: ${at.lines.join(', ') || 'sin definir'}\nPresentaron ${at.present.length} de ${at.req.length}${at.absent.length ? '' : ' · ¡Todos presentaron!'}` +
       g.map(([k, vs]) => `\n\n${k} (${vs.length}):\n` + vs.map(v => `  • ${fullName(v)} — ${by === 'region' ? v.linea : regionOf(v)}`).join('\n')).join(''); }).join('\n\n────────\n\n');
 }
+function cfgPeopleHtml(checked){
+  const groups = groupBy(S.visitadores.filter(v => v.estado !== 'Inactivo' && v.estado !== 'Vacante').sort((a,b) => fullName(a).localeCompare(fullName(b), 'es')), v => v.linea);
+  const order = allLines().concat([GD, 'SIN ASIGNAR']);
+  return [...groups].sort((a,b) => order.indexOf(a[0]) - order.indexOf(b[0])).map(([l, vs]) => `<h5>${esc(l)} <button type="button" class="btn sm ghost" data-act="cfg-line" data-line="${esc(l)}" data-on="1">Marcar</button><button type="button" class="btn sm ghost" data-act="cfg-line" data-line="${esc(l)}" data-on="0">Quitar</button></h5>` +
+    vs.map(v => `<label><input type="checkbox" name="personas" value="${v.id}" data-line="${esc(v.linea)}" ${checked.has(v.id) ? 'checked' : ''}> ${esc(fullName(v))}</label>`).join('')).join('');
+}
 function examCfgForm(ex){
   const cur = examLines(ex), set = new Set(cur.lines);
+  const reqNow = new Set(cur.personas || S.visitadores.filter(v => v.estado === 'Activo' && cur.lines.includes(v.linea)).map(v => v.id));
+  const presented = new Set(S.evaluaciones.filter(e => e.examen === ex && e.estado !== 'No presentó').map(e => e.vid));
+  const modo = cur.personas ? 'personas' : 'lineas';
   openForm(`¿Quiénes deben presentar “${ex}”?`, [
-    {k:'_i', type:'info', full:1, html:`Marca las líneas cuyos representantes activos deben presentar esta evaluación. Los que no tengan nota aparecerán como inasistentes.<br><small>Ahora: ${esc(cur.how)}.</small>`},
-    {k:'_l', type:'raw', html:`<div class="checks">${allLines().concat([GD]).map(l => `<label><input type="checkbox" name="lineas" value="${esc(l)}" ${set.has(l) ? 'checked' : ''}> ${esc(l)}</label>`).join('')}</div>`}
-  ].concat(cur.cfg ? [{k:'_r', type:'raw', html:`<button type="button" class="btn sm" data-act="att-auto" data-ex="${esc(ex)}">↺ Volver a la detección automática</button>`}] : []), {}, d => {
-    put('examenes', {id: examKey(ex), examen: ex, lineas: arr(d.lineas)}).then(ok => ok && toast('Líneas de la evaluación guardadas.'));
+    {k:'_i', type:'info', full:1, html:`Quien deba presentarla y no tenga nota aparecerá como <b>inasistente</b>. Ahora: ${esc(cur.how)}.`},
+    {k:'modo', label:'Elegir por', type:'select', full:1, options:[['lineas','Líneas completas (todos los activos de esas líneas)'], ['personas','Personas específicas (marcar una por una)']]},
+    {k:'_l', type:'raw', html:`<div class="cfg-lineas"><div class="checks">${allLines().concat([GD]).map(l => `<label><input type="checkbox" name="lineas" value="${esc(l)}" ${set.has(l) ? 'checked' : ''}> ${esc(l)}</label>`).join('')}</div></div>`},
+    {k:'_p', type:'raw', html:`<div class="cfg-personas"><div class="checks-h"><span>Personas que deben presentarla · <span id="cfgCount">${reqNow.size}</span> marcadas</span><span class="toolbar"><button type="button" class="btn sm" data-act="cfg-presented">Solo quienes la presentaron (${presented.size})</button><button type="button" class="btn sm" data-act="cfg-none">Ninguno</button></span></div><div class="checks" id="cfgPeople" style="max-height:300px">${cfgPeopleHtml(reqNow)}</div>
+      <small class="muted">Empieza con las personas de la regla actual: desmarca a quienes esta vez no debían presentarla.</small></div>`}
+  ].concat(cur.cfg ? [{k:'_r', type:'raw', html:`<button type="button" class="btn sm" data-act="att-auto" data-ex="${esc(ex)}">↺ Volver a la detección automática</button>`}] : []), {modo}, d => {
+    if (d.modo === 'personas') {
+      const ps = arr(d.personas); if (!ps.length) { toast('Marca al menos una persona.'); return false; }
+      const vm = VM(); const lines = [...new Set(ps.map(id => vm[id] && vm[id].linea).filter(Boolean))];
+      put('examenes', {id: examKey(ex), examen: ex, modo: 'personas', personas: ps, lineas: lines}).then(ok => ok && toast(`${ps.length} personas deben presentar “${ex}”. Inasistencias actualizadas.`));
+    } else put('examenes', {id: examKey(ex), examen: ex, modo: 'lineas', lineas: arr(d.lineas)}).then(ok => ok && toast('Líneas de la evaluación guardadas.'));
   });
+  const mb = $('#modalBody'); mb.dataset.modo = modo;
+  UI.cfgPresented = presented;
 }
 
 const kptsOf = s => s.list.reduce((a, e) => a + (e.estado !== 'No presentó' && e.kahoot != null && Number.isFinite(+e.kahoot) ? +e.kahoot : 0), 0);
@@ -1274,7 +1295,7 @@ views.evals = () => {
     .filter(r => matchesQ(r.nombre+' '+r.apellidos, r.correo, r.examen, r.linea, r.estado, r.fecha && fdate(r.fecha)));
   const exams = [...new Set(rows.map(r => r.examen))];
   return `<div class="card"><div class="card-h"><div><h2>Historial de evaluaciones</h2><p class="sub">${rows.length} registros · ${exams.length} exámenes · nota escalada a 20 puntos</p></div>
-    <div class="toolbar"><button class="btn" data-act="exam-merge">✎ Renombrar / unificar evaluaciones</button><button class="btn" data-act="exp-evals">⬇ CSV</button><button class="btn primary" data-act="add-eval">＋ Nueva evaluación</button></div></div>
+    <div class="toolbar"><button class="btn" data-act="exam-who">👥 Quién debe presentar</button><button class="btn" data-act="exam-merge">✎ Renombrar / unificar evaluaciones</button><button class="btn" data-act="exp-evals">⬇ CSV</button><button class="btn primary" data-act="add-eval">＋ Nueva evaluación</button></div></div>
     <div class="card-b" style="padding:10px 0 0">
     ${table('evals', [
       {k:'nombre', label:'Nombre'}, {k:'apellidos', label:'Apellidos'},
@@ -2057,6 +2078,7 @@ document.addEventListener('click', e => {
         S.config.areas = arr(S.config.areas).concat([n]); putConfig(); toast(`Área ${titleCase(n)} agregada. Ya puedes elegirla al crear o editar productos.`); }, 'Agregar'); break;
     case 'area-del': { const ar = a.dataset.a; S.config.areas = arr(S.config.areas).filter(x => x !== ar); putConfig(); toast(`Área ${titleCase(ar)} eliminada.`); break; }
     case 'exam-merge': examMergeForm(); break;
+    case 'exam-who': { const exs = examOrder(S.evaluaciones); openForm('¿De qué evaluación?', [{k:'ex', label:'Evaluación', type:'select', full:1, options:exs}], {ex: UI.exam || exs[0]}, d => { setTimeout(() => examCfgForm(d.ex), 0); }, 'Continuar'); break; }
     case 'k-new-all': if (UI.kahoot && UI.kahoot.rows) { UI.kahoot.rows.forEach(r => { if (!r.vid && (UI.kahoot.sheet || r.nota != null)) { r.vid = '__new'; r.matchBy = 'se creará como nuevo'; } }); render(); } break;
     case 'local-move': openForm('Pasar tus cargas al panel compartido', [{k:'_i', type:'info', full:1, html:`<ol style="margin:0;padding-left:18px;line-height:1.6"><li>Pulsa <b>Copiar respaldo</b> (abajo).</li><li>Abre el <a href="https://claude.ai/artifact/22pVMwsTEmSbJE51rPGWc7" target="_blank" rel="noopener">panel compartido</a> (inicia sesión en Claude si te lo pide).</li><li>Allí ve a <b>Datos → Importar respaldo (JSON)</b>, pega el texto y elige <b>Combinar</b>.</li></ol><p style="margin:8px 0 0">Solo se agregan las notas y representantes que falten; no se borra nada del panel compartido. Repite esto en cada computadora donde hayas cargado notas con la copia local.</p>`}, {k:'out', type:'textarea', full:1, attrs:'readonly style="min-height:120px"'}], {out: JSON.stringify(S)}, () => {
         const text = JSON.stringify(S), ta = $('#fld_out'); const fb = () => { ta.focus(); ta.select(); try { document.execCommand('copy'); toast('Respaldo copiado.'); } catch(e) { toast('Selecciona el texto y cópialo con Ctrl/⌘+C.'); } };
@@ -2111,6 +2133,9 @@ document.addEventListener('click', e => {
     case 'cal-today': UI.calMonth = today().slice(0,7); UI.cronFrom = UI.cronTo = ''; render(); break;
     case 'cron-mode': UI.cronMode = a.dataset.v; render(); break;
     case 'cron-copy-text': copyText(cronText(UI.cronMode || 'fecha'), 'Cronograma'); break;
+    case 'cfg-line': $$('#cfgPeople input').forEach(i => { if (i.dataset.line === a.dataset.line) i.checked = a.dataset.on === '1'; }); $('#cfgCount').textContent = $$('#cfgPeople input:checked').length; break;
+    case 'cfg-none': $$('#cfgPeople input').forEach(i => { i.checked = false; }); $('#cfgCount').textContent = 0; break;
+    case 'cfg-presented': $$('#cfgPeople input').forEach(i => { i.checked = UI.cfgPresented && UI.cfgPresented.has(i.value); }); $('#cfgCount').textContent = $$('#cfgPeople input:checked').length; break;
     case 'att-pick': UI.attExam = a.dataset.ex; render(); break;
     case 'att-by': UI.attBy = a.dataset.v; render(); break;
     case 'att-cfg': e.stopPropagation(); if (document.body.classList.contains('ro')) { toast('Solo lectura: no puedes cambiar las líneas.'); break; } examCfgForm(a.dataset.ex); break;
@@ -2137,6 +2162,8 @@ document.addEventListener('input', e => {
   if (f) { UI.kahoot = UI.kahoot || {}; UI.kahoot[f] = e.target.value; }
 });
 document.addEventListener('change', e => {
+  if (e.target.name === 'modo' && e.target.closest('#modalBody') && $('#cfgPeople')) { $('#modalBody').dataset.modo = e.target.value; return; }
+  if (e.target.name === 'personas' && $('#cfgCount')) { $('#cfgCount').textContent = $$('#cfgPeople input:checked').length; return; }
   if (e.target.name === 'tipo' && e.target.closest('#modalBody')) { $('#modalBody').dataset.tipo = e.target.value; return; }
   if (e.target.name === 'fechaFin' && e.target.closest('#modalBody')) { const fx = $('#modalBody [name="fechaExamen"]'); if (fx && (!fx.value || fx.value < e.target.value || fx.dataset.auto !== '0')) fx.value = e.target.value; }
   if (e.target.name === 'fecha' && e.target.closest('#modalBody')) { const ff = $('#modalBody [name="fechaFin"]'); if (ff && ff.value < e.target.value) { ff.value = e.target.value; const fx = $('#modalBody [name="fechaExamen"]'); if (fx && fx.value < e.target.value) fx.value = e.target.value; } }
