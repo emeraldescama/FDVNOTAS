@@ -1112,15 +1112,35 @@ views.fdv = () => {
     </div></div>`;
 };
 /* ---------- roster import (Excel / CSV) ---------- */
+function fdvAlias(raw){
+  const n = nrm(raw); if (!n || /^(todos|todas|all)$/.test(n)) return '';
+  if (/super ?marca|otc/.test(n)) return 'FDV OTC';
+  if (/molecula|generic/.test(n)) return 'FDV LA SANTÉ GENÉRICOS';
+  if (/terapia|pharmetique|visita medica/.test(n)) return FDV_DEFAULT;
+  const ex = fdvList().find(f => nrm(f) === n); return ex || String(raw).trim().toUpperCase();
+}
+function cityRegion(z){
+  const n = nrm(z);
+  if (/caracas/.test(n)) return /oeste/.test(n) ? 'Oeste Caracas' : /este/.test(n) ? 'Este Caracas' : '';
+  const map = [[/valencia|maracay|carabobo|aragua/, 'Centro'], [/barquisimeto|barinas|portuguesa|acarigua|lara/, 'Centro Occidente'], [/maracaibo|zulia|falcon|punto fijo|coro/, 'Occidente'],
+    [/merida|san cristobal|tachira|valera|trujillo/, 'Andes'], [/barcelona|lecheria|puerto la cruz|anzoategui|cumana|carupano|maturin|puerto ordaz|ciudad bolivar|el tigre|san felix|margarita|nueva esparta/, 'Oriente']];
+  const m = map.find(([re]) => re.test(n)); return m ? m[1] : '';
+}
+function splitFullName(full){
+  const t = String(full || '').trim().replace(/\s+/g, ' ').split(' ').filter(Boolean), parts = [];
+  for (let i = 0; i < t.length; ) { if (/^(de|del|la|los|las|d)$/i.test(t[i]) && i + 1 < t.length) { const buf = []; while (i < t.length && /^(de|del|la|los|las|d)$/i.test(t[i])) buf.push(t[i++]); if (i < t.length) buf.push(t[i++]); parts.push(buf.join(' ')); } else parts.push(t[i++]); }
+  const n = parts.length >= 4 ? 2 : 1; const tc = s => titleCase(s).replace(/\b(De|Del|La|Los|Las)\b/g, m => m.toLowerCase());
+  return [tc(parts.slice(0, n).join(' ')), tc(parts.slice(n).join(' '))];
+}
 function parseRoster(text, defFdv){
   const lines = text.split(/\r?\n/).filter(l => l.trim()); if (!lines.length) return [];
   const d = lines[0].includes('\t') ? '\t' : (lines[0].split(';').length > lines[0].split(',').length ? ';' : ',');
   let rows = lines.map(l => splitRow(l, d));
-  const hIdx = rows.slice(0, 20).findIndex(r => r.some(c => /^(nombre|nombres|nombre completo|nombre y apellido|apellido|apellidos|apellido\(s\)|correo|email|e-mail|region|zona|linea)$/.test(nrm(c))));
+  const hIdx = rows.slice(0, 20).findIndex(r => r.some(c => /^(nombre|nombres|nombre completo|nombre y apellido|nombres y apellidos|nombre y apellidos|apellidos y nombres|apellido|apellidos|apellido\(s\)|correo|email|e-mail|region|zona|localidad|linea|negocio|cargo)$/.test(nrm(c))));
   if (hIdx < 0) return [];
   rows = rows.slice(hIdx); const hdr = rows[0].map(nrm); const body = rows.slice(1);
   const f = re => hdr.findIndex(h => re.test(h));
-  const iReg = f(/^region$/), iZona = f(/^zona$/), iFirst = f(/^(nombre|nombres|first name)$/), iLast = f(/^(apellido|apellidos|apellido\(s\)|last name)$/), iFull = f(/nombre completo|nombre y apellido|representante|visitador|^name$/), iMail = f(/correo|e-?mail/), iLine = f(/^linea$|^line$/), iFdv = f(/fuerza de ventas|^fdv$|unidad|negocio/), iEst = f(/^estado$/);
+  const iReg = f(/^region$/), iZona = f(/^zona$|^localidad$|^ciudad$/), iCargo = f(/^cargo$|^puesto$/), iDep = f(/^departamento$|^area$|^gerencia$/), iFirst = f(/^(nombre|nombres|first name)$/), iLast = f(/^(apellido|apellidos|apellido\(s\)|last name)$/), iFull = f(/nombre completo|nombres? y apellidos?|apellidos? y nombres?|representante|visitador|^name$/), iMail = f(/correo|e-?mail/), iLine = f(/^linea$|^line$/), iFdv = f(/fuerza de ventas|^fdv$|unidad|negocio/), iEst = f(/^estado$/);
   const lineCols = hdr.map((h, i) => i).filter(i => i !== iReg && i !== iZona && /^(linea|hibrida|otc|generic|line)\b|linea \d|hibrida \d/.test(hdr[i]));
   const out = [];
   if (iFirst < 0 && iFull < 0 && lineCols.length && iZona >= 0) {
@@ -1132,12 +1152,16 @@ function parseRoster(text, defFdv){
   }
   body.forEach(r => {
     let nombre = iFirst >= 0 ? String(r[iFirst] || '').trim() : '', apellidos = iLast >= 0 ? String(r[iLast] || '').trim() : '';
-    if (!nombre && iFull >= 0) { const parts = titleCase(String(r[iFull] || '').trim()).split(' '); nombre = parts[0] || ''; apellidos = parts.slice(1).join(' '); }
+    if (!nombre && iFull >= 0) { const sp = splitFullName(String(r[iFull] || '')); nombre = sp[0]; apellidos = sp[1]; }
     else if (nombre && !apellidos && iLast < 0 && nombre.includes(' ')) { const parts = titleCase(nombre).split(' '); nombre = parts[0]; apellidos = parts.slice(1).join(' '); }
     if (!nombre && !apellidos) return;
     const est = iEst >= 0 ? titleCase(String(r[iEst] || '').trim()) : '';
-    out.push({nombre: titleCase(nombre), apellidos: titleCase(apellidos), correo: iMail >= 0 ? String(r[iMail] || '').trim().toLowerCase() : '', linea: iLine >= 0 ? String(r[iLine] || '').trim().toUpperCase() : '', region: iReg >= 0 ? canonRegion(titleCase(String(r[iReg] || '').trim()), String(r[iZona] ?? '')) : '', zona: iZona >= 0 ? titleCase(String(r[iZona] || '').trim()) : '',
-      fdvFromFile: iFdv >= 0 && !!String(r[iFdv] || '').trim(), fdv: iFdv >= 0 && String(r[iFdv] || '').trim() ? String(r[iFdv]).trim().toUpperCase() : defFdv, estado: ['Activo','Inactivo','Vacante'].includes(est) ? est : 'Activo'});
+    const cargo = iCargo >= 0 ? String(r[iCargo] || '').trim() : '', dep = iDep >= 0 ? String(r[iDep] || '').trim() : '';
+    const isGd = /gerente de distrito/i.test(nrm(cargo)), rawF = iFdv >= 0 ? String(r[iFdv] || '').trim() : '';
+    const otherArea = (dep && !/promocion medica|visita medica|fuerza de ventas/.test(nrm(dep))) || (cargo && !isGd && !/asesor|representante|visitador/.test(nrm(cargo)));
+    const zonaRaw = iZona >= 0 ? titleCase(String(r[iZona] || '').trim()) : '';
+    out.push({cargo: titleCase(cargo), skip: otherArea, note: otherArea ? `Otra área (${titleCase(cargo || dep)}): se omite` : '',nombre: titleCase(nombre), apellidos: titleCase(apellidos), correo: iMail >= 0 ? String(r[iMail] || '').trim().toLowerCase() : '', linea: isGd ? GD : (iLine >= 0 ? String(r[iLine] || '').trim().toUpperCase() : ''), region: iReg >= 0 && String(r[iReg] || '').trim() ? canonRegion(titleCase(String(r[iReg] || '').trim()), zonaRaw) : cityRegion(zonaRaw), zona: zonaRaw,
+      fdvFromFile: !!fdvAlias(rawF), fdv: isGd ? FDV_DEFAULT : (fdvAlias(rawF) || defFdv), estado: ['Activo','Inactivo','Vacante'].includes(est) ? est : 'Activo'});
   });
   return out;
 }
@@ -1145,13 +1169,17 @@ function rosterMatch(r){
   if (r.estado === 'Vacante') { const v = S.visitadores.find(x => x.estado === 'Vacante' && x.linea === r.linea && nrm(x.zona) === nrm(r.zona)); return v ? v.id : ''; }
   if (r.correo) { const v = S.visitadores.find(x => x.correo && nrm(x.correo) === nrm(r.correo)); if (v) return v.id; }
   const full = nrm(`${r.nombre} ${r.apellidos}`); const v = S.visitadores.find(x => nrm(fullName(x)) === full); if (v) return v.id;
-  const m = matchVis(`${r.nombre} ${r.apellidos}`, ''); return m.by === 'por nombre' ? m.vid : '';
+  const m = matchVis(`${r.nombre} ${r.apellidos}`, ''); if (m.by === 'por nombre') return m.vid;
+  const ft = nrm(`${r.nombre} ${r.apellidos}`).replace(/[^a-z ]/g, ' ').split(' ').filter(x => x.length > 1), joined = ft.join('');
+  const near = (a, b) => { if (a === b) return true; if (Math.abs(a.length - b.length) > 1 || a.length < 6) return false; let i = 0, j = 0, e = 0; while (i < a.length && j < b.length) { if (a[i] === b[j]) { i++; j++; continue; } if (++e > 1) return false; if (a.length > b.length) i++; else if (b.length > a.length) j++; else { i++; j++; } } return e + (a.length - i) + (b.length - j) <= 1; };
+  const cands = S.visitadores.filter(x => x.nombre && x.estado !== 'Vacante').filter(x => { const vt = nrm(fullName(x)).replace(/[^a-z ]/g, ' ').split(' ').filter(y => y.length > 1); return vt.length >= 2 && vt.every(y => ft.some(z => near(y, z)) || (y.length > 4 && joined.includes(y))); });
+  return cands.length === 1 ? cands[0].id : '';
 }
 function fdvImportCard(){
   const k = UI.fdvImp, vm = VM();
   const opts = (r, i) => `<select data-irow="${i}" style="max-width:240px"><option value="__new" ${r.target==='__new'?'selected':''}>＋ Agregar como nuevo</option><option value="" ${!r.target?'selected':''}>— Omitir —</option>${S.visitadores.filter(v => v.estado !== 'Vacante' || r.estado === 'Vacante').sort((a,b) => fullName(a).localeCompare(fullName(b), 'es')).map(v => `<option value="${v.id}" ${r.target===v.id?'selected':''}>Actualizar: ${esc(fullName(v))} · ${esc(shortLine(v.linea))}</option>`).join('')}</select>`;
   const nNew = (k.rows || []).filter(r => r.target === '__new').length, nUpd = (k.rows || []).filter(r => r.target && r.target !== '__new').length;
-  return `<div class="card imp-card" style="margin-bottom:16px"><div class="card-h"><div><h2>Cargar representantes desde Excel</h2><p class="sub">Acepta una lista (Nombre, Apellido(s) o Nombre completo, Correo, Línea, Región, Zona, Fuerza de ventas) o la estructura por regiones (Región, Zona y una columna por línea).</p></div><button class="btn ghost" data-act="fdv-imp-close">✕ Cerrar</button></div>
+  return `<div class="card imp-card" style="margin-bottom:16px"><div class="card-h"><div><h2>Cargar representantes desde Excel</h2><p class="sub">Acepta una lista (Nombre y Apellido(s) o “Nombres y Apellidos”, Correo, Línea, Región, Zona o Localidad, Fuerza de ventas o Negocio, Cargo) o la estructura por regiones (Región, Zona y una columna por línea).</p></div><button class="btn ghost" data-act="fdv-imp-close">✕ Cerrar</button></div>
     <div class="card-b">
       <div class="form-row"><label style="flex:1 1 260px">Fuerza de ventas (si el archivo no la trae)<select id="impFdv">${fdvList().map(f => `<option ${k.fdv===f?'selected':''}>${esc(f)}</option>`).join('')}</select></label>
         <label class="chk" style="flex:2 1 300px"><input type="checkbox" id="impDeact" ${k.deact?'checked':''}> Desactivar a los representantes de esta fuerza de ventas que no estén en el archivo</label></div>
@@ -1159,18 +1187,18 @@ function fdvImportCard(){
       <textarea class="paste" id="impText" style="min-height:110px" placeholder="Nombre&#9;Apellido(s)&#9;Correo&#9;Línea&#9;Región&#9;Zona&#10;Ana&#9;Pérez&#9;ana.perez@...&#9;OTC 1&#9;Caracas&#9;Caracas Nor Este">${esc(k.text || '')}</textarea>
       <div class="toolbar" style="margin-top:10px"><button class="btn primary" data-act="imp-parse">Procesar y previsualizar</button></div>
     </div>
-    ${k.rows ? `<div class="card-h" style="padding-top:0"><div><h2>Previsualización</h2><p class="sub">${k.rows.length} filas · ${nNew} nuevos · ${nUpd} actualizaciones</p></div><button class="btn primary" data-act="imp-commit">✓ Guardar ${nNew + nUpd} representantes</button></div>
+    ${k.rows ? `<div class="card-h" style="padding-top:0"><div><h2>Previsualización</h2><p class="sub">${k.rows.length} filas · ${nNew} nuevos · ${nUpd} actualizaciones${k.rows.filter(r => !r.target).length ? ` · ${k.rows.filter(r => !r.target).length} omitidos (otras áreas u “Omitir”)` : ''}</p></div><button class="btn primary" data-act="imp-commit">✓ Guardar ${nNew + nUpd} representantes</button></div>
     <div class="card-b" style="padding:10px 0 0"><div class="tbl-wrap"><table><thead><tr><th>Nombre</th><th>Apellidos</th><th>Correo</th><th>Fuerza de ventas</th><th>Línea</th><th>Región / Zona</th><th>Acción</th></tr></thead><tbody>
       ${k.rows.map((r, i) => { const cur = vm[r.target]; const ch = cur ? ['fdv','linea','region','zona','correo'].filter(f0 => r[f0] && (f0 === 'fdv' ? fdvOf(cur) : cur[f0]) !== r[f0]) : [];
         return `<tr><td>${r.nombre ? esc(r.nombre) : '<span class="muted">(Vacante)</span>'}</td><td>${esc(r.apellidos)}</td><td class="mono">${esc(r.correo)}</td><td><small>${esc(r.fdv)}</small></td><td><span class="pill">${esc(r.linea || 'SIN ASIGNAR')}</span></td><td>${esc(r.zona)}<br><small class="muted">${esc(r.region)}</small></td>
-        <td>${opts(r, i)}${ch.length ? `<br><small class="t-warn">Cambia: ${ch.map(f0 => f0 === 'fdv' ? 'FDV' : f0).join(', ')}</small>` : ''}</td></tr>`; }).join('')}</tbody></table></div></div>` : ''}</div>`;
+        <td>${opts(r, i)}${ch.length ? `<br><small class="t-warn">Cambia: ${ch.map(f0 => f0 === 'fdv' ? 'FDV' : f0).join(', ')}</small>` : ''}${r.note ? `<br><small class="muted">${esc(r.note)}</small>` : ''}</td></tr>`; }).join('')}</tbody></table></div></div>` : ''}</div>`;
 }
 async function rosterCommit(){
   const k = UI.fdvImp; if (!k || !k.rows) return; const ops = [], seen = new Set(); let nNew = 0, nUpd = 0;
   k.rows.forEach(r => { if (!r.target) return;
     const fields = {nombre:r.nombre, apellidos:r.apellidos, correo:r.correo, linea:r.linea || 'SIN ASIGNAR', region:r.region || '—', zona:r.zona || '—', fdv:r.fdv, estado:r.estado};
     if (r.target === '__new') { ops.push({col:'visitadores', rec:Object.assign({id:uid('v')}, fields)}); nNew++; }
-    else { const cur = S.visitadores.find(v => v.id === r.target); if (!cur) return; seen.add(cur.id); const upd = Object.assign({}, cur); Object.entries(fields).forEach(([f0, v0]) => { if (v0 && v0 !== '—' && v0 !== 'SIN ASIGNAR' || !upd[f0]) upd[f0] = v0; }); if (cur.estado === 'Inactivo' && r.estado === 'Activo') upd.estado = 'Activo'; ops.push({col:'visitadores', rec:upd}); nUpd++; } });
+    else { const cur = S.visitadores.find(v => v.id === r.target); if (!cur) return; seen.add(cur.id); const upd = Object.assign({}, cur); Object.entries(fields).forEach(([f0, v0]) => { if (['nombre','apellidos','correo'].includes(f0) && upd[f0]) return; if (v0 && v0 !== '—' && v0 !== 'SIN ASIGNAR' || !upd[f0]) upd[f0] = v0; }); if (cur.estado === 'Inactivo' && r.estado === 'Activo') upd.estado = 'Activo'; ops.push({col:'visitadores', rec:upd}); nUpd++; } });
   let nOff = 0;
   if (k.deact) S.visitadores.filter(v => fdvOf(v) === k.fdv && v.estado === 'Activo' && !seen.has(v.id)).forEach(v => { ops.push({col:'visitadores', rec:Object.assign({}, v, {estado:'Inactivo'})}); nOff++; });
   const btn = $('[data-act="imp-commit"]'); if (btn) { btn.disabled = true; btn.textContent = 'Guardando…'; }
@@ -1196,7 +1224,7 @@ function rosterParse(){
   const k = UI.fdvImp; const ta = $('#impText'); if (ta) k.text = ta.value; const sf = $('#impFdv'); if (sf) k.fdv = sf.value; const dc = $('#impDeact'); if (dc) k.deact = dc.checked;
   const rows = parseRoster(k.text || '', k.fdv || FDV_DEFAULT);
   if (!rows.length) { toast('No se encontraron representantes. Revisa que el archivo tenga una fila de encabezados (Nombre, Apellido(s), Correo, Línea, Región, Zona…).'); return; }
-  rows.forEach(r => { const id = rosterMatch(r); r.target = id || '__new'; }); k.rows = rows; render();
+  rows.forEach(r => { const id = r.skip ? '' : rosterMatch(r); r.target = r.skip ? '' : (id || '__new'); }); k.rows = rows; render();
 }
 
 function historyTable(v){
