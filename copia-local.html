@@ -306,6 +306,8 @@ textarea.paste{width:100%;min-height:170px;font-family:ui-monospace,SFMono-Regul
 .note ul{margin:4px 0 0;padding-left:18px}
 .note.bad{border-color:var(--bad);color:var(--text)}
 .note.good{border-color:var(--good);color:var(--text)}
+.sugp{display:flex;align-items:center;gap:8px;justify-content:space-between;padding:1px 0}
+.mvsel{font-size:11.5px;padding:2px 4px;width:auto;max-width:170px;min-height:0;height:auto}
 .kv{display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;color:var(--text-2);margin-top:8px}
 .kv b{color:var(--text)}
 @media (max-width:640px){
@@ -941,31 +943,48 @@ function sugHolidays(k){ const m = new Map(); if (k.feriadosVE) { const y0 = +k.
     const iso = x.includes('-') ? x : `${r[3] ? (r[3].length === 2 ? '20' + r[3] : r[3]) : k.desde.slice(0,4)}-${pad2(r[2])}-${pad2(r[1])}`; m.set(iso, 'Día no laborable'); }); return m; }
 function sugWorkdays(k){ const hol = sugHolidays(k), out = [], skipped = []; if (!k.desde || !k.hasta || k.hasta <= k.desde) return {days: out, skipped};
   for (let d = k.desde; d < k.hasta; d = addDays(d, 1)) { const w = (parseD(d).getDay() + 6) % 7; if (w === 6 || (w === 5 && !k.sabado)) continue; if (hol.has(d)) { skipped.push([d, hol.get(d)]); continue; } out.push(d); } return {days: out, skipped}; }
-function sugProducts(k){ const seen = new Set(), out = []; const ls = k.lineas.includes(GD) ? allLines() : k.lineas;
-  ls.forEach(l => S.portafolio.filter(p => p.linea === l).sort((a,b) => areaIdx(a.area) - areaIdx(b.area) || a.producto.localeCompare(b.producto, 'es')).forEach(p => { if (!seen.has(p.producto)) { seen.add(p.producto); out.push({producto:p.producto, linea:l, area:p.area}); } })); return out; }
+const famKey = name => nrm(String(name).split(/\s+/)[0]);
+function sugProducts(k){
+  const ls = k.lineas.includes(GD) ? allLines() : k.lineas, seen = new Map();
+  ls.forEach((l, li) => S.portafolio.filter(p => p.linea === l).forEach(p => { if (!seen.has(p.producto)) seen.set(p.producto, {producto:p.producto, linea:l, area:p.area, li}); }));
+  const fams = new Map(); [...seen.values()].forEach(p => { const f = famKey(p.producto); if (!fams.has(f)) fams.set(f, []); fams.get(f).push(p); });
+  const famList = [...fams.values()].map(ps => { ps.sort((a, b) => a.producto.length - b.producto.length || a.producto.localeCompare(b.producto, 'es')); const head = ps.slice().sort((a, b) => a.li - b.li || areaIdx(a.area) - areaIdx(b.area))[0]; return {ps, li: head.li, ai: Math.min(...ps.map(p => areaIdx(p.area))), name: ps[0].producto}; });
+  famList.sort((a, b) => a.li - b.li || a.ai - b.ai || a.name.localeCompare(b.name, 'es'));
+  return famList.flatMap(f => f.ps.map(p => Object.assign(p, {fam: famKey(p.producto), famSize: f.ps.length})));
+}
+function chunkFamilies(prods, G){
+  const fams = []; prods.forEach(p => { const last = fams[fams.length - 1]; if (last && last[0].fam === p.fam) last.push(p); else fams.push([p]); });
+  const F = fams.length, Gp = Math.min(G, F), T = prods.length / Gp, pre = [0]; fams.forEach(f => pre.push(pre[pre.length - 1] + f.length));
+  const dp = Array.from({length: Gp + 1}, () => Array(F + 1).fill(Infinity)), cut = Array.from({length: Gp + 1}, () => Array(F + 1).fill(0)); dp[0][0] = 0;
+  for (let g = 1; g <= Gp; g++) for (let i = g; i <= F; i++) for (let j = g - 1; j < i; j++) { const sz = pre[i] - pre[j], c = dp[g-1][j] + (sz - T) * (sz - T) + (sz > Math.ceil(T) ? 1000 * (sz - Math.ceil(T)) : 0); if (c < dp[g][i]) { dp[g][i] = c; cut[g][i] = j; } }
+  const groups = []; for (let g = Gp, i = F; g > 0; g--) { const j = cut[g][i]; groups.unshift(fams.slice(j, i).flat()); i = j; }
+  return groups;
+}
 function sugPlan(k){
   const prods = sugProducts(k).filter(p => !k.off.includes(p.producto)), {days, skipped} = sugWorkdays(k), n = prods.length, D = days.length;
   let modo = k.modo; if (modo === 'auto') modo = D >= 2*n ? 'normal' : D >= n + 1 ? 'compacto' : 'intensivo';
-  const items = []; let need, fit, perDay = 1;
-  if (!D || !n) return {prods, days, skipped, items, modo: k.modo === 'auto' ? 'normal' : k.modo, need: modo === 'normal' ? 2*n : n + 1, fit: 0, libres: 0, perDay};
+  const items = []; let need = modo === 'normal' ? 2*n : n ? n + 1 : 0, fit = 0, perDay = 1;
+  if (!D || !n) return {prods, days, skipped, items, groups: [], modo: k.modo === 'auto' ? 'normal' : modo, need, fit, libres: 0, perDay};
+  // groups (study blocks): families stay together
+  let groups = modo === 'intensivo' ? chunkFamilies(prods, Math.max(1, Math.min(n, D - 1))) : prods.map(p => [p]);
+  const pins = Object.entries(k.pin || {}).filter(([name]) => prods.some(p => p.producto === name));
+  pins.forEach(([name, gi]) => { let p; groups.forEach(g => { const i = g.findIndex(x => x.producto === name); if (i >= 0) p = g.splice(i, 1)[0]; });
+    if (!p) return; if (modo === 'intensivo') { groups = groups.filter(g => g.length); groups[Math.max(0, Math.min(+gi, groups.length - 1))].push(p); } else { groups = groups.filter(g => g.length); groups.splice(Math.max(0, Math.min(+gi, groups.length)), 0, [p]); } });
+  groups = groups.filter(g => g.length);
   if (modo === 'intensivo') {
-    const G = Math.max(1, Math.min(n, D - 1)), groups = []; let j = 0;
-    for (let g = 0; g < G; g++) { const sz = Math.floor(n / G) + (g < n % G ? 1 : 0); groups.push(prods.slice(j, j + sz)); j += sz; }
-    perDay = Math.max(0, ...groups.map(x => x.length));
-    if (D === 1 && n) { items.push({d:days[0], tipo:'estudio', ps:prods, momento:'mañana'}); items.push({d:days[0], tipo:'examen', ps:prods, momento:'tarde'}); }
-    else groups.forEach((ps, g) => { if (g) items.push({d:days[g], tipo:'examen', ps:groups[g-1], momento:'mañana'}); items.push({d:days[g], tipo:'estudio', ps, momento: g ? 'tarde' : 'todo el día'}); if (g === G - 1 && days[g+1]) items.push({d:days[g+1], tipo:'examen', ps, momento:'mañana'}); });
-    need = n ? Math.min(n + 1, Math.max(2, D)) : 0; fit = D ? n : 0;
-    if (k.repaso && n && D >= 2) { const last = items[items.length - 1]; if (last && last.tipo === 'examen' && G > 1) items.push({d:last.d, tipo:'repaso', momento:'tarde'}); }
+    const G = groups.length; perDay = Math.max(...groups.map(x => x.length));
+    if (D === 1) { items.push({d:days[0], tipo:'estudio', ps:prods, momento:'mañana', g:0}); items.push({d:days[0], tipo:'examen', ps:prods, momento:'tarde', g:0}); }
+    else groups.forEach((ps, g) => { if (!days[g]) return; if (g) items.push({d:days[g], tipo:'examen', ps:groups[g-1], momento:'mañana', g:g-1}); items.push({d:days[g], tipo:'estudio', ps, momento: g ? 'tarde' : 'todo el día', g}); if (g === G - 1 && days[g+1]) items.push({d:days[g+1], tipo:'examen', ps, momento:'mañana', g}); });
+    need = Math.min(G + 1, Math.max(2, D)); fit = items.filter(x => x.tipo === 'examen').reduce((a, x) => a + x.ps.length, 0);
+    if (k.repaso && D >= 2 && G > 1) { const last = items[items.length - 1]; if (last && last.tipo === 'examen') items.push({d:last.d, tipo:'repaso', momento:'tarde'}); }
   } else {
-    let i = 0;
-    if (modo === 'normal') prods.forEach(p => { if (i + 1 < D) { items.push({d:days[i], tipo:'estudio', ps:[p]}); items.push({d:days[i+1], tipo:'examen', ps:[p]}); } i += 2; });
-    else prods.forEach((p, j) => { if (j + 1 < D) { if (j) items.push(items.pop()); items.push({d:days[j], tipo:'estudio', ps:[p]}); items.push({d:days[j+1], tipo:'examen', ps:[p]}); } });
+    groups.forEach((ps, j) => { const s0 = modo === 'normal' ? 2*j : j; if (s0 + 1 < D) { items.push({d:days[s0], tipo:'estudio', ps, g:j}); items.push({d:days[s0+1], tipo:'examen', ps, g:j}); } });
     if (modo === 'compacto') items.sort((a, b) => a.d.localeCompare(b.d) || (a.tipo === 'examen' ? -1 : 1));
-    need = modo === 'normal' ? 2*n : n ? n + 1 : 0; fit = items.filter(x => x.tipo === 'examen').length;
+    fit = items.filter(x => x.tipo === 'examen').length;
   }
   const libres = Math.max(0, D - need);
-  if (modo !== 'intensivo' && k.repaso && libres > 0 && n) { const last = items.length ? items[items.length - 1].d : null; const rd = days.find(d => !last || d > last); if (rd) items.push({d:rd, tipo:'repaso'}); }
-  return {prods, days, skipped, items, modo, need, fit, libres, perDay};
+  if (modo !== 'intensivo' && k.repaso && libres > 0) { const last = items.length ? items[items.length - 1].d : null; const rd = days.find(d => !last || d > last); if (rd) items.push({d:rd, tipo:'repaso'}); }
+  return {prods, days, skipped, items, groups, modo, need, fit, libres, perDay};
 }
 function sugVis(k){ const n = nrm(k.nombre); if (!n) return null; const act = S.visitadores.filter(v => v.estado !== 'Inactivo' && v.estado !== 'Vacante'); return act.find(v => nrm(fullName(v)) === n) || (act.filter(v => nrm(fullName(v)).includes(n)).length === 1 ? act.find(v => nrm(fullName(v)).includes(n)) : null); }
 function sugCard(){
@@ -979,7 +998,8 @@ function sugCard(){
   else if (pl.modo === 'intensivo' && pl.days.length) msg = `<div class="note ${pl.perDay > 4 ? 'bad' : 'good'}">⚡ <b>Plan intensivo</b>: ${pl.prods.length} productos en ${pl.days.length} días hábiles. Los productos se agrupan por área en bloques de hasta <b>${pl.perDay} por día</b>: cada mañana presenta el examen de lo estudiado el día anterior y en la tarde estudia el bloque siguiente; el último día solo presenta el examen${k.repaso && pl.items.some(x => x.tipo === 'repaso') ? ' y en la tarde hace un repaso general' : ''}.${pl.perDay > 4 ? ` Son muchos productos por día: si puedes, mueve la salida al <b>${fdate(sugNeedDate(k, Object.assign({}, pl, {need: Math.ceil(pl.prods.length / 3) + 1})))}</b> para bajar a 3 por día, o quita productos.` : ''}</div>`;
   else if (pl.fit < pl.prods.length) msg = `<div class="note bad">⚠ No alcanzan los días: hay <b>${pl.days.length} días hábiles</b> y se necesitan <b>${pl.need}</b>${pl.modo === 'normal' ? '' : ' aun en modo compacto'}. Solo caben ${pl.fit} de ${pl.prods.length} productos. Mueve la fecha de salida al <b>${fdate(sugNeedDate(k, pl))}</b> o quita productos.</div>`;
   else msg = `<div class="note good">✓ Cabe: ${pl.prods.length} productos en ${pl.need} de ${pl.days.length} días hábiles${pl.modo === 'compacto' ? ' en <b>modo compacto</b> (el día del examen estudia el siguiente producto, porque no alcanzaban 2 días por producto)' : ' (1 día de estudio + 1 día de examen por producto)'}${pl.libres ? ` · le sobran ${pl.libres} día${pl.libres===1?'':'s'}` : ''}.</div>`;
-  const rows = pl.items.map((x, i) => `<tr><td class="num">${pl.days.indexOf(x.d) + 1}</td><td class="dt">${fdate(x.d)}<small>${dowName(x.d)}</small></td><td><span class="tipo ${x.tipo === 'examen' ? 'examen' : 'estudio'}">${x.tipo === 'examen' ? 'Examen' : x.tipo === 'repaso' ? 'Repaso general' : 'Estudio'}</span>${x.momento ? `<br><small class="muted">${x.momento === 'todo el día' ? 'Todo el día' : x.momento === 'mañana' ? 'Mañana' + (x.tipo === 'examen' && k.hora ? ' · ' + esc(k.hora) : '') : 'Tarde'}</small>` : ''}</td><td>${x.ps ? x.ps.map(p => `<b>${esc(p.producto)}</b> <small class="muted">${esc(titleCase(p.area))}</small>`).join('<br>') : 'Todos los productos'}</td><td><small>${x.ps ? [...new Set(x.ps.map(p => p.linea))].map(esc).join(', ') : ''}</small></td></tr>`).join('');
+  const studyOpts = pl.items.filter(x => x.tipo === 'estudio' && x.g != null).map(x => [x.g, x.d]);
+  const rows = pl.items.map((x, i) => `<tr><td class="num">${pl.days.indexOf(x.d) + 1}</td><td class="dt">${fdate(x.d)}<small>${dowName(x.d)}</small></td><td><span class="tipo ${x.tipo === 'examen' ? 'examen' : 'estudio'}">${x.tipo === 'examen' ? 'Examen' : x.tipo === 'repaso' ? 'Repaso general' : 'Estudio'}</span>${x.momento ? `<br><small class="muted">${x.momento === 'todo el día' ? 'Todo el día' : x.momento === 'mañana' ? 'Mañana' + (x.tipo === 'examen' && k.hora ? ' · ' + esc(k.hora) : '') : 'Tarde'}</small>` : ''}</td><td>${x.ps ? x.ps.map(p => `<div class="sugp"><span><b>${esc(p.producto)}</b> <small class="muted">${esc(titleCase(p.area))}</small>${k.pin && k.pin[p.producto] != null ? ' <small class="t-warn" title="Movido por ti">✋</small>' : ''}</span>${x.tipo === 'estudio' && studyOpts.length > 1 ? `<select class="mvsel" data-sugmove="${esc(p.producto)}" aria-label="Mover ${esc(p.producto)} a otro día" title="Mover a otro día de estudio">${studyOpts.map(([g, d]) => `<option value="${g}" ${g === x.g ? 'selected' : ''}>${g === x.g ? 'Mover a…' : (pl.modo === 'intensivo' ? 'Estudio ' : 'Posición ' + (g + 1) + ' · ') + shortDate(d)}</option>`).join('')}</select>` : ''}</div>`).join('') : 'Todos los productos'}</td><td><small>${x.ps ? [...new Set(x.ps.map(p => p.linea))].map(esc).join(', ') : ''}</small></td></tr>`).join('');
   return `<div class="card imp-card" style="margin-bottom:16px"><div class="card-h"><div><h2>✨ Cronograma sugerido</h2><p class="sub">Escribe el representante, el día en que sale a trabajar y las líneas. Cada producto lleva 1 día completo de estudio y 1 día de examen, solo en días hábiles.</p></div><button class="btn ghost" data-act="sug-close">✕ Cerrar</button></div>
     <div class="card-b">
       <div class="form-row">
@@ -1000,7 +1020,7 @@ function sugCard(){
       </div>
       ${pl.skipped.length ? `<p class="muted" style="font-size:12.5px;margin:6px 0 0">Se saltan: ${pl.skipped.map(([d, n]) => `${fdate(d)} (${esc(n)})`).join(', ')}</p>` : ''}
       <div style="margin-top:12px">${msg}</div>
-      ${rows ? `<div class="toolbar" style="margin:12px 0"><button class="btn primary" data-act="sug-save" ${k.nombre ? '' : 'disabled'}>✓ Guardar en el cronograma (${pl.items.length} actividades)</button><span class="muted" style="font-size:12.5px">Después podrás exportarlo como imagen o copiarlo para WhatsApp abajo.</span></div>
+      ${rows ? `<div class="toolbar" style="margin:12px 0"><button class="btn primary" data-act="sug-save" ${k.nombre ? '' : 'disabled'}>✓ Guardar en el cronograma (${pl.items.length} actividades)</button>${Object.keys(k.pin || {}).length ? '<button class="btn" data-act="sug-reset">↺ Volver al orden sugerido</button>' : ''}<span class="muted" style="font-size:12.5px">Los productos de una misma marca (ej. todo Analper) van juntos. Usa “Mover a…” para pasar un producto a otro día.</span></div>
       <div class="tbl-wrap"><table class="sched"><thead><tr><th>Día</th><th>Fecha</th><th>Actividad</th><th>Producto</th><th>Línea</th></tr></thead><tbody>${rows}</tbody></table></div>` : ''}
     </div></div>`;
 }
@@ -1010,7 +1030,7 @@ function sugNeedDate(k, pl){ let d = k.desde, c = 0; const hol = sugHolidays(Obj
 function sugOpen(){
   let d = today(); while ([0, 6].includes(parseD(d).getDay())) d = addDays(d, 1);
   const v = UI.vis && VM()[UI.vis];
-  UI.sug = {nombre: v ? fullName(v) : '', desde: d, hasta: '', hora: '09:00', lineas: v && v.linea && v.linea !== 'SIN ASIGNAR' ? [v.linea] : [], off: [], modo: 'auto', sabado: false, feriadosVE: true, repaso: true, extra: ''};
+  UI.sug = {nombre: v ? fullName(v) : '', desde: d, hasta: '', hora: '09:00', lineas: v && v.linea && v.linea !== 'SIN ASIGNAR' ? [v.linea] : [], off: [], modo: 'auto', sabado: false, feriadosVE: true, repaso: true, extra: '', pin: {}};
   render(); window.scrollTo(0, 0);
 }
 function sugSet(field, val){
@@ -2313,6 +2333,7 @@ document.addEventListener('click', e => {
     case 'sug-open': if (UI.sug) { UI.sug = null; render(); } else sugOpen(); break;
     case 'sug-close': UI.sug = null; render(); break;
     case 'sug-save': sugSave(); break;
+    case 'sug-reset': UI.sug.pin = {}; render(); break;
     case 'cron-copy-text': copyText(cronText(UI.cronMode || 'fecha'), 'Cronograma'); break;
     case 'cfg-line': $$('#cfgPeople input').forEach(i => { if (i.dataset.line === a.dataset.line) i.checked = a.dataset.on === '1'; }); $('#cfgCount').textContent = $$('#cfgPeople input:checked').length; break;
     case 'cfg-none': $$('#cfgPeople input').forEach(i => { i.checked = false; }); $('#cfgCount').textContent = 0; break;
@@ -2357,6 +2378,7 @@ document.addEventListener('change', e => {
   }
   if (e.target.closest && e.target.closest('#modalBody') && $('#sesReps') && (e.target.name === 'linea' || e.target.name === 'reps' || e.target.name === 'productos')) refreshSesLists();
   if (UI.sug && e.target.dataset && e.target.dataset.sug) { sugSet(e.target.dataset.sug, e.target.type === 'checkbox' ? e.target.checked : e.target.value); return; }
+  if (UI.sug && e.target.dataset && e.target.dataset.sugmove != null) { UI.sug.pin = Object.assign({}, UI.sug.pin, {[e.target.dataset.sugmove]: +e.target.value}); render(); return; }
   if (UI.sug && e.target.dataset && e.target.dataset.sugline != null) { const l = e.target.dataset.sugline; UI.sug.lineas = e.target.checked ? UI.sug.lineas.concat([l]) : UI.sug.lineas.filter(x => x !== l); render(); return; }
   if (UI.sug && e.target.dataset && e.target.dataset.sugprod != null) { const p = e.target.dataset.sugprod; UI.sug.off = e.target.checked ? UI.sug.off.filter(x => x !== p) : UI.sug.off.concat([p]); render(); return; }
   if (e.target.id === 'portFile' && e.target.files[0]) { loadPortFile(e.target.files[0]); e.target.value = ''; return; }
