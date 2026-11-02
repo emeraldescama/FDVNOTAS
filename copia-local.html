@@ -449,12 +449,13 @@ function canonRegion(r, z){
 }
 const regionSort = (a, b) => { const ia = REGIONS.indexOf(a), ib = REGIONS.indexOf(b); if (a === '—') return 1; if (b === '—') return -1; return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b, 'es'); };
 const FDV_BASE = [FDV_DEFAULT, 'FDV OTC', 'FDV LA SANTÉ GENÉRICOS'];
-const fdvOf = v => (v && v.fdv) || FDV_DEFAULT;
+const fdvOf = v => (v && v.linea === GD) ? GD : ((v && v.fdv) || FDV_DEFAULT);
 const pfdv = p => (p && p.fdv) || FDV_DEFAULT;
-function fdvList(){ const s = new Set((S.config && Array.isArray(S.config.fdvs) && S.config.fdvs.length ? S.config.fdvs : FDV_BASE)); S.visitadores.forEach(v => s.add(fdvOf(v))); S.portafolio.forEach(p => s.add(pfdv(p))); return [...s]; }
+function fdvList(){ const s = new Set((S.config && Array.isArray(S.config.fdvs) && S.config.fdvs.length ? S.config.fdvs : FDV_BASE)); S.visitadores.forEach(v => { if (v.linea !== GD) s.add(fdvOf(v)); }); S.portafolio.forEach(p => s.add(pfdv(p))); s.delete(GD); return [...s]; }
+function fdvGroups(){ return fdvList().concat(S.visitadores.some(v => v.linea === GD) ? [GD] : []); }
 const cfgLines = () => (S.config && Array.isArray(S.config.lineas) ? S.config.lineas : []).filter(x => x && x.nombre);
 function allLines(){ const extra = new Set(); cfgLines().forEach(x => extra.add(x.nombre)); S.portafolio.forEach(p => extra.add(p.linea)); S.visitadores.forEach(v => extra.add(v.linea)); [...LINES, GD, 'SIN ASIGNAR'].forEach(l => extra.delete(l)); return LINES.concat([...extra].filter(Boolean).sort((a,b) => a.localeCompare(b, 'es'))); }
-function linesOfFdv(f){ return allLines().filter(l => (f === FDV_DEFAULT && LINES.includes(l)) || cfgLines().some(x => x.nombre === l && (x.fdv || FDV_DEFAULT) === f) || S.portafolio.some(p => p.linea === l && pfdv(p) === f) || S.visitadores.some(v => v.linea === l && fdvOf(v) === f)); }
+function linesOfFdv(f){ if (f === GD) return []; return allLines().filter(l => (f === FDV_DEFAULT && LINES.includes(l)) || cfgLines().some(x => x.nombre === l && (x.fdv || FDV_DEFAULT) === f) || S.portafolio.some(p => p.linea === l && pfdv(p) === f) || S.visitadores.some(v => v.linea === l && fdvOf(v) === f)); }
 function lineFdv(l){ const c = cfgLines().find(x => x.nombre === l); if (c) return c.fdv || FDV_DEFAULT; if (LINES.includes(l)) return FDV_DEFAULT; const p = S.portafolio.find(x => x.linea === l); if (p) return pfdv(p); const v = S.visitadores.find(x => x.linea === l); return v ? fdvOf(v) : (UI.fdv || FDV_DEFAULT); }
 const catKey = name => 'c-' + (nrm(name).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 120) || 'x');
 const prodInfo = name => (S.productos || []).find(c => c.producto === name) || {producto:name, principio:'', alias:[]};
@@ -533,7 +534,7 @@ async function connect(){
   schedule();
 }
 
-const UI = { rankOpen:new Set(), tab:'ranking', q:'', fdv:'', linea:'', region:'', pieBy:'general', vis:'', exam:'', band:'', sort:{}, open:new Set(), showInactive:false, portView:'cards', rankDir:'asc', kahoot:null, ficheroLinea:'' };
+const UI = { lineSel:new Set(), fdvSel:new Set(), rankOpen:new Set(), tab:'ranking', q:'', fdv:'', linea:'', region:'', pieBy:'general', vis:'', exam:'', band:'', sort:{}, open:new Set(), showInactive:false, portView:'cards', rankDir:'asc', kahoot:null, ficheroLinea:'' };
 try { const t = localStorage.getItem(LS_KEY+'-tab'); if (t) UI.tab = t; } catch(e) {}
 if (/^#cronograma$/i.test(location.hash)) UI.tab = 'crono';
 try { const rb = localStorage.getItem(LS_KEY+'-rankBy'); if (rb) UI.rankBy = rb; } catch(e) {}
@@ -1089,7 +1090,7 @@ views.resumen = () => {
 
 function fdvVisibleList(){
   const evAll = S.evaluaciones;
-  return S.visitadores.filter(v => (UI.showInactive || v.estado !== 'Inactivo') && (!UI.fdv || fdvOf(v) === UI.fdv) && (!UI.linea || v.linea === UI.linea) && (!UI.region || (v.region || '—') === UI.region) && (!UI.vis || v.id === UI.vis)
+  return S.visitadores.filter(v => (UI.showInactive || v.estado !== 'Inactivo') && (UI.fdvSel.size ? UI.fdvSel.has(fdvOf(v)) : (!UI.fdv || fdvOf(v) === UI.fdv)) && (UI.lineSel.size ? UI.lineSel.has(v.linea) : (!UI.linea || v.linea === UI.linea)) && (!UI.region || (v.region || '—') === UI.region) && (!UI.vis || v.id === UI.vis)
     && matchesQ(fullName(v), v.correo, v.linea, v.zona, v.region, v.estado, fdvOf(v), ...evAll.filter(e => e.vid === v.id).map(e => e.examen)));
 }
 function copyEmails(people, what){
@@ -1101,25 +1102,29 @@ function copyEmails(people, what){
   const fb = () => showExport(`${mails.length} correos · ${what}`, text, `Selecciona y copia los correos, luego pégalos en el campo “Para” de Outlook o Gmail.${esc(extra)}`);
   try { navigator.clipboard.writeText(text).then(() => toast(`${mails.length} correos copiados (${what}). Pégalos en el campo “Para” de tu correo.${extra}`), fb); } catch(e) { fb(); }
 }
-function scopeLabel(){ return [UI.fdv, UI.linea, UI.region && (UI.region === '—' ? 'sin región' : UI.region), UI.vis && fullName(VM()[UI.vis])].filter(Boolean).join(' · ') || 'todos los representantes'; }
+function scopeLabel(){ return [UI.fdvSel.size ? [...UI.fdvSel].join(' + ') : UI.fdv, UI.lineSel.size ? [...UI.lineSel].join(' + ') : UI.linea, UI.region && (UI.region === '—' ? 'sin región' : UI.region), UI.vis && fullName(VM()[UI.vis])].filter(Boolean).join(' · ') || 'todos los representantes'; }
 views.fdv = () => {
   const evAll = S.evaluaciones;
   const list = fdvVisibleList();
   const rows = list.map(v => { const evs = evAll.filter(e => e.vid === v.id); return Object.assign({}, v, {full:fullName(v), fdvN:fdvOf(v), evs, st:stats(evs)}); });
-  const fdvCards = fdvList().map(f => { const vs = S.visitadores.filter(v => fdvOf(v) === f && v.estado !== 'Inactivo'); const act = vs.filter(v => v.estado === 'Activo').length; const nl = linesOfFdv(f).length;
-    return `<div class="card fdvcard ${UI.fdv===f?'on':''}" data-act="fdv-pick" data-f="${esc(f)}" role="button" tabindex="0"><div class="t"><span>${esc(f)}</span><span style="white-space:nowrap"><button class="iconbtn" data-act="fdv-ren" data-f="${esc(f)}" title="Cambiar nombre" aria-label="Cambiar nombre">✎</button>${vs.length || S.portafolio.some(p => pfdv(p) === f) || f === FDV_DEFAULT ? '' : `<button class="iconbtn del" data-act="fdv-del" data-f="${esc(f)}" title="Eliminar" aria-label="Eliminar">🗑</button>`}</span></div>
+  const fdvCards = fdvGroups().map(f => { const vs = S.visitadores.filter(v => fdvOf(v) === f && v.estado !== 'Inactivo'); const act = vs.filter(v => v.estado === 'Activo' || v.estado === 'Fuera de estructura').length; const nl = linesOfFdv(f).length;
+    if (f === GD) return `<div class="card fdvcard ${UI.fdvSel.has(f)?'on':''}" data-act="fdv-pick" data-f="${esc(f)}" role="button" tabindex="0" aria-pressed="${UI.fdvSel.has(f)}"><div class="t"><span>${UI.fdvSel.has(f)?'☑ ':''}${esc(f)}</span></div><div class="s">${act} activos · llevan todas las líneas</div></div>`;
+    return `<div class="card fdvcard ${UI.fdvSel.has(f)?'on':''}" data-act="fdv-pick" data-f="${esc(f)}" role="button" tabindex="0" aria-pressed="${UI.fdvSel.has(f)}"><div class="t"><span>${UI.fdvSel.has(f)?'☑ ':''}${esc(f)}</span><span style="white-space:nowrap"><button class="iconbtn" data-act="fdv-ren" data-f="${esc(f)}" title="Cambiar nombre" aria-label="Cambiar nombre">✎</button>${vs.length || S.portafolio.some(p => pfdv(p) === f) || f === FDV_DEFAULT ? '' : `<button class="iconbtn del" data-act="fdv-del" data-f="${esc(f)}" title="Eliminar" aria-label="Eliminar">🗑</button>`}</span></div>
       <div class="s">${act} activos · ${nl} línea${nl===1?'':'s'}${vs.length ? '' : ' · <span class="t-warn">sin representantes cargados</span>'}</div></div>`; }).join('') + `<button type="button" class="card fdvcard add" data-act="fdv-add">＋ Agregar fuerza de ventas</button>`;
-  const lineList = (UI.fdv ? linesOfFdv(UI.fdv) : allLines()).concat([GD, 'SIN ASIGNAR']);
+  const selF = UI.fdvSel.size ? [...UI.fdvSel] : (UI.fdv ? [UI.fdv] : null);
+  const lineList = selF ? [...new Set(selF.flatMap(f => f === GD ? [GD] : linesOfFdv(f).concat(['SIN ASIGNAR'])))] : allLines().concat(['SIN ASIGNAR']);
   const lineCards = lineList.map(l => {
-    const vs = S.visitadores.filter(v => v.linea === l && v.estado !== 'Inactivo' && (!UI.fdv || fdvOf(v) === UI.fdv));
-    if (!vs.length && !LINES.includes(l) && l !== GD) return '';
+    const vs = S.visitadores.filter(v => v.linea === l && v.estado !== 'Inactivo' && (!selF || selF.includes(fdvOf(v))));
+    if (!vs.length && !LINES.includes(l)) return '';
     const act = vs.filter(v => v.estado === 'Activo' || v.estado === 'Fuera de estructura').length, vac = vs.filter(v => v.estado === 'Vacante').length;
-    const target = (!UI.fdv || UI.fdv === FDV_DEFAULT) ? HEAD_TARGET[l] : null;
-    return `<div class="card ${UI.linea===l?'on':''}" data-line-card="${esc(l)}" role="button" tabindex="0">
-      <div class="t">${esc(l)}</div><div class="s">${act} activos${vac?` · <span class="t-warn">${vac} vacante</span>`:''}${target?` · meta ${target}`:''}</div></div>`;
+    const target = HEAD_TARGET[l];
+    return `<div class="card ${UI.lineSel.has(l)?'on':''}" data-line-card="${esc(l)}" role="button" tabindex="0" aria-pressed="${UI.lineSel.has(l)}">
+      <div class="t">${UI.lineSel.has(l)?'☑ ':''}${esc(l)}</div><div class="s">${act} activos${vac?` · <span class="t-warn">${vac} vacante</span>`:''}${target?` · meta ${target}`:''}</div></div>`;
   }).join('');
+  const selTxt = [...UI.fdvSel, ...UI.lineSel];
   return `${UI.fdvImp ? fdvImportCard() : ''}<div class="fdvbar">${fdvCards}</div><div class="linesum">${lineCards}</div>
-  <div class="card"><div class="card-h"><div><h2>Representantes${UI.fdv ? ' · ' + esc(UI.fdv) : ' por fuerza de ventas y línea'}</h2><p class="sub">${rows.length} registros · ordenados por fuerza de ventas y línea · clic en una fila para ver su historial</p></div>
+  <div class="toolbar" style="margin:-4px 0 12px;font-size:12.5px;color:var(--text-2)">${selTxt.length ? `Seleccionado: <b>${selTxt.map(esc).join(' + ')}</b> <button class="btn sm ghost" data-act="sel-clear">✕ Quitar selección</button>` : 'Haz clic en una o varias tarjetas para seleccionar fuerzas de ventas o líneas (por ejemplo Línea 1 + Línea 2) y luego copia sus correos.'}</div>
+  <div class="card"><div class="card-h"><div><h2>Representantes${selTxt.length ? ' · ' + esc(selTxt.join(' + ')) : UI.fdv ? ' · ' + esc(UI.fdv) : ' por fuerza de ventas y línea'}</h2><p class="sub">${rows.length} registros · ordenados por fuerza de ventas y línea · clic en una fila para ver su historial</p></div>
     <div class="toolbar"><label class="chk"><input type="checkbox" data-act="show-inactive" ${UI.showInactive?'checked':''}> Mostrar inactivos</label>
     <button class="btn primary" data-act="mail-fdv" title="Copia los correos de la lista que estás viendo (usa los filtros o las tarjetas de línea para elegir a quiénes)">📋 Copiar ${list.filter(v => v.correo).length} correos</button><button class="btn" data-act="fdv-imp">⬆ Cargar desde Excel</button><button class="btn" data-act="exp-fdv">⬇ CSV</button><button class="btn primary" data-act="add-vis">＋ Nuevo representante</button></div></div>
     <div class="card-b" style="padding:10px 0 0">
@@ -1127,7 +1132,7 @@ views.fdv = () => {
       {k:'nombre', label:'Nombre', f:r => `<span class="chev">▸</span>${r.nombre?esc(r.nombre):'<span class="muted">—</span>'}`},
       {k:'apellidos', label:'Apellidos'},
       {k:'correo', label:'Correo', f:r => r.correo ? `<span class="mono">${esc(r.correo)}</span>` : '<span class="muted">—</span>'},
-      {k:'fdvN', label:'Fuerza de ventas', sv:r => `${fdvList().indexOf(r.fdvN) + 10}|${allLines().concat([GD,'SIN ASIGNAR']).indexOf(r.linea) + 100}|${r.full}`, f:r => `<small>${esc(r.fdvN)}</small>`},
+      {k:'fdvN', label:'Fuerza de ventas', sv:r => `${fdvGroups().indexOf(r.fdvN) + 10}|${allLines().concat([GD,'SIN ASIGNAR']).indexOf(r.linea) + 100}|${r.full}`, f:r => `<small>${esc(r.fdvN)}</small>`},
       {k:'linea', label:'Línea', f:r => `<span class="pill">${esc(r.linea)}</span>`},
       {k:'zona', label:'Región / Zona', f:r => `${esc(r.zona)}<br><small class="muted">${esc(r.region)}</small>`},
       {k:'estado', label:'Estado', f:r => `<span class="status ${r.estado==='Activo'?'good':r.estado==='Vacante'?'warn':'neutral'}">${esc(r.estado)}</span>`},
@@ -1947,7 +1952,7 @@ function exportPort(){ download('portafolio.csv', csv([['Fuerza de ventas','Lín
 
 /* ---------- render ---------- */
 function syncFilters(){
-  const fdvs = fdvList(); if (UI.fdv && !fdvs.includes(UI.fdv)) UI.fdv = '';
+  const fdvs = fdvGroups(); if (UI.fdv && !fdvs.includes(UI.fdv)) UI.fdv = '';
   $('#fFdv').innerHTML = `<option value="">Todas las fuerzas de ventas</option>` + fdvs.map(f => `<option ${UI.fdv===f?'selected':''}>${esc(f)}</option>`).join('');
   $('#fLinea').innerHTML = `<option value="">Todas las líneas</option>` + (UI.fdv ? linesOfFdv(UI.fdv).concat([GD, 'SIN ASIGNAR']) : lineOpts()).map(l => `<option ${UI.linea===l?'selected':''}>${esc(l)}</option>`).join('');
   const regs = [...new Set(S.visitadores.map(v => v.region || '—'))].sort(regionSort);
@@ -1998,7 +2003,7 @@ $('#fVis').addEventListener('change', e => { UI.vis = e.target.value; render(); 
 $('#fExam').addEventListener('change', e => { UI.exam = e.target.value; UI.attExam = undefined; render(); });
 $('#fMin').addEventListener('change', e => { const v = parseFloat(e.target.value); if (!isNaN(v) && v >= 0 && v <= 20) { S.config.min = v; putConfig(); } });
 $('#fAus').addEventListener('change', e => { S.config.ausCero = e.target.checked; putConfig(); });
-$('#btnClear').addEventListener('click', () => { UI.q = ''; UI.fdv = ''; UI.linea = ''; UI.region = ''; UI.attExam = undefined; UI.vis = ''; UI.exam = ''; UI.band = ''; UI.ficheroLinea = ''; $('#q').value = ''; render(); });
+$('#btnClear').addEventListener('click', () => { UI.q = ''; UI.fdv = ''; UI.fdvSel.clear(); UI.lineSel.clear(); UI.linea = ''; UI.region = ''; UI.attExam = undefined; UI.vis = ''; UI.exam = ''; UI.band = ''; UI.ficheroLinea = ''; $('#q').value = ''; render(); });
 $('#syncStatus').addEventListener('click', () => { if (DBS.mode === 'db' && !DBS.canWrite) { permShown = false; permHelp(); } else toast($('#syncStatus').title || $('#syncStatus').textContent); });
 $('#btnTheme').addEventListener('click', () => {
   const r = document.documentElement, cur = r.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
@@ -2018,7 +2023,7 @@ document.addEventListener('click', e => {
   const s = e.target.closest('th[data-sort]');
   if (s) { const key = s.dataset.sort, k = s.dataset.k, cur = UI.sort[key]; UI.sort[key] = {k, dir: cur && cur.k === k ? -cur.dir : (/(avg|nota|n|kahoot|cuota|reg|rate)$/.test(k) ? -1 : 1)}; render(); return; }
   const lc = e.target.closest('[data-line-card]');
-  if (lc) { UI.linea = UI.linea === lc.dataset.lineCard ? '' : lc.dataset.lineCard; render(); return; }
+  if (lc) { const l = lc.dataset.lineCard; UI.lineSel.has(l) ? UI.lineSel.delete(l) : UI.lineSel.add(l); render(); return; }
   const a = e.target.closest('[data-act]');
   if (!a) { const ro = e.target.closest('tr[data-rank-open]'); if (ro) { const id = ro.dataset.rankOpen; UI.rankOpen.has(id) ? UI.rankOpen.delete(id) : UI.rankOpen.add(id); render(); return; }
     const ex = e.target.closest('tr[data-expand]'); if (ex) { const id = ex.dataset.expand; UI.open.has(id) ? UI.open.delete(id) : UI.open.add(id); render(); } return; }
@@ -2062,7 +2067,8 @@ document.addEventListener('click', e => {
       if (nv) { toast(`${l} tiene ${nv} representante${nv===1?'':'s'}. Cámbialos de línea antes de eliminarla.`); break; }
       askConfirm(`¿Eliminar la línea ${l}${np ? ` y quitar sus ${np} productos asignados` : ''}?`, () => { S.config.lineas = cfgLines().filter(x => x.nombre !== l); putConfig(); if (UI.linea === l) UI.linea = '';
         runOps(S.portafolio.filter(p => p.linea === l).map(p => ({col:'portafolio', del:p.id}))).then(() => toast(`Línea ${l} eliminada.`)); }, 'Eliminar'); break; }
-    case 'fdv-pick': UI.fdv = UI.fdv === a.dataset.f ? '' : a.dataset.f; UI.linea = ''; render(); break;
+    case 'fdv-pick': { const f = a.dataset.f; UI.fdvSel.has(f) ? UI.fdvSel.delete(f) : UI.fdvSel.add(f); render(); break; }
+    case 'sel-clear': UI.fdvSel.clear(); UI.lineSel.clear(); render(); break;
     case 'fdv-add': openForm('Agregar fuerza de ventas', [{k:'nombre', label:'Nombre *', req:1, full:1, attrs:'placeholder="Ej. FDV HOSPITALARIA" style="text-transform:uppercase"'}], {}, d => { const n0 = d.nombre.trim().toUpperCase(); if (fdvList().includes(n0)) { toast('Esa fuerza de ventas ya existe.'); return false; } S.config.fdvs = fdvList().concat([n0]); putConfig(); toast(`${n0} agregada.`); }); break;
     case 'fdv-ren': { e.stopPropagation(); const old = a.dataset.f; openForm(`Cambiar nombre de ${old}`, [{k:'nombre', label:'Nuevo nombre *', req:1, full:1, attrs:'style="text-transform:uppercase"'}], {nombre:old}, d => { const n0 = d.nombre.trim().toUpperCase(); if (!n0 || n0 === old) return; if (fdvList().includes(n0)) { toast('Ya existe una fuerza de ventas con ese nombre.'); return false; }
         S.config.fdvs = fdvList().map(f => f === old ? n0 : f); putConfig();
