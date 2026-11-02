@@ -533,7 +533,7 @@ async function connect(){
   schedule();
 }
 
-const UI = { tab:'ranking', q:'', fdv:'', linea:'', region:'', pieBy:'general', vis:'', exam:'', band:'', sort:{}, open:new Set(), showInactive:false, portView:'cards', rankDir:'asc', kahoot:null, ficheroLinea:'' };
+const UI = { rankOpen:new Set(), tab:'ranking', q:'', fdv:'', linea:'', region:'', pieBy:'general', vis:'', exam:'', band:'', sort:{}, open:new Set(), showInactive:false, portView:'cards', rankDir:'asc', kahoot:null, ficheroLinea:'' };
 try { const t = localStorage.getItem(LS_KEY+'-tab'); if (t) UI.tab = t; } catch(e) {}
 if (/^#cronograma$/i.test(location.hash)) UI.tab = 'crono';
 
@@ -966,7 +966,7 @@ async function saveFile(filename, data){
 
 views.ranking = () => {
   const evs = scopeEvals(), vs = visStats(evs), exams = examOrder(evs), min = S.config.min;
-  const rows = vs.map(s => { const byEx = {}; s.list.forEach(e => { byEx[e.examen] = e; });
+  const rows = vs.map(s => { const byEx = {}; s.list.forEach(e => { byEx[e.examen] = e; }); s.kpts = s.list.reduce((a, e) => a + (e.estado !== 'No presentó' && Number.isFinite(+e.kahoot) && e.kahoot != null ? +e.kahoot : 0), 0);
     return Object.assign({}, s, {full:fullName(s.v), linea:s.v.linea, band:bandOf(s.avg), byEx}); });
   const ranked = rows.filter(r => r.avg != null).sort((a,b) => b.avg - a.avg || b.n - a.n); let prev = null, pos = 0;
   ranked.forEach((r,i) => { if (r.avg !== prev) { pos = i + 1; prev = r.avg; } r.pos = pos; });
@@ -991,19 +991,27 @@ views.ranking = () => {
       <div style="margin-top:14px">${bars(exams.map(ex => { const st = stats(evs.filter(e => e.examen === ex)); return {label:esc(ex), value:st.avg, tip:`${ex}: promedio ${fmt(st.avg,2)} · aprobación ${pct(st.rate)} · n=${st.n}`}; }))}</div></div></div>
   </div>
   ${attendanceCard()}
-  <div class="card" style="margin-top:16px"><div class="card-h"><div><h2>Ranking por promedio general</h2><p class="sub">Promedio acumulado de todas las notas de cada estudiante${UI.exam ? ' (solo ' + esc(UI.exam) + ')' : ''} · clic en una cabecera para reordenar</p></div>
-    <div class="toolbar">${UI.band ? `<span class="chipf">${BAND_META[UI.band].label}<button type="button" data-act="band" data-band="${UI.band}" aria-label="Quitar filtro">✕</button></span>` : ''}<button class="btn" data-act="exp-rank">⬇ CSV</button></div></div>
+  <div class="card" style="margin-top:16px"><div class="card-h"><div><h2>Ranking por promedio general</h2><p class="sub">Promedio acumulado de todas las notas de cada estudiante${UI.exam ? ' (solo ' + esc(UI.exam) + ')' : ''} · clic en un estudiante para ver el detalle · clic en una cabecera para reordenar</p></div>
+    <div class="toolbar">${UI.band ? `<span class="chipf">${BAND_META[UI.band].label}<button type="button" data-act="band" data-band="${UI.band}" aria-label="Quitar filtro">✕</button></span>` : ''}<button class="btn sm" data-act="rank-expand">${UI.rankOpen.size ? 'Contraer todo' : 'Desplegar todo'}</button><button class="btn" data-act="exp-rank">⬇ CSV</button></div></div>
     <div class="card-b" style="padding:10px 0 0">${table('ranking', [
-      {k:'pos', label:'#', r:1, sv:r => r.pos ?? 9999, f:r => r.pos ? `<span class="pos ${r.pos<=3?'p'+r.pos:''}">${r.pos}</span>` : '<span class="muted">—</span>'},
-      {k:'full', label:'Estudiante', f:r => `<b>${esc(r.full)}</b><br><small class="muted">${fdvOf(r.v) !== FDV_DEFAULT ? esc(fdvOf(r.v)) + ' · ' : ''}${esc(r.linea)}${r.v.zona && r.v.zona !== '—' ? ' · ' + esc(r.v.zona) : ''}</small>`},
+      {k:'pos', label:'#', r:1, sv:r => r.pos ?? 9999, f:r => `<span class="chev">▸</span>${r.pos ? `<span class="pos ${r.pos<=3?'p'+r.pos:''}">${r.pos}</span>` : '<span class="muted">—</span>'}`},
+      {k:'full', label:'Estudiante', f:r => `<b>${esc(r.full)}</b><br><small class="muted">${fdvOf(r.v) !== FDV_DEFAULT ? esc(fdvOf(r.v)) + ' · ' : ''}${esc(r.linea)}${r.v.region && r.v.region !== '—' ? ' · ' + esc(r.v.region) : ''}</small>`},
       {k:'avg', label:'Promedio', r:1, sv:r => r.avg, f:r => avgBadge(r.avg)},
-      {k:'n', label:'Notas', r:1},
+      {k:'n', label:'Evaluaciones', r:1, sv:r => r.list.length, f:r => `${r.n}${r.list.length > r.n ? ` <small class="t-warn" title="No presentó">+${r.list.length - r.n} NP</small>` : ''}`},
       {k:'pass', label:'Aprobadas', r:1, f:r => `${r.pass}/${r.n}`},
-      ...exams.map((ex,i) => ({k:'ex'+i, label:`<span title="${esc(ex)}">${esc(ex.length > 16 ? ex.slice(0,15) + '…' : ex)}</span>`, r:1, sv:r => { const e = r.byEx[ex]; return !e ? null : e.estado === 'No presentó' ? -1 : e.nota; }, f:r => cell(r, ex)})),
+      {k:'kpts', label:'Pts Kahoot', r:1, sv:r => r.kpts, f:r => r.kpts ? `<b>${r.kpts.toLocaleString('es-VE')}</b>` : '<span class="muted">—</span>'},
       {k:'band', label:'Estado', sv:r => BAND_ORDER.indexOf(r.band), f:r => { const m = BAND_META[r.band]; return `<span class="status ${r.band==='exc'||r.band==='apr'?'good':r.band==='rie'?'warn':r.band==='cri'?'bad':'neutral'}">${r.band==='exc'?'★ ':r.band==='apr'?'✓ ':r.band==='rie'?'! ':r.band==='cri'?'✕ ':''}${m.label}</span>`; }}
-    ], shown, {defaultSort:{k:'pos', dir:1}, empty:'No hay estudiantes con notas para los filtros actuales.'})}</div></div>`;
+    ], shown, {defaultSort:{k:'pos', dir:1}, empty:'No hay estudiantes con notas para los filtros actuales.',
+      rowAttr: r => `class="expandable ${UI.rankOpen && UI.rankOpen.has(r.vid) ? 'open' : ''}" data-rank-open="${r.vid}" title="Clic para ver el detalle de sus evaluaciones"`,
+      after: r => UI.rankOpen && UI.rankOpen.has(r.vid) ? `<tr class="sub"><td colspan="7">${rankDetail(r, exams)}</td></tr>` : ''})}</div></div>`;
 };
 
+function rankDetail(r, exams){
+  const min = S.config.min, list = exams.filter(ex => r.byEx[ex]).map(ex => r.byEx[ex]);
+  return `<table><thead><tr><th>Evaluación</th><th>Fecha</th><th class="r">Nota /20</th><th class="r">Pts Kahoot</th><th>Resultado</th></tr></thead><tbody>
+    ${list.map(e => `<tr><td>${esc(e.examen)}</td><td>${e.fecha ? fdate(e.fecha) : '<span class="muted">Sin fecha</span>'}</td><td class="r num"><b class="${e.estado !== 'No presentó' && e.nota < min ? 't-bad' : ''}">${e.estado === 'No presentó' ? '—' : fmt(e.nota)}</b></td><td class="r num">${e.kahoot != null && e.estado !== 'No presentó' ? (+e.kahoot).toLocaleString('es-VE') : '—'}</td><td>${statusBadge(e)}</td></tr>`).join('')}
+    <tr><th>Total</th><th></th><th class="r num">${fmt(r.avg)} <small class="muted">prom.</small></th><th class="r num">${r.kpts ? r.kpts.toLocaleString('es-VE') : '—'}</th><th>${r.pass}/${r.n} aprobadas</th></tr></tbody></table>`;
+}
 views.resumen = () => {
   const evs = scopeEvals(), all = stats(evs), ex = examStats(evs), risk = riskList(evs);
   const vis = scopeVis().filter(v => v.estado !== 'Vacante');
@@ -1617,7 +1625,17 @@ function kahootParse(){
   render();
   setTimeout(() => { const s = $('#kMode'); if (s) s.value = UI.kahoot.mode; }, 0);
 }
+function upsertEval(ops, seen, rec, replace){
+  const key = rec.vid + '|' + nrm(rec.examen);
+  if (seen.has(key)) { const op = seen.get(key); op.rec = Object.assign({}, rec, {id: op.rec.id}); return 'dup'; }
+  const prevs = S.evaluaciones.filter(e => e.vid === rec.vid && nrm(e.examen) === nrm(rec.examen));
+  let kind = 'added';
+  if (prevs.length && replace) { rec.id = prevs[0].id; kind = 'replaced'; prevs.slice(1).forEach(p => ops.push({col:'evaluaciones', del:p.id})); }
+  else if (prevs.length && prevs.some(p => p.nota === rec.nota && p.estado === rec.estado)) return 'same';
+  const op = {col:'evaluaciones', rec}; ops.push(op); seen.set(key, op); return kind;
+}
 async function kahootCommit(){
+  const seenEv = new Map();
   const k = UI.kahoot; if (!k || !k.rows) return;
   const replace = $('#kReplace')?.checked;
   const exam = $('#kExam').value.trim() || k.exam;
@@ -1634,7 +1652,7 @@ async function kahootCommit(){
       if (vid === '__new') { const parts = titleCase(r.name).split(' '); const v = {id:uid('v'), nombre:parts[0]||'', apellidos:parts.slice(1).join(' '), correo:r.email||'', linea:UI.linea||'SIN ASIGNAR', region:UI.region||'—', zona:'—', estado:'Activo'}; ops.push({col:'visitadores', rec:v}); vid = v.id; created++; }
       else { const cur = S.visitadores.find(v => v.id === vid); if (r.email && cur && !cur.correo) ops.push({col:'visitadores', rec:Object.assign({}, cur, {correo:r.email})}); }
       notas.forEach(([c, n]) => { const ex = c.name.trim(); const rec = {id:uid('e'), vid, examen:ex, fecha, nota:n, kahoot:null, estado:'Presentó', origen:'Carga planilla ' + today()};
-        const prev = S.evaluaciones.findIndex(e => e.vid === vid && nrm(e.examen) === nrm(ex)); if (prev >= 0 && replace) { rec.id = S.evaluaciones[prev].id; replaced++; } else added++; ops.push({col:'evaluaciones', rec}); });
+        const kd = upsertEval(ops, seenEv, rec, replace); if (kd === 'replaced') replaced++; else if (kd === 'added') added++; });
     });
   } else k.rows.forEach(r => {
     if (!r.vid || r.nota == null) return;
@@ -1646,9 +1664,7 @@ async function kahootCommit(){
     } else { const cur = S.visitadores.find(v => v.id === vid); if (r.email && cur && !cur.correo) ops.push({col:'visitadores', rec:Object.assign({}, cur, {correo:r.email})}); }
     const ex = r.exam || exam;
     const rec = {id:uid('e'), vid, examen:ex, fecha:r.date || $('#kDate').value || '', nota:r.np ? 0 : r.nota, kahoot:r.points, estado:r.np ? 'No presentó' : 'Presentó', origen:'Carga Kahoot '+today()};
-    const prev = S.evaluaciones.findIndex(e => e.vid === vid && nrm(e.examen) === nrm(ex));
-    if (prev >= 0 && replace) { rec.id = S.evaluaciones[prev].id; replaced++; } else added++;
-    ops.push({col:'evaluaciones', rec});
+    const kd = upsertEval(ops, seenEv, rec, replace); if (kd === 'replaced') replaced++; else if (kd === 'added') added++;
   });
   const okLabel = $('[data-act="k-commit"]'); if (okLabel) { okLabel.disabled = true; okLabel.textContent = 'Guardando…'; }
   const ok = await runOps(ops);
@@ -1902,9 +1918,9 @@ function exportRanking(){
   const evs = scopeEvals(), exams = examOrder(evs);
   const rows = visStats(evs).filter(s => s.avg != null).sort((a,b) => b.avg - a.avg);
   const n2 = x => x == null ? '' : String(Math.round(x*100)/100).replace('.', ',');
-  download('ranking_notas.csv', csv([['Posición','Nombre','Apellidos','Correo','Línea','Promedio','Notas','Aprobadas','Estado'].concat(exams)].concat(rows.map((s,i) => {
-    const by = {}; s.list.forEach(e => { by[e.examen] = e; });
-    return [i+1, s.v.nombre, s.v.apellidos, s.v.correo, s.v.linea, n2(s.avg), s.n, s.pass, BAND_META[bandOf(s.avg)].label].concat(exams.map(x => !by[x] ? '' : by[x].estado === 'No presentó' ? 'NP' : n2(by[x].nota)));
+  download('ranking_notas.csv', csv([['Posición','Nombre','Apellidos','Correo','Línea','Región','Promedio','Notas','Aprobadas','Pts Kahoot total','Estado'].concat(exams)].concat(rows.map((s,i) => {
+    const by = {}; s.list.forEach(e => { by[e.examen] = e; }); const kp = s.list.reduce((a, e) => a + (e.estado !== 'No presentó' && e.kahoot != null && Number.isFinite(+e.kahoot) ? +e.kahoot : 0), 0);
+    return [i+1, s.v.nombre, s.v.apellidos, s.v.correo, s.v.linea, s.v.region || '', n2(s.avg), s.n, s.pass, kp, BAND_META[bandOf(s.avg)].label].concat(exams.map(x => !by[x] ? '' : by[x].estado === 'No presentó' ? 'NP' : n2(by[x].nota)));
   }))), 'text/csv;charset=utf-8');
 }
 function exportPort(){ download('portafolio.csv', csv([['Fuerza de ventas','Línea','Área terapéutica','Producto','Principio activo','Otros nombres']].concat(S.portafolio.map(p => [pfdv(p), p.linea, p.area, p.producto, prodInfo(p.producto).principio || '', arr(prodInfo(p.producto).alias).join(', ')]))), 'text/csv;charset=utf-8'); }
@@ -1984,7 +2000,8 @@ document.addEventListener('click', e => {
   const lc = e.target.closest('[data-line-card]');
   if (lc) { UI.linea = UI.linea === lc.dataset.lineCard ? '' : lc.dataset.lineCard; render(); return; }
   const a = e.target.closest('[data-act]');
-  if (!a) { const ex = e.target.closest('tr[data-expand]'); if (ex) { const id = ex.dataset.expand; UI.open.has(id) ? UI.open.delete(id) : UI.open.add(id); render(); } return; }
+  if (!a) { const ro = e.target.closest('tr[data-rank-open]'); if (ro) { const id = ro.dataset.rankOpen; UI.rankOpen.has(id) ? UI.rankOpen.delete(id) : UI.rankOpen.add(id); render(); return; }
+    const ex = e.target.closest('tr[data-expand]'); if (ex) { const id = ex.dataset.expand; UI.open.has(id) ? UI.open.delete(id) : UI.open.add(id); render(); } return; }
   const act = a.dataset.act, id = a.dataset.id;
   const menuClose = () => $('#dataMenu').classList.remove('on');
   switch (act) {
@@ -2055,6 +2072,7 @@ document.addEventListener('click', e => {
     case 'pie-group': if (a.dataset.by === 'region') UI.region = a.dataset.g === 'Sin región' ? '—' : a.dataset.g; else if (a.dataset.by === 'fdv') UI.fdv = a.dataset.g; else UI.linea = a.dataset.g; UI.pieBy = 'general'; render(); toast(`Mostrando solo ${a.dataset.g}. Usa “Limpiar filtros” para volver a ver todo.`); break;
     case 'band': UI.band = UI.band === a.dataset.band ? '' : a.dataset.band; if (UI.tab !== 'ranking') { UI.tab = 'ranking'; window.scrollTo(0,0); } render(); break;
     case 'exp-rank': exportRanking(); break;
+    case 'rank-expand': if (UI.rankOpen.size) UI.rankOpen.clear(); else visStats(scopeEvals()).forEach(s => UI.rankOpen.add(s.vid)); render(); break;
     case 'add-ses': if (document.body.classList.contains('ro')) break; sesForm(null, a.dataset.date); break;
     case 'new-ses': sesForm(null, (UI.calMonth && UI.calMonth !== today().slice(0,7)) ? UI.calMonth + '-01' : today()); break;
     case 'edit-ses': e.stopPropagation(); if (document.body.classList.contains('ro')) break; sesForm((S.cronograma || []).find(x => x.id === id)); break;
