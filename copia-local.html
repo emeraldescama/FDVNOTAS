@@ -307,6 +307,12 @@ textarea.paste{width:100%;min-height:170px;font-family:ui-monospace,SFMono-Regul
 .note.bad{border-color:var(--bad);color:var(--text)}
 .note.good{border-color:var(--good);color:var(--text)}
 .sugp{display:flex;align-items:center;gap:8px;justify-content:space-between;padding:1px 0}
+.sugdrag{cursor:grab;border-radius:6px;padding:2px 6px 2px 2px;display:inline-flex;align-items:baseline;gap:4px}
+.sugdrag:hover{background:var(--surface-2)}
+.sugdrag .grip{font-style:normal;color:var(--muted);font-size:13px}
+.sugdrag.dragging{opacity:.4}
+tr.sugrow.drag-over td{background:color-mix(in srgb,var(--brand-2) 14%,transparent)}
+tr.sugrow.drag-over td:first-child{box-shadow:inset 3px 0 0 var(--brand-2)}
 .mvsel{font-size:11.5px;padding:2px 4px;width:auto;max-width:170px;min-height:0;height:auto}
 .kv{display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;color:var(--text-2);margin-top:8px}
 .kv b{color:var(--text)}
@@ -999,7 +1005,7 @@ function sugCard(){
   else if (pl.fit < pl.prods.length) msg = `<div class="note bad">⚠ No alcanzan los días: hay <b>${pl.days.length} días hábiles</b> y se necesitan <b>${pl.need}</b>${pl.modo === 'normal' ? '' : ' aun en modo compacto'}. Solo caben ${pl.fit} de ${pl.prods.length} productos. Mueve la fecha de salida al <b>${fdate(sugNeedDate(k, pl))}</b> o quita productos.</div>`;
   else msg = `<div class="note good">✓ Cabe: ${pl.prods.length} productos en ${pl.need} de ${pl.days.length} días hábiles${pl.modo === 'compacto' ? ' en <b>modo compacto</b> (el día del examen estudia el siguiente producto, porque no alcanzaban 2 días por producto)' : ' (1 día de estudio + 1 día de examen por producto)'}${pl.libres ? ` · le sobran ${pl.libres} día${pl.libres===1?'':'s'}` : ''}.</div>`;
   const studyOpts = pl.items.filter(x => x.tipo === 'estudio' && x.g != null).map(x => [x.g, x.d]);
-  const rows = pl.items.map((x, i) => `<tr><td class="num">${pl.days.indexOf(x.d) + 1}</td><td class="dt">${fdate(x.d)}<small>${dowName(x.d)}</small></td><td><span class="tipo ${x.tipo === 'examen' ? 'examen' : 'estudio'}">${x.tipo === 'examen' ? 'Examen' : x.tipo === 'repaso' ? 'Repaso general' : 'Estudio'}</span>${x.momento ? `<br><small class="muted">${x.momento === 'todo el día' ? 'Todo el día' : x.momento === 'mañana' ? 'Mañana' + (x.tipo === 'examen' && k.hora ? ' · ' + esc(k.hora) : '') : 'Tarde'}</small>` : ''}</td><td>${x.ps ? x.ps.map(p => `<div class="sugp"><span><b>${esc(p.producto)}</b> <small class="muted">${esc(titleCase(p.area))}</small>${k.pin && k.pin[p.producto] != null ? ' <small class="t-warn" title="Movido por ti">✋</small>' : ''}</span>${x.tipo === 'estudio' && studyOpts.length > 1 ? `<select class="mvsel" data-sugmove="${esc(p.producto)}" aria-label="Mover ${esc(p.producto)} a otro día" title="Mover a otro día de estudio">${studyOpts.map(([g, d]) => `<option value="${g}" ${g === x.g ? 'selected' : ''}>${g === x.g ? 'Mover a…' : (pl.modo === 'intensivo' ? 'Estudio ' : 'Posición ' + (g + 1) + ' · ') + shortDate(d)}</option>`).join('')}</select>` : ''}</div>`).join('') : 'Todos los productos'}</td><td><small>${x.ps ? [...new Set(x.ps.map(p => p.linea))].map(esc).join(', ') : ''}</small></td></tr>`).join('');
+  const rows = pl.items.map((x, i) => `<tr ${x.g != null ? `data-suggrp="${x.g}" class="sugrow ${x.tipo}"` : ''}><td class="num">${pl.days.indexOf(x.d) + 1}</td><td class="dt">${fdate(x.d)}<small>${dowName(x.d)}</small></td><td><span class="tipo ${x.tipo === 'examen' ? 'examen' : 'estudio'}">${x.tipo === 'examen' ? 'Examen' : x.tipo === 'repaso' ? 'Repaso general' : 'Estudio'}</span>${x.momento ? `<br><small class="muted">${x.momento === 'todo el día' ? 'Todo el día' : x.momento === 'mañana' ? 'Mañana' + (x.tipo === 'examen' && k.hora ? ' · ' + esc(k.hora) : '') : 'Tarde'}</small>` : ''}</td><td>${x.ps ? x.ps.map(p => `<div class="sugp"><span ${x.tipo === 'estudio' && studyOpts.length > 1 ? `class="sugdrag" draggable="true" data-sugdrag="${esc(p.producto)}" title="Arrástralo a otro día"` : ''}>${x.tipo === 'estudio' && studyOpts.length > 1 ? '<i class="grip" aria-hidden="true">⠿</i>' : ''}<b>${esc(p.producto)}</b> <small class="muted">${esc(titleCase(p.area))}</small>${k.pin && k.pin[p.producto] != null ? ' <small class="t-warn" title="Movido por ti">✋</small>' : ''}</span>${x.tipo === 'estudio' && studyOpts.length > 1 ? `<select class="mvsel" data-sugmove="${esc(p.producto)}" aria-label="Mover ${esc(p.producto)} a otro día" title="Mover a otro día de estudio">${studyOpts.map(([g, d]) => `<option value="${g}" ${g === x.g ? 'selected' : ''}>${g === x.g ? 'Mover a…' : (pl.modo === 'intensivo' ? 'Estudio ' : 'Posición ' + (g + 1) + ' · ') + shortDate(d)}</option>`).join('')}</select>` : ''}</div>`).join('') : 'Todos los productos'}</td><td><small>${x.ps ? [...new Set(x.ps.map(p => p.linea))].map(esc).join(', ') : ''}</small></td></tr>`).join('');
   return `<div class="card imp-card" style="margin-bottom:16px"><div class="card-h"><div><h2>✨ Cronograma sugerido</h2><p class="sub">Escribe el representante, el día en que sale a trabajar y las líneas. Cada producto lleva 1 día completo de estudio y 1 día de examen, solo en días hábiles.</p></div><button class="btn ghost" data-act="sug-close">✕ Cerrar</button></div>
     <div class="card-b">
       <div class="form-row">
@@ -1020,7 +1026,7 @@ function sugCard(){
       </div>
       ${pl.skipped.length ? `<p class="muted" style="font-size:12.5px;margin:6px 0 0">Se saltan: ${pl.skipped.map(([d, n]) => `${fdate(d)} (${esc(n)})`).join(', ')}</p>` : ''}
       <div style="margin-top:12px">${msg}</div>
-      ${rows ? `<div class="toolbar" style="margin:12px 0"><button class="btn primary" data-act="sug-save" ${k.nombre ? '' : 'disabled'}>✓ Guardar en el cronograma (${pl.items.length} actividades)</button>${Object.keys(k.pin || {}).length ? '<button class="btn" data-act="sug-reset">↺ Volver al orden sugerido</button>' : ''}<span class="muted" style="font-size:12.5px">Los productos de una misma marca (ej. todo Analper) van juntos. Usa “Mover a…” para pasar un producto a otro día.</span></div>
+      ${rows ? `<div class="toolbar" style="margin:12px 0"><button class="btn primary" data-act="sug-save" ${k.nombre ? '' : 'disabled'}>✓ Guardar en el cronograma (${pl.items.length} actividades)</button>${Object.keys(k.pin || {}).length ? '<button class="btn" data-act="sug-reset">↺ Volver al orden sugerido</button>' : ''}<span class="muted" style="font-size:12.5px">Los productos de una misma marca (ej. todo Analper) van juntos. <b>Arrastra</b> un producto (⠿) a otro día, o usa “Mover a…”. Mantén Shift al arrastrar para llevar toda la marca.</span></div>
       <div class="tbl-wrap"><table class="sched"><thead><tr><th>Día</th><th>Fecha</th><th>Actividad</th><th>Producto</th><th>Línea</th></tr></thead><tbody>${rows}</tbody></table></div>` : ''}
     </div></div>`;
 }
@@ -2397,7 +2403,13 @@ document.addEventListener('keydown', e => {
   if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-line-card],.tick,.cal-day,.pie-mini,.fdvcard')) { e.preventDefault(); e.target.click(); }
 });
 /* drag & drop: portfolio + kahoot file */
-let dragPid = null;
+let dragPid = null, dragSug = null;
+document.addEventListener('dragstart', e => { const c = e.target.closest && e.target.closest('[data-sugdrag]'); if (!c || !UI.sug) return; dragSug = {name: c.dataset.sugdrag, fam: e.shiftKey}; c.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', dragSug.name); } catch(_) {} e.stopPropagation(); }, true);
+document.addEventListener('dragover', e => { if (!dragSug) return; const r = e.target.closest && e.target.closest('tr[data-suggrp]'); if (!r) return; e.preventDefault(); e.dataTransfer.dropEffect = 'move'; $$('.drag-over').forEach(x => x !== r && x.classList.remove('drag-over')); r.classList.add('drag-over'); }, true);
+document.addEventListener('drop', e => { if (!dragSug) return; const r = e.target.closest && e.target.closest('tr[data-suggrp]'); const d = dragSug; dragSug = null; if (!r || !UI.sug) return; e.preventDefault(); e.stopPropagation();
+  const g = +r.dataset.suggrp, f = famKey(d.name), names = d.fam || e.shiftKey ? sugPlan(UI.sug).prods.filter(p => p.fam === f).map(p => p.producto) : [d.name];
+  const pin = Object.assign({}, UI.sug.pin); names.forEach(n => { pin[n] = g; }); UI.sug.pin = pin; render(); }, true);
+document.addEventListener('dragend', () => { dragSug = null; }, true);
 document.addEventListener('dragstart', e => { const c = e.target.closest && e.target.closest('.chip'); if (!c) return; dragPid = c.dataset.pid; c.classList.add('dragging'); e.dataTransfer.effectAllowed = 'copyMove'; try { e.dataTransfer.setData('text/plain', dragPid); } catch(_) {} });
 document.addEventListener('dragend', () => { dragPid = null; $$('.dragging,.drag-over').forEach(x => x.classList.remove('dragging','drag-over')); });
 document.addEventListener('dragover', e => {
