@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="claude:viewport-fit-sides" content="cover">
 <title>FDV Terapias de Marca</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
   color-scheme:light;
@@ -384,6 +385,54 @@ body.ro [data-act="exam-merge"],body.ro [data-act="exam-who"],body.ro [data-act=
 .seg button.on{background:var(--brand-2);color:#fff}
 body.ro .chip{cursor:default}
 .loading{padding:40px;text-align:center;color:var(--muted)}
+
+/* ===== look & feel: degradado azul → violeta → magenta ===== */
+:root{
+  --bg:#f4f2fb; --surface:#ffffff; --surface-2:#f7f5fd; --border:#e4def5; --border-strong:#cfc5ec;
+  --text:#1a1440; --text-2:#4b4470; --muted:#7c7699;
+  --brand:#3a1f9e; --brand-2:#5b30d9; --brand-soft:#eee8fd; --accent:#c42fb4;
+  --bar:#5b30d9; --track:#ece8f7;
+  --g1:#2347e0; --g2:#6a2fd6; --g3:#c22fb8;
+  --grad:linear-gradient(110deg,var(--g1) 0%,var(--g2) 48%,var(--g3) 100%);
+  --shadow:0 1px 2px rgba(40,20,110,.06),0 4px 14px rgba(60,30,160,.07);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c0920; --surface:#16113a; --surface-2:#1d1747; --border:#2d2563; --border-strong:#40357f;
+    --text:#f1eeff; --text-2:#c4bde8; --muted:#948cbd;
+    --brand:#b9a6ff; --brand-2:#8f70ff; --brand-soft:#271e5c; --accent:#ec5fdc;
+    --bar:#8f70ff; --track:#251e52;
+    --shadow:0 1px 2px rgba(0,0,0,.45),0 6px 20px rgba(10,0,40,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c0920; --surface:#16113a; --surface-2:#1d1747; --border:#2d2563; --border-strong:#40357f;
+  --text:#f1eeff; --text-2:#c4bde8; --muted:#948cbd;
+  --brand:#b9a6ff; --brand-2:#8f70ff; --brand-soft:#271e5c; --accent:#ec5fdc;
+  --bar:#8f70ff; --track:#251e52;
+  --shadow:0 1px 2px rgba(0,0,0,.45),0 6px 20px rgba(10,0,40,.35);
+}
+body{background:radial-gradient(1100px 520px at -10% -5%,color-mix(in srgb,var(--g1) 13%,transparent),transparent 60%),radial-gradient(900px 600px at 110% 105%,color-mix(in srgb,var(--g3) 13%,transparent),transparent 60%),var(--bg);background-attachment:fixed;min-height:100vh}
+h1,h2,h3,.tab,.kpi b,.kpi .v,.section-title h2,.card-h h2{font-family:"Poppins",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;letter-spacing:-.01em}
+.top{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='520' height='160' viewBox='0 0 520 160'%3E%3Cg stroke='%23ffffff' stroke-opacity='.11' stroke-width='.8' fill='none'%3E%3Cpath d='M10 40L90 20L170 70L250 30L330 90L410 40L510 80M90 20L120 110L170 70L230 140L250 30M330 90L360 150L410 40L470 130L510 80M10 40L40 120L120 110M230 140L330 90'/%3E%3C/g%3E%3Cg fill='%23ffffff'%3E%3Ccircle cx='10' cy='40' r='1.6' fill-opacity='.27'/%3E%3Ccircle cx='90' cy='20' r='2.2' fill-opacity='.44'/%3E%3Ccircle cx='170' cy='70' r='1.8' fill-opacity='.33'/%3E%3Ccircle cx='250' cy='30' r='2.4' fill-opacity='.49'/%3E%3Ccircle cx='330' cy='90' r='1.8' fill-opacity='.33'/%3E%3Ccircle cx='410' cy='40' r='2.2' fill-opacity='.44'/%3E%3Ccircle cx='510' cy='80' r='1.6' fill-opacity='.27'/%3E%3Ccircle cx='120' cy='110' r='1.4' fill-opacity='.27'/%3E%3Ccircle cx='230' cy='140' r='1.6' fill-opacity='.27'/%3E%3Ccircle cx='360' cy='150' r='1.4' fill-opacity='.22'/%3E%3Ccircle cx='470' cy='130' r='1.8' fill-opacity='.33'/%3E%3Ccircle cx='40' cy='120' r='1.2' fill-opacity='.22'/%3E%3C/g%3E%3C/svg%3E") right -30px bottom -70px/520px 160px no-repeat,radial-gradient(500px 220px at 85% 0%,rgba(255,255,255,.18),transparent 70%),var(--grad);border-bottom:0;color:#fff;box-shadow:0 6px 24px rgba(70,30,170,.28)}
+body::before{background:var(--g1)}
+.top .brand h1{color:#fff;font-weight:600;font-size:17px}
+.top .brand p{color:rgba(255,255,255,.78)}
+.logo{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);backdrop-filter:blur(4px);font-family:"Poppins",system-ui,sans-serif;box-shadow:inset 0 1px 0 rgba(255,255,255,.25)}
+.top .btn{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.32);color:#fff}
+.top .btn:hover{background:rgba(255,255,255,.22)}
+.top .menu-pop button{color:var(--text)}
+.top .status{background:rgba(255,255,255,.16);color:#fff;border-color:rgba(255,255,255,.3)}
+.top .tab{color:rgba(255,255,255,.75);font-weight:500}
+.top .tab:hover{color:#fff}
+.top .tab[aria-selected="true"]{color:#fff;border-bottom-color:#fff;font-weight:600}
+.btn.primary{background:var(--grad);border-color:transparent;color:#fff;box-shadow:0 2px 10px color-mix(in srgb,var(--g2) 35%,transparent)}
+.btn.primary:hover{filter:brightness(1.08)}
+.card{border-color:var(--border)}
+.kpi{position:relative;overflow:hidden}
+.kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--grad)}
+.cal-day.today .dn,.cal-day.today>.dn{background:var(--grad)!important;color:#fff}
+::selection{background:color-mix(in srgb,var(--g2) 30%,transparent)}
 @media print{.top,.filters,.toolbar,.iconbtn,.btn{display:none!important}.card{box-shadow:none}}
 </style>
 </head>
@@ -1070,7 +1119,7 @@ async function sugSave(){
 function loadScript(src){ return new Promise((res, rej) => { if ([...document.scripts].some(x => x.src === src)) return res(); const el = document.createElement('script'); el.src = src; el.onload = res; el.onerror = rej; document.head.appendChild(el); }); }
 function posterHtml(){
   const [from, to] = cronRange(), list = scopeSessions().filter(s => overlaps(s, from, to)), mode = UI.cronMode || 'fecha';
-  const C = {ink:'#14213d', sub:'#4a5672', mute:'#7a849b', line:'#e1e5ee', est:'#1d5fb4', estBg:'#e7effb', exa:'#c0392b', exaBg:'#fdeaea'};
+  const C = {ink:'#1a1440', sub:'#4b4470', mute:'#7c7699', line:'#e4def5', est:'#5b30d9', estBg:'#eee8fd', exa:'#c0392b', exaBg:'#fdeaea'};
   const pill = s => `<span style="display:inline-block;font-size:11px;font-weight:800;letter-spacing:.6px;padding:3px 9px;border-radius:999px;background:${sesTipo(s)==='examen'?C.exaBg:C.estBg};color:${sesTipo(s)==='examen'?C.exa:C.est}">${tipoLabel(s).toUpperCase()}</span>`;
   const tags = s => arr(s.productos).map(p => `<span style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border:1px solid ${C.line};border-radius:6px;font-size:12px;font-weight:700;color:${C.ink};background:#f7f8fb">${esc(p)}</span>`).join('');
   const scopeTxt = [UI.linea, UI.region, UI.vis && fullName(VM()[UI.vis])].filter(Boolean).join(' · ');
@@ -1099,7 +1148,7 @@ function posterHtml(){
         <div><div>${tags(s)}</div><div style="font-size:12px;color:${C.sub};margin-top:3px">${repsInScope(s).map(v => esc(fullName(v))).join(', ')}</div>${s.notas ? `<div style="font-size:12px;color:${C.mute};margin-top:2px">${esc(s.notas)}</div>` : ''}</div></div>`).join('')}`;
   }
   return `<div style="width:1120px;background:#fff;font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:${C.ink}">
-    <div style="background:linear-gradient(135deg,#123a73,#1d5fb4);color:#fff;padding:28px 34px">
+    <div style="background:linear-gradient(110deg,#2347e0 0%,#6a2fd6 48%,#c22fb8 100%);color:#fff;padding:28px 34px">
       <div style="font-size:12px;letter-spacing:2.5px;opacity:.85;font-weight:700">TERAPIAS DE MARCA · FUERZA DE VENTAS</div>
       <div style="font-size:32px;font-weight:800;margin-top:4px">Cronograma de capacitaciones</div>
       <div style="font-size:16px;opacity:.92;margin-top:4px">Del ${longDate(from)} al ${longDate(to)}${scopeTxt ? ' · ' + esc(scopeTxt) : ''}</div></div>
