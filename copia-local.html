@@ -1413,6 +1413,7 @@ views.carga = () => {
       <li>Cada fila se asocia al visitador por correo o por coincidencia de nombre; puedes corregir la asociación antes de registrar.</li>
       <li>Al registrar, todas las métricas, tasas y alertas de riesgo se recalculan al instante.</li>
     </ul></div></div></div></div>`;
+  if (k && k.sheets && k.sheets.length > 1) h += `<div class="card" style="margin-top:16px"><div class="card-b"><label class="fld" style="gap:10px">El archivo tiene varias hojas con notas. Hoja a cargar: <select id="kSheet">${k.sheets.map(s => `<option ${s.name === k.sheetPick ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></label></div></div>`;
   if (k && k.rows && k.sheet) {
     const opts = v => `<option value="">— Omitir fila —</option><option value="__new" ${v==='__new'?'selected':''}>＋ Crear visitador nuevo</option>` +
       [...S.visitadores].filter(x => x.estado !== 'Vacante').sort((a,b) => fullName(a).localeCompare(fullName(b),'es')).map(x => `<option value="${x.id}" ${x.id===v?'selected':''}>${esc(fullName(x))} · ${esc(shortLine(x.linea))}</option>`).join('');
@@ -1442,7 +1443,7 @@ views.carga = () => {
       ${unmatchedBox(unm, k.rows.length)}${sinNota ? `<div class="card-b" style="padding-bottom:0"><div class="warnbox"><span aria-hidden="true">⚠</span><div><b>${sinNota} fila${sinNota===1?'':'s'} sin nota calculada.</b> Revisa el método de conversión o indica el N° de preguntas arriba y pulsa “Procesar” otra vez.</div></div></div>` : ''}
       <div class="card-b" style="padding:10px 0 0"><div class="tbl-wrap"><table><thead><tr><th>#</th><th>Jugador (reporte)</th><th>Correo</th><th>Examen</th><th class="r">Pts Kahoot</th><th class="r">Correctas</th><th class="r">Nota /20</th><th>Resultado</th><th>Asociar a visitador</th></tr></thead><tbody>
       ${k.rows.map((r,i) => `<tr class="${r.vid || r.nota == null ? '' : 'unm'}"><td class="muted">${i+1}</td><td>${esc(r.name)}</td><td class="mono">${esc(r.email||'')}</td><td>${esc(r.exam||k.exam||'')}</td><td class="r num">${r.points!=null?r.points.toLocaleString('es-VE'):'—'}</td><td class="r num">${r.correct!=null?r.correct+(r.total?'/'+r.total:''):'—'}</td>
-        <td class="r num"><b class="${r.nota!=null&&r.nota<S.config.min?'t-bad':''}">${fmt(r.nota)}</b></td><td>${r.nota==null?'<span class="status neutral">Sin nota</span>':r.nota>=S.config.min?'<span class="status good">✓ Aprobado</span>':'<span class="status bad">✕ Reprobado</span>'}</td>
+        <td class="r num"><b class="${r.nota!=null&&r.nota<S.config.min?'t-bad':''}">${fmt(r.nota)}</b></td><td>${r.np?'<span class="status warn">⦸ No presentó</span>':r.nota==null?'<span class="status neutral">Sin nota</span>':r.nota>=S.config.min?'<span class="status good">✓ Aprobado</span>':'<span class="status bad">✕ Reprobado</span>'}</td>
         <td><select data-krow="${i}" style="max-width:260px">${opts(r.vid)}</select> ${r.matchBy?`<small class="muted">${esc(r.matchBy)}</small>`:''}</td></tr>`).join('')}
       </tbody></table></div></div></div>`;
   }
@@ -1519,10 +1520,43 @@ function sheetDetect(rows, hdr, ix){
 }
 function sheetRowNota(r, c){ return sheetNota(r.raw[c.i], c.rowMax && r.rowMax ? r.rowMax : c.max); }
 
+function examCanon(name){
+  const raw = String(name || '').trim(); if (!raw) return '';
+  const exams = examOrder(S.evaluaciones), n = nrm(raw);
+  const same = exams.find(x => nrm(x) === n); if (same) return same;
+  const prod = [...new Set(S.portafolio.map(p => p.producto))].find(p => prodTerms(p).some(term => nrm(term) === n));
+  if (prod) { const ex = exams.find(x => nrm(x) === nrm(prod)); return ex || titleCase(prod); }
+  return n.length <= 5 ? raw.toUpperCase() : titleCase(raw);
+}
+function parseWideBlocks(rows, hdr, temaCols, defDate){
+  const iName = hdr.findIndex(h => /nombre|jugador|player|participante|apellido/.test(h)), iMail = hdr.findIndex(h => /correo|e-?mail/.test(h));
+  const blocks = temaCols.map((ti, bi) => { const end = bi + 1 < temaCols.length ? temaCols[bi + 1] : hdr.length; const rng = []; for (let i = ti + 1; i < end; i++) if (i !== iMail && i !== iName) rng.push(i);
+    const pts = rng.find(i => /kahoot|puntuacion|puntos|score/.test(hdr[i])), nota = rng.find(i => /nota|ponderal|calificacion/.test(hdr[i]) && i !== pts);
+    return {ti, nota, pts}; }).filter(b => b.nota != null);
+  const out = []; let curDate = '', section = '';
+  rows.slice(1).forEach(r => {
+    const first = String(r[0] || '').trim();
+    const dm = first.match(/fecha[^0-9]*(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/i); if (dm) { curDate = `${dm[3]}-${dm[2].padStart(2,'0')}-${dm[1].padStart(2,'0')}`; return; }
+    const name = iName >= 0 ? String(r[iName] || '').trim() : '';
+    if (!name) { const lone = r.map(c => String(c || '').trim()).filter(Boolean); if (lone.length === 1 && !/^\d/.test(lone[0])) section = lone[0]; return; }
+    if (/^(solo|total|promedio|nota:|obs)/i.test(name)) return;
+    const email = iMail >= 0 ? String(r[iMail] || '').trim() : '';
+    blocks.forEach(b => {
+      const tema = String(r[b.ti] || '').trim(); if (!tema) return;
+      const rawN = String(r[b.nota] ?? '').trim(), rawP = b.pts != null ? String(r[b.pts] ?? '').trim() : '';
+      const zero = /^0+([.,]0+)?(\s*\/\s*20)?$/.test(rawN), pts = parsePoints(rawP);
+      const np = (!rawN || zero) && !pts;
+      const nota = np ? 0 : parseNota(rawN);
+      const m = matchVis(name, email);
+      out.push({name, email, exam: examCanon(tema), points: pts, correct:null, nota: nota != null ? Math.round(nota * 100) / 100 : null, np, date: curDate || '', vid: m.vid, matchBy: m.by});
+    });
+  });
+  return out;
+}
 function kahootParse(){
   const text = $('#kText').value, exam = $('#kExam').value.trim(), date = $('#kDate').value, n = parseInt($('#kN').value,10) || null;
   let mode = $('#kMode').value;
-  UI.kahoot = {text, exam, date, n, mode};
+  UI.kahoot = {text, exam, date, n, mode, sheets: UI.kahoot && UI.kahoot.sheets, sheetPick: UI.kahoot && UI.kahoot.sheetPick};
   const lines = text.split(/\r?\n/).filter(l => l.trim());
   if (!lines.length) { toast('Pega o arrastra un reporte primero.'); return; }
   const d = lines[0].includes('\t') ? '\t' : (lines[0].split(';').length > lines[0].split(',').length ? ';' : ',');
@@ -1531,13 +1565,15 @@ function kahootParse(){
   if (hIdx > 0) rows = rows.slice(hIdx);
   const hdr = rows[0].map(nrm), hdrRaw = rows[0];
   const find = (re, not) => hdr.findIndex(h => re.test(h) && !(not && not.test(h)));
+  const temaCols = hdr.map((h, i) => i).filter(i => /^(tema|examen|evaluacion|capacitacion|producto)( evaluad[oa])?$|tema evaluado/.test(hdr[i]));
+  if (temaCols.length >= 2 && mode === 'auto') { const w = parseWideBlocks(rows, hdr, temaCols, date); if (w.length) { UI.kahoot = Object.assign(UI.kahoot, {rows:w, sheet:false, cols:null, modeLabel:`Varias evaluaciones por fila (${temaCols.length} bloques)`, info:''}); render(); return; } }
   const hasHeader = hdr.some(h => /player|jugador|nombre|name|participante|usuario|user|apellido|estudiante|alumno|correo|email|score|punt|nota|correct/.test(h));
   let ix;
   if (hasHeader) {
     ix = { name:find(/player|jugador|nombre|participante|nickname|^name|full name|apellido|usuario|^user|estudiante|alumno/), email:find(/correo|e-?mail|mail/),
       correct:find(/correct|correctas|aciertos/, /incorrect/), incorrect:find(/incorrect|incorrectas|errores|fallos/),
       points:find(/score|puntaje|puntos|puntuacion|kahoot|points/, /nota|ponderal/), nota:find(/nota|calificacion|grade|ponderal/),
-      exam:find(/examen|tema|quiz|evaluacion|capacitacion/), date:find(/fecha|date/) };
+      exam:find(/examen|tema|quiz|evaluacion|capacitacion/), date:find(/fecha|date/), estado:find(/^estado$|asistencia|condicion/) };
     rows = rows.slice(1);
   } else {
     ix = { name:0, email:rows[0].findIndex(c => c.includes('@')), correct:-1, incorrect:-1, points:-1, nota:-1, exam:-1, date:-1 };
@@ -1560,13 +1596,13 @@ function kahootParse(){
   const parsed = rows.filter(r => (get(r,'name')||'').trim() && !/^(rank|total|promedio)/i.test(get(r,'name'))).map(r => {
     const correct = parseNum(get(r,'correct')), incorrect = parseNum(get(r,'incorrect'));
     return { name:get(r,'name').trim(), email:(get(r,'email')||'').trim(), points:parsePoints(get(r,'points')), correct, incorrect,
-      notaRaw:get(r,'nota'), exam:(get(r,'exam')||'').trim(), date:(get(r,'date')||'').trim() };
+      notaRaw:get(r,'nota'), exam:examCanon((get(r,'exam')||'').trim()), date:(get(r,'date')||'').trim(), np: /no present|ausente|inasist|no asist/.test(nrm(get(r,'estado') || '')) };
   });
   if (mode === 'auto') mode = ix.nota >= 0 ? 'nota' : ix.correct >= 0 ? 'correct' : ix.points >= 0 ? (n ? 'pointsMax' : 'pointsTop') : 'nota';
   const top = Math.max(0, ...parsed.map(r => r.points || 0));
   let info = '';
   parsed.forEach(r => {
-    if (mode === 'nota') r.nota = parseNota(r.notaRaw);
+    if (r.np) r.nota = 0; else if (mode === 'nota') r.nota = parseNota(r.notaRaw);
     else if (mode === 'correct') { r.total = n || (ix.incorrect >= 0 ? ((r.correct ?? 0) + (r.incorrect ?? 0)) : null) || null; r.nota = r.correct != null && r.total ? r.correct / r.total * 20 : null; }
     else if (mode === 'pointsMax') { r.nota = n && r.points != null ? Math.min(20, r.points / (n * 1000) * 20) : null; }
     else if (mode === 'pointsTop') { r.nota = top && r.points != null ? r.points / top * 20 : null; }
@@ -1609,7 +1645,7 @@ async function kahootCommit(){
       ops.push({col:'visitadores', rec:v}); vid = v.id; created++;
     } else { const cur = S.visitadores.find(v => v.id === vid); if (r.email && cur && !cur.correo) ops.push({col:'visitadores', rec:Object.assign({}, cur, {correo:r.email})}); }
     const ex = r.exam || exam;
-    const rec = {id:uid('e'), vid, examen:ex, fecha:r.date || $('#kDate').value || '', nota:r.nota, kahoot:r.points, estado:'Presentó', origen:'Carga Kahoot '+today()};
+    const rec = {id:uid('e'), vid, examen:ex, fecha:r.date || $('#kDate').value || '', nota:r.np ? 0 : r.nota, kahoot:r.points, estado:r.np ? 'No presentó' : 'Presentó', origen:'Carga Kahoot '+today()};
     const prev = S.evaluaciones.findIndex(e => e.vid === vid && nrm(e.examen) === nrm(ex));
     if (prev >= 0 && replace) { rec.id = S.evaluaciones[prev].id; replaced++; } else added++;
     ops.push({col:'evaluaciones', rec});
@@ -2068,6 +2104,7 @@ document.addEventListener('change', e => {
   if (e.target.id === 'impFdv' && UI.fdvImp) { UI.fdvImp.fdv = e.target.value; if (UI.fdvImp.rows) UI.fdvImp.rows.forEach(r => { if (!r.fdvFromFile) r.fdv = e.target.value; }); render(); return; }
   if (e.target.id === 'impDeact' && UI.fdvImp) { UI.fdvImp.deact = e.target.checked; return; }
   if (e.target.dataset && e.target.dataset.irow != null && UI.fdvImp && UI.fdvImp.rows) { UI.fdvImp.rows[+e.target.dataset.irow].target = e.target.value; render(); return; }
+  if (e.target.id === 'kSheet' && UI.kahoot && UI.kahoot.sheets) { const s = UI.kahoot.sheets.find(x => x.name === e.target.value); if (s) { UI.kahoot.sheetPick = s.name; UI.kahoot.text = s.text; UI.kahoot.rows = null; render(); kahootParse(); } return; }
   if (e.target.id === 'attExam') { UI.attExam = e.target.value; render(); return; }
   if (e.target.id === 'cronFrom' || e.target.id === 'cronTo') { const [f, tt] = cronRange(); UI.cronFrom = e.target.id === 'cronFrom' ? e.target.value || f : f; UI.cronTo = e.target.id === 'cronTo' ? e.target.value || tt : tt; render(); }
   const map = {kMode:'mode', kDate:'date'}; const f = map[e.target.id]; if (f) { UI.kahoot = UI.kahoot || {}; UI.kahoot[f] = e.target.value; }
@@ -2096,22 +2133,24 @@ document.addEventListener('drop', e => {
 document.addEventListener('change', e => { if (e.target.id === 'kFile' && e.target.files[0]) { loadEvalFile(e.target.files[0]); e.target.value = ''; } });
 const sheetToText = ws => XLSX.utils.sheet_to_json(ws, {header:1, raw:true, defval:''}).map(r => r.map(c => String(c).replace(/[\t\r\n]+/g, ' ').trim()).join('\t')).join('\n');
 async function loadEvalFile(f){
-  let text = '', title = '';
+  let text = '', title = '', sheets = null, sheetPick = '';
   try {
     if (/\.xlsx?$/i.test(f.name)) {
       if (!window.XLSX) { toast('No se pudo abrir el lector de Excel. Abre el archivo, copia las celdas y pégalas aquí.'); return; }
       const wb = XLSX.read(await f.arrayBuffer(), {type:'array'});
       const hasHdr = n => /(^|\t)(player|players|jugador|jugadores|nombre|apellido|usuario|user|first name|participante|estudiante|alumno)/im.test(sheetToText(wb.Sheets[n]).slice(0, 6000));
-      const pick = wb.SheetNames.find(n => /final scores|puntuaci.n(es)? final|clasificaci.n final|final/i.test(n) && hasHdr(n)) || wb.SheetNames.find(hasHdr) || wb.SheetNames[0];
+      const cands = wb.SheetNames.filter(hasHdr);
+      const pick = wb.SheetNames.find(n => /final scores|puntuaci.n(es)? final|clasificaci.n final|final/i.test(n) && hasHdr(n)) || cands[cands.length - 1] || wb.SheetNames[0];
       text = sheetToText(wb.Sheets[pick]);
+      sheets = cands.length > 1 ? cands.map(n => ({name:n, text:sheetToText(wb.Sheets[n])})) : null; sheetPick = pick;
       const ov = wb.SheetNames.find(n => /overview|resumen|summary|descripci/i.test(n));
       if (ov) { const first = XLSX.utils.sheet_to_json(wb.Sheets[ov], {header:1, defval:''}).flat().map(String).find(s => s.trim().length > 2); if (first && !/overview|resumen|summary|kahoot! summary/i.test(first)) title = first.trim(); }
     } else text = await f.text();
   } catch(err) { toast('No se pudo leer el archivo. Verifica que sea un .xlsx o .csv válido.'); return; }
   const base = f.name.replace(/\.[^.]+$/, '').replace(/kahoot!?|results?|resultados|report[e]?|final scores|[_]+/gi, ' ').replace(/\s+/g, ' ').replace(/^[\s\-–]+|[\s\-–]+$/g, '').trim();
   const cur = UI.kahoot || {};
-  UI.kahoot = {text, exam: (($('#kExam') && $('#kExam').value.trim()) || cur.exam || title || base), date: ($('#kDate') && $('#kDate').value) || cur.date || today(), n: cur.n || '', mode: cur.mode || 'auto'};
-  render(); kahootParse(); toast(`Archivo “${f.name}” leído. Revisa la previsualización y pulsa “Registrar”.`);
+  UI.kahoot = {text, sheets, sheetPick, exam: (($('#kExam') && $('#kExam').value.trim()) || cur.exam || title || base), date: ($('#kDate') && $('#kDate').value) || cur.date || today(), n: cur.n || '', mode: cur.mode || 'auto'};
+  render(); kahootParse(); toast(sheets ? `Archivo “${f.name}” leído (hoja “${sheetPick}”). Si las notas están en otra hoja, elígela arriba de la vista previa.` : `Archivo “${f.name}” leído. Revisa la previsualización y pulsa “Registrar”.`);
 }
 /* tooltip */
 const tip = $('#tip');
