@@ -314,7 +314,7 @@ textarea.paste{width:100%;min-height:170px;font-family:ui-monospace,SFMono-Regul
 body.ro [data-act="add-vis"],body.ro [data-act="edit-vis"],body.ro [data-act="toggle-vis"],body.ro [data-act="del-vis"],body.ro [data-act="add-eval"],body.ro [data-act="edit-eval"],body.ro [data-act="del-eval"],body.ro [data-act="add-prod"],body.ro [data-act="del-prod"],body.ro [data-act="move-prod"],body.ro [data-act="add-med"],body.ro [data-act="edit-med"],body.ro [data-act="del-med"],body.ro [data-act="k-commit"],body.ro [data-act="imp-json"]{display:none!important}
 body.ro .tick{pointer-events:none}
 body.ro [data-act="add-ses"],body.ro [data-act="edit-ses"]{pointer-events:none}
-body.ro [data-act="exam-merge"],body.ro [data-act="exam-who"],body.ro [data-act="area-add"],body.ro [data-act="area-del"],body.ro [data-act="line-add"],body.ro [data-act="line-ren"],body.ro [data-act="line-del"],body.ro [data-act="fdv-add"],body.ro [data-act="fdv-ren"],body.ro [data-act="fdv-del"],body.ro [data-act="fdv-imp"],body.ro [data-act="new-ses"],body.ro [data-act="del-all-ses"]{display:none!important}
+body.ro [data-act="exam-merge"],body.ro [data-act="exam-who"],body.ro [data-act="area-add"],body.ro [data-act="area-del"],body.ro [data-act="line-add"],body.ro [data-act="port-imp"],body.ro [data-act="line-ren"],body.ro [data-act="line-del"],body.ro [data-act="fdv-add"],body.ro [data-act="fdv-ren"],body.ro [data-act="fdv-del"],body.ro [data-act="fdv-imp"],body.ro [data-act="new-ses"],body.ro [data-act="del-all-ses"]{display:none!important}
 /* calendar / schedule */
 .cal-nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .cal-nav h2{min-width:170px;text-align:center}
@@ -1318,6 +1318,76 @@ function gdCard(P, q){
     <div class="card-b"><p class="gd-note">Los gerentes de distrito llevan todas las líneas. Esta lista se arma sola con los productos de todas las líneas.</p>${[...groups].sort((a,b) => areaIdx(a[0]) - areaIdx(b[0])).map(([a, ps]) => `<div class="agroup"><h4><i class="dot" style="background:${AREA_VAR(a)}"></i>${esc(titleCase(a))} <span class="muted">(${ps.length})</span></h4>
       <div class="chips">${ps.map(([p]) => `<span class="chip ${q && prodMatches(p, q) ? 'hl' : ''}" style="padding-right:8px"><span class="cn" data-act="edit-prod" data-prod="${esc(p)}">${esc(p)}</span></span>`).join('')}</div></div>`).join('')}</div></div>`;
 }
+async function loadPortFile(f){
+  try {
+    let rows;
+    if (/\.xlsx?$/i.test(f.name)) {
+      if (!window.XLSX) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
+      const wb = XLSX.read(await f.arrayBuffer(), {type:'array'});
+      const sheets = wb.SheetNames.map(n => XLSX.utils.sheet_to_json(wb.Sheets[n], {header:1, raw:false, defval:''}));
+      rows = sheets.find(r => r.slice(0, 15).some(x => x.some(c => /^producto/i.test(String(c).trim())) && x.some(c => /^l[ií]nea/i.test(String(c).trim())))) || sheets.find(r => r.slice(0, 15).some(x => x.some(c => /^producto/i.test(String(c).trim())))) || sheets[0];
+    } else { const txt = await f.text(); const d = txt.includes('\t') ? '\t' : txt.includes(';') ? ';' : ','; rows = txt.split(/\r?\n/).map(l => splitRow(l, d)); }
+    portParse(rows, f.name);
+  } catch(e) { console.error(e); toast('No se pudo leer el archivo. Verifica que sea un Excel (.xlsx) o CSV.'); }
+}
+function portParse(rows, fname){
+  const hi = rows.findIndex(r => r.some(c => /^producto/i.test(String(c).trim())));
+  if (hi < 0) { toast('No encontré la columna “Producto” en el archivo.'); return; }
+  const H = rows[hi].map(c => nrm(c));
+  const col = re => H.findIndex(h => re.test(h));
+  const cP = col(/^producto|^marca|^nombre comercial/), cL = col(/^linea/), cF = col(/fuerza|^fdv|negocio/), cA = col(/^area/), cPa = col(/principio|molecula/), cAl = col(/otros nombres|alias/);
+  const def = UI.portImp && UI.portImp.fdv || UI.fdv || 'FDV OTC';
+  const out = [], seen = new Set();
+  rows.slice(hi + 1).forEach(r => {
+    const g = i => i < 0 ? '' : String(r[i] == null ? '' : r[i]).trim();
+    const producto = g(cP).toUpperCase().replace(/\s+/g, ' '); if (!producto) return;
+    const fdv = fdvAlias(g(cF)) || def;
+    let linea = g(cL).toUpperCase().replace(/\s+/g, ' '); if (!linea) linea = fdv.replace(/^FDV\s+/, '');
+    const exL = allLines().find(l => nrm(l) === nrm(linea)); if (exL) linea = exL;
+    let area = g(cA).toUpperCase().replace(/\s+/g, ' '); const exA = areaList().find(a => nrm(a) === nrm(area)); if (exA) area = exA; if (!area) area = 'SIN ÁREA';
+    const key = producto + '||' + linea; if (seen.has(key)) return; seen.add(key);
+    const exists = S.portafolio.some(p => p.producto === producto && p.linea === linea);
+    out.push({producto, linea, fdv, area, principio: g(cPa), alias: g(cAl).split(/[,;]/).map(s => s.trim()).filter(Boolean), exists, on: !exists});
+  });
+  if (!out.length) { toast('El archivo no tiene productos.'); return; }
+  UI.portImp = {fname, fdv: def, rows: out}; render(); toast(`${out.length} productos leídos de “${fname}”. Revisa y guarda.`);
+}
+function portImportCard(){
+  const k = UI.portImp, rows = k.rows || [];
+  const newLines = [...new Set(rows.filter(r => r.on && !allLines().includes(r.linea)).map(r => r.linea))];
+  const newAreas = [...new Set(rows.filter(r => r.on && !areaList().includes(r.area)).map(r => r.area))];
+  const n = rows.filter(r => r.on).length;
+  return `<div class="card imp-card" style="margin-bottom:16px"><div class="card-h"><div><h2>Cargar productos desde Excel</h2><p class="sub">Columnas: Fuerza de ventas, Línea, Producto, Área terapéutica, Principio activo, Otros nombres. Un producto por fila (sin repetir SKUs).</p></div><button class="btn ghost" data-act="port-imp-close">✕ Cerrar</button></div>
+    <div class="card-b"><div class="drop">${k.fname ? `Archivo: <b>${esc(k.fname)}</b> — ` : ''}<button type="button" class="btn sm" data-act="port-imp-file">📂 ${k.fname ? 'Elegir otro archivo' : 'Elegir archivo Excel'}</button></div>
+    ${rows.length ? `<p class="sub" style="margin:10px 0">${rows.length} productos en el archivo · <b>${n} se agregarán</b>${rows.filter(r => r.exists).length ? ` · ${rows.filter(r => r.exists).length} ya estaban en su línea (se actualiza su principio activo)` : ''}${newLines.length ? ` · líneas nuevas: <b>${newLines.map(esc).join(', ')}</b>` : ''}${newAreas.length ? ` · áreas nuevas: <b>${newAreas.map(a => esc(titleCase(a))).join(', ')}</b>` : ''}</p>
+    <div class="toolbar" style="margin-bottom:10px"><button class="btn primary" data-act="port-imp-commit">✓ Guardar ${n} productos en el portafolio</button></div>
+    <div class="tbl-wrap"><table><thead><tr><th></th><th>Producto</th><th>Principio activo</th><th>Área terapéutica</th><th>Fuerza de ventas</th><th>Línea</th><th>Estado</th></tr></thead><tbody>
+    ${rows.map((r, i) => `<tr><td><input type="checkbox" data-prow="${i}" ${r.on ? 'checked' : ''} aria-label="Incluir ${esc(r.producto)}"></td><td><b>${esc(r.producto)}</b>${r.alias.length ? `<br><small class="muted">${esc(r.alias.join(', '))}</small>` : ''}</td><td>${esc(r.principio)}</td><td><i class="dot" style="background:${AREA_VAR(r.area)}"></i> ${esc(titleCase(r.area))}</td><td><small>${esc(r.fdv)}</small></td><td><span class="pill">${esc(r.linea)}</span></td><td>${r.exists ? '<span class="status neutral">Ya existe</span>' : '<span class="status good">Nuevo</span>'}</td></tr>`).join('')}
+    </tbody></table></div>` : ''}</div></div>`;
+}
+async function portCommit(){
+  const k = UI.portImp; if (!k || !k.rows) return;
+  const rows = k.rows.filter(r => r.on || r.exists);
+  let cfgCh = false;
+  rows.filter(r => r.on).forEach(r => {
+    if (!allLines().concat([GD, 'SIN ASIGNAR']).some(l => l === r.linea) && !cfgLines().some(x => x.nombre === r.linea)) { S.config.lineas = cfgLines().concat([{nombre:r.linea, fdv:r.fdv}]); cfgCh = true; }
+    if (!fdvList().includes(r.fdv)) { S.config.fdvs = fdvList().concat([r.fdv]); cfgCh = true; }
+    if (!areaList().includes(r.area)) { S.config.areas = arr(S.config.areas).concat([r.area]); cfgCh = true; }
+  });
+  if (cfgCh) await putConfig();
+  const ops = [], cat = new Map();
+  rows.forEach(r => {
+    if (r.on && !S.portafolio.some(p => p.producto === r.producto && p.linea === r.linea)) ops.push({col:'portafolio', rec:{id:uid('p'), linea:r.linea, fdv:r.fdv, area:r.area, producto:r.producto}});
+    if (r.principio || r.alias.length) { const c = cat.get(r.producto) || Object.assign({}, (S.productos || []).find(x => x.producto === r.producto) || {id:catKey(r.producto), producto:r.producto, principio:'', alias:[]});
+      c.principio = r.principio || c.principio || ''; c.alias = [...new Set(arr(c.alias).concat(r.alias))]; cat.set(r.producto, c); }
+  });
+  cat.forEach(c => { const old = (S.productos || []).find(x => x.producto === c.producto); if (!old || old.principio !== c.principio || arr(old.alias).join('|') !== c.alias.join('|')) ops.push({col:'productos', rec:c}); });
+  const nP = ops.filter(o => o.col === 'portafolio').length;
+  const ok = await runOps(ops);
+  if (ok < ops.length) { toast(`Se guardaron ${ok} de ${ops.length} cambios. Intenta de nuevo.`); return; }
+  UI.portImp = null; if (rows.some(r => r.on)) UI.fdv = ''; render();
+  toast(`${nP} productos agregados al portafolio${cat.size ? `, ${cat.size} con principio activo` : ''}.`);
+}
 function linePill(l, f){ return `<span class="pill" title="${esc(f)}">${esc(l)}</span>`; }
 views.port = () => {
   const P = S.portafolio.filter(p => !UI.fdv || pfdv(p) === UI.fdv);
@@ -1367,8 +1437,8 @@ views.port = () => {
   }
   return `<div class="section-title" style="margin-top:0"><div><h2>Portafolio de productos por línea${UI.fdv ? ' · ' + esc(UI.fdv) : ''}</h2>
     <p class="muted" style="margin:2px 0 0;font-size:12.5px">${P.length} asignaciones · ${products.length} productos. Usa el buscador de arriba para ver en qué líneas está un producto (también por principio activo). Clic en un producto para editarlo o corregir su nombre.</p></div>
-    <div class="toolbar"><button class="btn ${UI.portView==='cards'?'primary':''}" data-act="port-view" data-v="cards">Por línea</button><button class="btn ${UI.portView==='matrix'?'primary':''}" data-act="port-view" data-v="matrix">Matriz producto × línea</button><button class="btn" data-act="exp-port">⬇ CSV</button><button class="btn" data-act="line-add">＋ Nueva línea</button><button class="btn primary" data-act="add-prod">＋ Nuevo producto</button></div></div>
-    ${results}<div style="margin-bottom:12px">${legend}</div>${body}`;
+    <div class="toolbar"><button class="btn ${UI.portView==='cards'?'primary':''}" data-act="port-view" data-v="cards">Por línea</button><button class="btn ${UI.portView==='matrix'?'primary':''}" data-act="port-view" data-v="matrix">Matriz producto × línea</button><button class="btn" data-act="exp-port">⬇ CSV</button><button class="btn" data-act="port-imp">⬆ Cargar productos desde Excel</button><input type="file" id="portFile" accept=".xlsx,.xls,.csv,.tsv,.txt" hidden><button class="btn" data-act="line-add">＋ Nueva línea</button><button class="btn primary" data-act="add-prod">＋ Nuevo producto</button></div></div>
+    ${UI.portImp ? portImportCard() : ''}${results}<div style="margin-bottom:12px">${legend}</div>${body}`;
 };
 
 views.fichero = () => {
@@ -2098,6 +2168,10 @@ document.addEventListener('click', e => {
     case 'fdv-del': e.stopPropagation(); { const f = a.dataset.f; askConfirm(`¿Eliminar la fuerza de ventas ${f}? No tiene representantes ni productos.`, () => { S.config.fdvs = fdvList().filter(x => x !== f); if (UI.fdv === f) UI.fdv = ''; putConfig(); }); } break;
     case 'fdv-imp': UI.fdvImp = UI.fdvImp ? null : {fdv: UI.fdv || FDV_DEFAULT}; render(); window.scrollTo(0, 0); break;
     case 'fdv-imp-close': UI.fdvImp = null; render(); break;
+    case 'port-imp': UI.portImp = UI.portImp ? null : {}; render(); if (UI.portImp) $('#portFile').click(); break;
+    case 'port-imp-file': $('#portFile').click(); break;
+    case 'port-imp-close': UI.portImp = null; render(); break;
+    case 'port-imp-commit': portCommit(); break;
     case 'imp-file': $('#impFile').click(); break;
     case 'imp-parse': rosterParse(); break;
     case 'imp-commit': rosterCommit(); break;
@@ -2175,6 +2249,8 @@ document.addEventListener('change', e => {
     render(); return;
   }
   if (e.target.closest && e.target.closest('#modalBody') && $('#sesReps') && (e.target.name === 'linea' || e.target.name === 'reps' || e.target.name === 'productos')) refreshSesLists();
+  if (e.target.id === 'portFile' && e.target.files[0]) { loadPortFile(e.target.files[0]); e.target.value = ''; return; }
+  if (e.target.dataset && e.target.dataset.prow != null && UI.portImp && UI.portImp.rows) { UI.portImp.rows[+e.target.dataset.prow].on = e.target.checked; render(); return; }
   if (e.target.id === 'impFile' && e.target.files[0]) { loadRosterFile(e.target.files[0]); e.target.value = ''; return; }
   if (e.target.id === 'impFdv' && UI.fdvImp) { UI.fdvImp.fdv = e.target.value; if (UI.fdvImp.rows) UI.fdvImp.rows.forEach(r => { if (!r.fdvFromFile) r.fdv = e.target.value; }); render(); return; }
   if (e.target.id === 'impDeact' && UI.fdvImp) { UI.fdvImp.deact = e.target.checked; return; }
