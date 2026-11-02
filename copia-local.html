@@ -15,7 +15,7 @@
   --warn:#fab219; --warn-text:#8a5a00; --warn-soft:#fff4dc;
   --bad:#d03b3b; --bad-text:#b12c2c; --bad-soft:#fdeaea;
   --bar:#2a78d6; --track:#edf0f5;
-  --a1:#2a78d6; --a2:#eb6834; --a3:#1baf7a; --a4:#eda100; --a5:#e87ba4; --a6:#008300; --a7:#6250d6; --a8:#e34948;
+  --a1:#2a78d6; --a2:#eb6834; --a3:#1baf7a; --a4:#eda100; --a5:#e87ba4; --a6:#008300; --a7:#6250d6; --a8:#e34948; --a9:#0f8fa8; --a10:#a0672b;
   --shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.08);
   --radius:12px;
 }
@@ -27,7 +27,7 @@
     --brand:#8db8f2; --brand-2:#5b9cec; --brand-soft:#1d2b40; --accent:#2cc2b2;
     --good-text:#5fd35f; --good-soft:#15301a; --warn-text:#fac557; --warn-soft:#33290f; --bad-text:#f08585; --bad-soft:#3a1c1c;
     --bar:#3987e5; --track:#252e3c;
-    --a1:#3987e5; --a2:#d95926; --a3:#199e70; --a4:#c98500; --a5:#d55181; --a6:#008300; --a7:#9085e9; --a8:#e66767;
+    --a1:#3987e5; --a2:#d95926; --a3:#199e70; --a4:#c98500; --a5:#d55181; --a6:#008300; --a7:#9085e9; --a8:#e66767; --a9:#2bb3cc; --a10:#c98d55;
     --shadow:0 1px 2px rgba(0,0,0,.4);
   }
 }
@@ -38,7 +38,7 @@
   --brand:#8db8f2; --brand-2:#5b9cec; --brand-soft:#1d2b40; --accent:#2cc2b2;
   --good-text:#5fd35f; --good-soft:#15301a; --warn-text:#fac557; --warn-soft:#33290f; --bad-text:#f08585; --bad-soft:#3a1c1c;
   --bar:#3987e5; --track:#252e3c;
-  --a1:#3987e5; --a2:#d95926; --a3:#199e70; --a4:#c98500; --a5:#d55181; --a6:#008300; --a7:#9085e9; --a8:#e66767;
+  --a1:#3987e5; --a2:#d95926; --a3:#199e70; --a4:#c98500; --a5:#d55181; --a6:#008300; --a7:#9085e9; --a8:#e66767; --a9:#2bb3cc; --a10:#c98d55;
   --shadow:0 1px 2px rgba(0,0,0,.4);
 }
 *{box-sizing:border-box}
@@ -467,7 +467,7 @@ const HEAD_TARGET = {'LÍNEA 1':5,'LÍNEA 2':5,'LÍNEA 3':5,'HÍBRIDA 1':9,'HÍB
 const AREAS = ['ALERGO RESPIRATORIA','ANTIINFECCIOSA','CARDIOMETABÓLICA','GASTROINTESTINAL','GENITOURINARIA','MÚSCULO ESQUELÉTICA','SISTEMA NERVIOSO CENTRAL'];
 function areaList(){ const s = new Set(AREAS); arr(S.config && S.config.areas).forEach(a => a && s.add(a)); S.portafolio.forEach(p => p.area && s.add(p.area)); return [...s]; }
 const areaIdx = a => { const i = areaList().indexOf(a); return i < 0 ? 99 : i; };
-const AREA_VAR = a => { const i = areaList().indexOf(a); return i < 0 ? 'var(--muted)' : i < 8 ? `var(--a${i+1})` : 'var(--muted)'; };
+const AREA_VAR = a => { const i = areaList().indexOf(a); return i < 0 ? 'var(--muted)' : i < 10 ? `var(--a${i+1})` : 'var(--muted)'; };
 const clone = o => JSON.parse(JSON.stringify(o));
 
 function fresh(){
@@ -551,7 +551,7 @@ const pct = n => (n == null || isNaN(n)) ? '—' : fmt(n*100, 0) + '%';
 const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
 const fullName = v => v ? ((v.nombre || v.apellidos) ? `${v.nombre} ${v.apellidos}`.trim() : '(Vacante)') : '(eliminado)';
 const fdate = d => d ? d.split('-').reverse().join('/') : '';
-const titleCase = s => String(s||'').toLowerCase().replace(/(^|\s)\S/g, m => m.toUpperCase());
+const titleCase = s => String(s||'').toLowerCase().replace(/(^|\s)\S/g, m => m.toUpperCase()).replace(/ (Y|E|De|Del|La|Los|Las) /g, m => m.toLowerCase());
 const shortLine = l => l.replace('LÍNEA','L').replace('HÍBRIDA','H');
 const VM = () => Object.fromEntries(S.visitadores.map(v => [v.id, v]));
 const matchesQ = (...vals) => !UI.q || vals.some(v => nrm(v).includes(UI.q));
@@ -1346,8 +1346,8 @@ function portParse(rows, fname){
     const exL = allLines().find(l => nrm(l) === nrm(linea)); if (exL) linea = exL;
     let area = g(cA).toUpperCase().replace(/\s+/g, ' '); const exA = areaList().find(a => nrm(a) === nrm(area)); if (exA) area = exA; if (!area) area = 'SIN ÁREA';
     const key = producto + '||' + linea; if (seen.has(key)) return; seen.add(key);
-    const exists = S.portafolio.some(p => p.producto === producto && p.linea === linea);
-    out.push({producto, linea, fdv, area, principio: g(cPa), alias: g(cAl).split(/[,;]/).map(s => s.trim()).filter(Boolean), exists, on: !exists});
+    const ex0 = S.portafolio.find(p => p.producto === producto && p.linea === linea), exists = !!ex0;
+    out.push({producto, linea, fdv, area, principio: g(cPa), alias: g(cAl).split(/[,;]/).map(s => s.trim()).filter(Boolean), exists, areaCh: !!(ex0 && ex0.area !== area), on: !exists || !!(ex0 && ex0.area !== area)});
   });
   if (!out.length) { toast('El archivo no tiene productos.'); return; }
   UI.portImp = {fname, fdv: def, rows: out}; render(); toast(`${out.length} productos leídos de “${fname}”. Revisa y guarda.`);
@@ -1359,10 +1359,10 @@ function portImportCard(){
   const n = rows.filter(r => r.on).length;
   return `<div class="card imp-card" style="margin-bottom:16px"><div class="card-h"><div><h2>Cargar productos desde Excel</h2><p class="sub">Columnas: Fuerza de ventas, Línea, Producto, Área terapéutica, Principio activo, Otros nombres. Un producto por fila (sin repetir SKUs).</p></div><button class="btn ghost" data-act="port-imp-close">✕ Cerrar</button></div>
     <div class="card-b"><div class="drop">${k.fname ? `Archivo: <b>${esc(k.fname)}</b> — ` : ''}<button type="button" class="btn sm" data-act="port-imp-file">📂 ${k.fname ? 'Elegir otro archivo' : 'Elegir archivo Excel'}</button></div>
-    ${rows.length ? `<p class="sub" style="margin:10px 0">${rows.length} productos en el archivo · <b>${n} se agregarán</b>${rows.filter(r => r.exists).length ? ` · ${rows.filter(r => r.exists).length} ya estaban en su línea (se actualiza su principio activo)` : ''}${newLines.length ? ` · líneas nuevas: <b>${newLines.map(esc).join(', ')}</b>` : ''}${newAreas.length ? ` · áreas nuevas: <b>${newAreas.map(a => esc(titleCase(a))).join(', ')}</b>` : ''}</p>
+    ${rows.length ? `<p class="sub" style="margin:10px 0">${rows.length} productos en el archivo · <b>${n} se agregarán o actualizarán</b>${rows.filter(r => r.exists && !r.areaCh).length ? ` · ${rows.filter(r => r.exists && !r.areaCh).length} ya estaban en su línea (se actualiza su principio activo)` : ''}${newLines.length ? ` · líneas nuevas: <b>${newLines.map(esc).join(', ')}</b>` : ''}${newAreas.length ? ` · áreas nuevas: <b>${newAreas.map(a => esc(titleCase(a))).join(', ')}</b>` : ''}</p>
     <div class="toolbar" style="margin-bottom:10px"><button class="btn primary" data-act="port-imp-commit">✓ Guardar ${n} productos en el portafolio</button></div>
     <div class="tbl-wrap"><table><thead><tr><th></th><th>Producto</th><th>Principio activo</th><th>Área terapéutica</th><th>Fuerza de ventas</th><th>Línea</th><th>Estado</th></tr></thead><tbody>
-    ${rows.map((r, i) => `<tr><td><input type="checkbox" data-prow="${i}" ${r.on ? 'checked' : ''} aria-label="Incluir ${esc(r.producto)}"></td><td><b>${esc(r.producto)}</b>${r.alias.length ? `<br><small class="muted">${esc(r.alias.join(', '))}</small>` : ''}</td><td>${esc(r.principio)}</td><td><i class="dot" style="background:${AREA_VAR(r.area)}"></i> ${esc(titleCase(r.area))}</td><td><small>${esc(r.fdv)}</small></td><td><span class="pill">${esc(r.linea)}</span></td><td>${r.exists ? '<span class="status neutral">Ya existe</span>' : '<span class="status good">Nuevo</span>'}</td></tr>`).join('')}
+    ${rows.map((r, i) => `<tr><td><input type="checkbox" data-prow="${i}" ${r.on ? 'checked' : ''} aria-label="Incluir ${esc(r.producto)}"></td><td><b>${esc(r.producto)}</b>${r.alias.length ? `<br><small class="muted">${esc(r.alias.join(', '))}</small>` : ''}</td><td>${esc(r.principio)}</td><td><i class="dot" style="background:${AREA_VAR(r.area)}"></i> ${esc(titleCase(r.area))}</td><td><small>${esc(r.fdv)}</small></td><td><span class="pill">${esc(r.linea)}</span></td><td>${r.areaCh ? '<span class="status warn">Cambia de área</span>' : r.exists ? '<span class="status neutral">Ya existe</span>' : '<span class="status good">Nuevo</span>'}</td></tr>`).join('')}
     </tbody></table></div>` : ''}</div></div>`;
 }
 async function portCommit(){
@@ -1377,7 +1377,9 @@ async function portCommit(){
   if (cfgCh) await putConfig();
   const ops = [], cat = new Map();
   rows.forEach(r => {
-    if (r.on && !S.portafolio.some(p => p.producto === r.producto && p.linea === r.linea)) ops.push({col:'portafolio', rec:{id:uid('p'), linea:r.linea, fdv:r.fdv, area:r.area, producto:r.producto}});
+    const ex0 = S.portafolio.find(p => p.producto === r.producto && p.linea === r.linea);
+    if (r.on && !ex0) ops.push({col:'portafolio', rec:{id:uid('p'), linea:r.linea, fdv:r.fdv, area:r.area, producto:r.producto}});
+    else if (r.on && ex0 && ex0.area !== r.area) ops.push({col:'portafolio', rec:Object.assign({}, ex0, {area:r.area})});
     if (r.principio || r.alias.length) { const c = cat.get(r.producto) || Object.assign({}, (S.productos || []).find(x => x.producto === r.producto) || {id:catKey(r.producto), producto:r.producto, principio:'', alias:[]});
       c.principio = r.principio || c.principio || ''; c.alias = [...new Set(arr(c.alias).concat(r.alias))]; cat.set(r.producto, c); }
   });
@@ -1386,7 +1388,7 @@ async function portCommit(){
   const ok = await runOps(ops);
   if (ok < ops.length) { toast(`Se guardaron ${ok} de ${ops.length} cambios. Intenta de nuevo.`); return; }
   UI.portImp = null; if (rows.some(r => r.on)) UI.fdv = ''; render();
-  toast(`${nP} productos agregados al portafolio${cat.size ? `, ${cat.size} con principio activo` : ''}.`);
+  toast(`${nP} productos agregados o actualizados en el portafolio${cat.size ? `, ${cat.size} con principio activo` : ''}.`);
 }
 function linePill(l, f){ return `<span class="pill" title="${esc(f)}">${esc(l)}</span>`; }
 views.port = () => {
